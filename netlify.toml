@@ -1,5 +1,9 @@
 # Netlify Configuration for ImpactEdu Next.js App
 
+# Enable the official Netlify Next.js plugin for best compatibility with App Router + API routes
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 [build]
   # Build command - generates Next.js optimized production build
   command = "npm run build"
