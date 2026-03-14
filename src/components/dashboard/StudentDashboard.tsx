@@ -163,10 +163,10 @@ export default function StudentDashboard() {
         }`}
       >
         <div>
-          <h1 className="text-5xl font-black text-text-500 mb-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-text-500 mb-2">
             Ready to Learn Today? 📚
           </h1>
-          <p className="text-lg text-gray-300">Track your progress and continue your learning journey</p>
+          <p className="text-base sm:text-lg text-gray-300">Track your progress and continue your learning journey</p>
         </div>
 
         {/* Key Metrics - Staggered Animation */}
@@ -270,7 +270,7 @@ export default function StudentDashboard() {
         <div ref={coursesSectionRef} className={`space-y-6 animate-fade-in scroll-fade-in ${coursesSectionVisible ? 'visible' : ''}`} style={{ animationDelay: "500ms" }}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-black text-text-500 mb-1">Continue Learning</h2>
+              <h2 className="text-2xl sm:text-3xl font-black text-text-500 mb-1">Continue Learning</h2>
               <p className="text-gray-300">Pick up where you left off</p>
             </div>
             <Button variant="primary" size="sm" className="gap-2">

@@ -236,24 +236,97 @@ export const emailTemplates = {
     `,
   }),
 
-  // Certificate earned
-  certificateEarned: (
-    studentName: string,
-    courseName: string,
-    certificateLink: string
-  ) => ({
-    subject: `Certificate Earned: ${courseName}`,
+  // Certificate issued
+  certificateIssued: (certificate: any) => ({
+    subject: `Certificate Earned: ${certificate.course.title}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Congratulations! 🎉</h2>
-        <p>Hi ${studentName},</p>
-        <p>You have successfully completed <strong>${courseName}</strong> and earned a certificate!</p>
+        <h2 style="color: #1FA774;">Congratulations! 🎉</h2>
+        <p>Hi ${certificate.user.firstName},</p>
+        <p>You have successfully completed <strong>"${certificate.course.title}"</strong> and earned your certificate!</p>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Certificate Details:</strong></p>
+          <p>Certificate ID: ${certificate.certificateNumber}</p>
+          <p>Grade: ${certificate.grade}%</p>
+          <p>Issued: ${certificate.issuedAt.toLocaleDateString()}</p>
+          <p>Instructor: ${certificate.course.instructor.firstName} ${certificate.course.instructor.lastName}</p>
+        </div>
         <p>
-          <a href="${certificateLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-            Download Certificate
+          <a href="${process.env.NEXT_PUBLIC_API_BASE_URL}/dashboard/certificates/${certificate.id}"
+             style="background: #1FA774; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px 0;">
+            View Certificate
           </a>
         </p>
-        <p>Share your achievement with your network!</p>
+        <p>Share your achievement with your network and add it to your professional profile!</p>
+        <p>Best regards,<br>The ImpactEdu Team</p>
+      </div>
+    `,
+  }),
+
+  // Quiz completed
+  quizCompleted: (attempt: any) => ({
+    subject: `Quiz Results: ${attempt.quiz.title}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Quiz Completed!</h2>
+        <p>Hi ${attempt.user.firstName},</p>
+        <p>You have completed the quiz for <strong>"${attempt.quiz.title}"</strong>.</p>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Results:</strong></p>
+          <p>Score: ${attempt.score}%</p>
+          <p>Status: ${attempt.passed ? '✅ Passed' : '❌ Not Passed'}</p>
+          <p>Time Spent: ${Math.floor(attempt.timeSpent / 60)}:${(attempt.timeSpent % 60).toString().padStart(2, '0')}</p>
+          <p>Completed: ${attempt.completedAt.toLocaleDateString()}</p>
+        </div>
+        ${!attempt.passed ? '<p>You can retake this quiz to improve your score.</p>' : '<p>Great job! Keep up the excellent work.</p>'}
+        <p>
+          <a href="${process.env.NEXT_PUBLIC_API_BASE_URL}/dashboard/courses/${attempt.quiz.courseId}"
+             style="background: #1FA774; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px 0;">
+            Continue Learning
+          </a>
+        </p>
+      </div>
+    `,
+  }),
+
+  // Event registration
+  eventRegistration: (registration: any) => ({
+    subject: `Registration Confirmed: ${registration.event.title}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1FA774;">Registration Confirmed! 🎉</h2>
+        <p>Hi ${registration.user.firstName},</p>
+        <p>Your registration for <strong>"${registration.event.title}"</strong> has been confirmed.</p>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Event Details:</strong></p>
+          <p>Date: ${registration.event.eventDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</p>
+          ${registration.event.endDate ? `<p>End Date: ${registration.event.endDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</p>` : ''}
+          <p>Location: ${registration.event.isVirtual ? 'Virtual Event' : registration.event.location}</p>
+          ${registration.event.isVirtual && registration.event.virtualLink ? `<p>Meeting Link: <a href="${registration.event.virtualLink}">${registration.event.virtualLink}</a></p>` : ''}
+          <p>Registration Date: ${registration.registeredAt.toLocaleDateString()}</p>
+        </div>
+        <p>
+          <a href="${process.env.NEXT_PUBLIC_API_BASE_URL}/dashboard/events/${registration.eventId}"
+             style="background: #1FA774; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 10px 0;">
+            View Event Details
+          </a>
+        </p>
+        <p>We look forward to seeing you at the event!</p>
+        <p>Best regards,<br>The ImpactEdu Team</p>
       </div>
     `,
   }),

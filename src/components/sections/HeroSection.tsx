@@ -22,7 +22,7 @@ export const HeroSection = () => {
           </div>
 
           {/* Main Heading */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[1.1] mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-white leading-[1.1] mb-6">
             Learning.<br />
             <span className="bg-gradient-to-r from-primary-300 to-secondary-400 bg-clip-text text-transparent">
               Building.
@@ -32,7 +32,7 @@ export const HeroSection = () => {
           </h1>
 
           {/* Subheading */}
-          <p className="text-xl md:text-2xl text-gray-200 max-w-3xl mx-auto mb-8 font-light leading-relaxed">
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-200 max-w-3xl mx-auto mb-8 font-light leading-relaxed">
             The unified digital platform transforming financial literacy, entrepreneurship development, and community participation across Nigeria.
           </p>
 

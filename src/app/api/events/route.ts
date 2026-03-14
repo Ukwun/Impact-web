@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { verifyToken } from "@/lib/auth";
 
 /**
  * GET /api/events
@@ -11,18 +12,26 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const eventType = searchParams.get("eventType");
     const featured = searchParams.get("featured") === "true";
+    const includePast = searchParams.get("includePast") === "true";
 
     // Build filter query
     const where: any = {
       isPublished: true,
       isCancelled: false,
-      eventDate: {
-        gte: new Date(), // Only upcoming events
-      },
     };
+
+    if (!includePast) {
+      where.eventDate = {
+        gte: new Date(), // Only upcoming events by default
+      };
+    }
 
     if (eventType && eventType !== "all") {
       where.eventType = eventType.toUpperCase();
+    }
+
+    if (featured) {
+      where.isFeatured = true;
     }
 
     // Fetch events
@@ -40,6 +49,13 @@ export async function GET(req: NextRequest) {
             lastName: true,
           },
         },
+        registrations: {
+          select: {
+            userId: true,
+            registeredAt: true,
+            status: true,
+          },
+        },
       },
       take: limit,
       orderBy: { eventDate: "asc" },
@@ -50,31 +66,30 @@ export async function GET(req: NextRequest) {
       id: event.id,
       title: event.title,
       description: event.description,
-      image: event.image,
-      eventDate: event.eventDate,
-      startTime: event.startTime,
-      endTime: event.endTime,
-      venue: event.venue,
-      location: event.location,
       eventType: event.eventType,
-      capacity: event.capacity,
-      registrationCount: event._count.registrations,
-      createdBy: {
-        name: `${event.createdBy.firstName} ${event.createdBy.lastName}`,
-      },
+      eventDate: event.eventDate,
+      endDate: event.endDate,
+      location: event.location,
+      isVirtual: event.isVirtual,
+      virtualLink: event.virtualLink,
+      maxAttendees: event.maxAttendees,
+      currentAttendees: event._count.registrations,
+      isFeatured: event.isFeatured,
+      tags: event.tags,
+      imageUrl: event.imageUrl,
+      createdBy: event.createdBy,
       createdAt: event.createdAt,
+      registrations: event.registrations,
     }));
 
     return NextResponse.json({
       success: true,
-      data: {
-        events: eventsResponse,
-      },
+      data: eventsResponse,
     });
   } catch (error) {
-    console.error("Fetch events error:", error);
+    console.error("Error fetching events:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch events" },
+      { success: false, error: "Internal server error" },
       { status: 500 }
     );
   }
@@ -82,21 +97,52 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/events
- * Create a new event (requires authentication)
+ * Create a new event (Admin/Facilitator only)
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const token = req.headers.get("Authorization")?.split(" ")[1];
+    const payload = verifyToken(token || "");
 
-    // TODO: Add authentication check here
-    // const token = req.headers.get("authorization");
-    // if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const { title, description, eventDate, startTime, endTime, venue, location, eventType, capacity, createdById } = body;
-
-    if (!title || !eventDate || !createdById) {
+    if (!payload) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields" },
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has permission to create events
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub as string },
+      select: { role: true },
+    });
+
+    if (!user || !["ADMIN", "FACILITATOR"].includes(user.role)) {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const {
+      title,
+      description,
+      eventType,
+      eventDate,
+      endDate,
+      location,
+      isVirtual,
+      virtualLink,
+      maxAttendees,
+      isFeatured,
+      tags,
+      imageUrl,
+    } = body;
+
+    if (!title || !description || !eventDate) {
+      return NextResponse.json(
+        { error: "Title, description, and event date are required" },
         { status: 400 }
       );
     }
@@ -104,31 +150,41 @@ export async function POST(req: NextRequest) {
     const event = await prisma.event.create({
       data: {
         title,
-        description: description || "",
+        description,
+        eventType: eventType || "WORKSHOP",
         eventDate: new Date(eventDate),
-        startTime: startTime || "09:00",
-        endTime: endTime || "17:00",
-        venue: venue || "",
-        location: location || "",
-        eventType: eventType || "WEBINAR",
-        capacity: capacity || 100,
-        createdById,
+        endDate: endDate ? new Date(endDate) : null,
+        location,
+        isVirtual: isVirtual || false,
+        virtualLink,
+        maxAttendees: maxAttendees || null,
+        isFeatured: isFeatured || false,
+        tags: tags || [],
+        imageUrl,
+        createdById: payload.sub as string,
+        isPublished: false, // Events need to be published manually
+      },
+      include: {
+        createdBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
       },
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Event created successfully",
-        data: { event },
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({
+      success: true,
+      data: event,
+    });
   } catch (error) {
-    console.error("Create event error:", error);
+    console.error("Error creating event:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to create event" },
+      { success: false, error: "Internal server error" },
       { status: 500 }
     );
   }
 }
+
+
