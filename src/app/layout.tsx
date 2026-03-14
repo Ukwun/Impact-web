@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { ClientLayout } from "@/components/ClientLayout";
@@ -15,7 +14,6 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   });
 }
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "ImpactApp - Learning. Building. Leading.",
@@ -55,7 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body 
-        className={`${inter.variable} font-sans bg-dark-900 text-white`} 
+        className="font-sans bg-dark-900 text-white" 
         suppressHydrationWarning
         style={{
           backgroundColor: 'rgb(5, 30, 59)',

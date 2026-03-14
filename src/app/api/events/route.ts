@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "10");
     const eventType = searchParams.get("eventType");
-    const featured = searchParams.get("featured") === "true";
     const includePast = searchParams.get("includePast") === "true";
 
     // Build filter query
@@ -30,11 +29,6 @@ export async function GET(req: NextRequest) {
       where.eventType = eventType.toUpperCase();
     }
 
-    if (featured) {
-      where.isFeatured = true;
-    }
-
-    // Fetch events
     const events = await prisma.event.findMany({
       where,
       include: {
@@ -68,15 +62,13 @@ export async function GET(req: NextRequest) {
       description: event.description,
       eventType: event.eventType,
       eventDate: event.eventDate,
-      endDate: event.endDate,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      venue: event.venue,
       location: event.location,
-      isVirtual: event.isVirtual,
-      virtualLink: event.virtualLink,
-      maxAttendees: event.maxAttendees,
+      capacity: event.capacity,
       currentAttendees: event._count.registrations,
-      isFeatured: event.isFeatured,
-      tags: event.tags,
-      imageUrl: event.imageUrl,
+      image: event.image,
       createdBy: event.createdBy,
       createdAt: event.createdAt,
       registrations: event.registrations,
@@ -130,19 +122,17 @@ export async function POST(req: NextRequest) {
       description,
       eventType,
       eventDate,
-      endDate,
+      startTime,
+      endTime,
+      venue,
       location,
-      isVirtual,
-      virtualLink,
-      maxAttendees,
-      isFeatured,
-      tags,
-      imageUrl,
+      capacity,
+      image,
     } = body;
 
-    if (!title || !description || !eventDate) {
+    if (!title || !description || !eventDate || !startTime || !venue || !location) {
       return NextResponse.json(
-        { error: "Title, description, and event date are required" },
+        { error: "Title, description, event date, start time, venue, and location are required" },
         { status: 400 }
       );
     }
@@ -153,14 +143,12 @@ export async function POST(req: NextRequest) {
         description,
         eventType: eventType || "WORKSHOP",
         eventDate: new Date(eventDate),
-        endDate: endDate ? new Date(endDate) : null,
+        startTime,
+        endTime,
+        venue,
         location,
-        isVirtual: isVirtual || false,
-        virtualLink,
-        maxAttendees: maxAttendees || null,
-        isFeatured: isFeatured || false,
-        tags: tags || [],
-        imageUrl,
+        capacity: capacity || 0,
+        image,
         createdById: payload.sub as string,
         isPublished: false, // Events need to be published manually
       },

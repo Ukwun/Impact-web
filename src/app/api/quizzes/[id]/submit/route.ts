@@ -40,7 +40,9 @@ export async function POST(
       include: {
         questions: true,
         course: {
-          include: {
+          select: {
+            id: true,
+            title: true,
             instructor: true,
           },
         },
@@ -59,7 +61,7 @@ export async function POST(
       where: {
         quizId,
         userId,
-        passed: true,
+        isPassed: true,
       },
     });
 
@@ -72,7 +74,11 @@ export async function POST(
 
     // Calculate score
     let correctAnswers = 0;
-    let totalPoints = 0;
+    let earnedPoints = 0;
+    const totalPossiblePoints = quiz.questions.reduce(
+      (sum, question) => sum + question.points,
+      0
+    );
     const questionResults = [];
 
     for (const question of quiz.questions) {
@@ -81,7 +87,7 @@ export async function POST(
       const points = isCorrect ? question.points : 0;
 
       correctAnswers += isCorrect ? 1 : 0;
-      totalPoints += points;
+      earnedPoints += points;
 
       questionResults.push({
         questionId: question.id,
@@ -92,7 +98,9 @@ export async function POST(
       });
     }
 
-    const percentage = Math.round((correctAnswers / quiz.questions.length) * 100);
+    const percentage = totalPossiblePoints
+      ? Math.round((earnedPoints / totalPossiblePoints) * 100)
+      : 0;
     const passed = percentage >= quiz.passingScore;
 
     // Create quiz attempt record
@@ -100,12 +108,19 @@ export async function POST(
       data: {
         quizId,
         userId,
-        answers: JSON.stringify(answers),
-        score: percentage,
-        totalPoints,
-        passed,
-        timeSpent: timeSpent || 0,
+        score: earnedPoints,
+        scoredOutOf: totalPossiblePoints,
+        percentageScore: percentage,
+        isPassed: passed,
         completedAt: new Date(),
+        answers: {
+          create: questionResults.map((result) => ({
+            questionId: result.questionId,
+            answer: result.userAnswer,
+            isCorrect: result.isCorrect,
+            pointsEarned: result.points,
+          })),
+        },
       },
       include: {
         user: true,
@@ -136,7 +151,7 @@ export async function POST(
           where: {
             userId,
             quiz: { courseId: quiz.courseId },
-            passed: true,
+            isPassed: true,
           },
         });
 
@@ -155,10 +170,10 @@ export async function POST(
           where: { courseId: quiz.courseId },
         });
 
-        const completedLessons = await prisma.lessonCompletion.count({
+        const completedLessons = await prisma.lessonProgress.count({
           where: {
-            userId,
-            lesson: { courseId: quiz.courseId },
+            enrollmentId: enrollment.id,
+            isCompleted: true,
           },
         });
 
@@ -197,10 +212,11 @@ export async function POST(
     // Send notification email
     try {
       const emailService = getEmailService();
-      await emailService.sendEmail({
+      const emailContent = emailTemplates.quizCompleted(attempt);
+
+      await emailService.send({
         to: attempt.user.email,
-        subject: `Quiz Results: ${quiz.title}`,
-        html: emailTemplates.quizCompleted(attempt),
+        ...emailContent,
       });
     } catch (error) {
       console.error("Error sending quiz completion email:", error);
@@ -211,11 +227,12 @@ export async function POST(
       data: {
         attemptId: attempt.id,
         score: percentage,
-        totalPoints,
+        pointsEarned: earnedPoints,
+        totalPossiblePoints,
         passed,
         correctAnswers,
         totalQuestions: quiz.questions.length,
-        timeSpent: attempt.timeSpent,
+        timeSpent: timeSpent || 0,
         showResults: quiz.showResults,
         results: quiz.showResults ? questionResults : null,
       },

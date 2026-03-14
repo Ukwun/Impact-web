@@ -80,23 +80,18 @@ export async function generateCertificatePDF(certificate: any): Promise<Buffer> 
            width: doc.page.width
          });
 
-      // Grade and date
+      // Issued date
       doc.fillColor('#666')
          .fontSize(12)
          .font('Helvetica')
-         .text(`Grade: ${certificate.grade}%`, 0, 360, {
+         .text(`Issued on: ${certificate.issuedDate.toLocaleDateString('en-US', {
+           year: 'numeric',
+           month: 'long',
+           day: 'numeric'
+         })}`, 0, 360, {
            align: 'center',
            width: doc.page.width
          });
-
-      doc.text(`Issued on: ${certificate.issuedAt.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })}`, 0, 380, {
-        align: 'center',
-        width: doc.page.width
-      });
 
       // Certificate number
       doc.fillColor('#999')
@@ -113,7 +108,7 @@ export async function generateCertificatePDF(certificate: any): Promise<Buffer> 
          .font('Helvetica')
          .text('Instructor:', 100, 480);
 
-      doc.text(`${certificate.course.instructor.firstName} ${certificate.course.instructor.lastName}`, 100, 500);
+      doc.text(`${certificate.course.instructor}`, 100, 500);
 
       // QR Code placeholder (you can add actual QR code generation later)
       doc.rect(doc.page.width - 150, 450, 100, 100)

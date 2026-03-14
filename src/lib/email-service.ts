@@ -247,9 +247,8 @@ export const emailTemplates = {
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p><strong>Certificate Details:</strong></p>
           <p>Certificate ID: ${certificate.certificateNumber}</p>
-          <p>Grade: ${certificate.grade}%</p>
-          <p>Issued: ${certificate.issuedAt.toLocaleDateString()}</p>
-          <p>Instructor: ${certificate.course.instructor.firstName} ${certificate.course.instructor.lastName}</p>
+          <p>Issued: ${certificate.issuedDate.toLocaleDateString()}</p>
+          <p>Course: ${certificate.course.title}</p>
         </div>
         <p>
           <a href="${process.env.NEXT_PUBLIC_API_BASE_URL}/dashboard/certificates/${certificate.id}"
@@ -307,16 +306,10 @@ export const emailTemplates = {
             hour: '2-digit',
             minute: '2-digit'
           })}</p>
-          ${registration.event.endDate ? `<p>End Date: ${registration.event.endDate.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          })}</p>` : ''}
-          <p>Location: ${registration.event.isVirtual ? 'Virtual Event' : registration.event.location}</p>
-          ${registration.event.isVirtual && registration.event.virtualLink ? `<p>Meeting Link: <a href="${registration.event.virtualLink}">${registration.event.virtualLink}</a></p>` : ''}
+          ${registration.event.startTime ? `<p>Start Time: ${registration.event.startTime}</p>` : ''}
+          ${registration.event.endTime ? `<p>End Time: ${registration.event.endTime}</p>` : ''}
+          <p>Venue: ${registration.event.venue}</p>
+          <p>Location: ${registration.event.location}</p>
           <p>Registration Date: ${registration.registeredAt.toLocaleDateString()}</p>
         </div>
         <p>

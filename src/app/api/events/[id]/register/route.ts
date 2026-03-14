@@ -28,7 +28,18 @@ export async function POST(
     // Check if event exists and is available for registration
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        location: true,
+        venue: true,
+        eventDate: true,
+        startTime: true,
+        endTime: true,
+        capacity: true,
+        isPublished: true,
+        isCancelled: true,
         _count: {
           select: {
             registrations: true,
@@ -59,7 +70,7 @@ export async function POST(
     }
 
     // Check capacity
-    if (event.maxAttendees && event._count.registrations >= event.maxAttendees) {
+    if (event.capacity && event._count.registrations >= event.capacity) {
       return NextResponse.json(
         { error: "Event is full" },
         { status: 400 }
@@ -69,9 +80,9 @@ export async function POST(
     // Check if user is already registered
     const existingRegistration = await prisma.eventRegistration.findUnique({
       where: {
-        userId_eventId: {
-          userId,
+        eventId_userId: {
           eventId,
+          userId,
         },
       },
     });
@@ -88,7 +99,7 @@ export async function POST(
       data: {
         userId,
         eventId,
-        status: "CONFIRMED",
+        status: "REGISTERED",
         registeredAt: new Date(),
       },
       include: {
@@ -102,8 +113,8 @@ export async function POST(
       data: {
         userId,
         title: "Event Registration Confirmed 🎉",
-        message: `You have successfully registered for "${event.title}". ${event.isVirtual ? 'Join link will be sent before the event.' : `Location: ${event.location}`}`,
-        type: "EVENT_REGISTRATION",
+        message: `You have successfully registered for "${event.title}". Location: ${event.location || event.venue}`,
+        type: "EVENT_REMINDER",
         link: `/dashboard/events/${eventId}`,
       },
     });
@@ -111,10 +122,11 @@ export async function POST(
     // Send confirmation email
     try {
       const emailService = getEmailService();
-      await emailService.sendEmail({
+      const emailContent = emailTemplates.eventRegistration(registration);
+
+      await emailService.send({
         to: registration.user.email,
-        subject: `Registration Confirmed: ${event.title}`,
-        html: emailTemplates.eventRegistration(registration),
+        ...emailContent,
       });
     } catch (error) {
       console.error("Error sending event registration email:", error);
@@ -128,8 +140,11 @@ export async function POST(
           id: event.id,
           title: event.title,
           eventDate: event.eventDate,
+          startTime: event.startTime,
+          endTime: event.endTime,
+          venue: event.venue,
           location: event.location,
-          isVirtual: event.isVirtual,
+          capacity: event.capacity,
         },
         status: registration.status,
       },
@@ -168,9 +183,9 @@ export async function DELETE(
     // Find and delete registration
     const registration = await prisma.eventRegistration.findUnique({
       where: {
-        userId_eventId: {
-          userId,
+        eventId_userId: {
           eventId,
+          userId,
         },
       },
       include: {
@@ -196,9 +211,9 @@ export async function DELETE(
     // Delete registration
     await prisma.eventRegistration.delete({
       where: {
-        userId_eventId: {
-          userId,
+        eventId_userId: {
           eventId,
+          userId,
         },
       },
     });
@@ -209,7 +224,7 @@ export async function DELETE(
         userId,
         title: "Registration Cancelled",
         message: `Your registration for "${registration.event.title}" has been cancelled.`,
-        type: "EVENT_CANCELLATION",
+        type: "SYSTEM",
         link: `/dashboard/events`,
       },
     });

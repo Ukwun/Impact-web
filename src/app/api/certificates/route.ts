@@ -24,27 +24,18 @@ export async function GET(request: NextRequest) {
 
     const certificates = await prisma.certificate.findMany({
       where: { userId },
-      include: {
-        course: {
-          select: {
-            title: true,
-            description: true,
-            instructor: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
+      select: {
+        id: true,
+        courseId: true,
+        certificateNumber: true,
+        title: true,
+        issuedDate: true,
+        expiryDate: true,
+        qrCode: true,
+        certificateUrl: true,
+        createdAt: true,
       },
-      orderBy: { issuedAt: "desc" },
+      orderBy: { issuedDate: "desc" },
     });
 
     return NextResponse.json({
@@ -92,16 +83,17 @@ export async function POST(request: NextRequest) {
       where: { id: enrollmentId },
       include: {
         course: {
-          include: {
+          select: {
+            title: true,
             instructor: true,
           },
         },
         user: true,
         quizAttempts: {
-          where: { passed: true },
+          where: { isPassed: true },
         },
         assignmentSubmissions: {
-          where: { grade: { not: null } },
+          where: { isGraded: true },
         },
       },
     });
@@ -140,11 +132,11 @@ export async function POST(request: NextRequest) {
 
     // Calculate final grade
     const quizScore = enrollment.quizAttempts.length > 0
-      ? enrollment.quizAttempts.reduce((sum, attempt) => sum + attempt.score, 0) / enrollment.quizAttempts.length
+      ? enrollment.quizAttempts.reduce((sum, attempt) => sum + (attempt.score ?? 0), 0) / enrollment.quizAttempts.length
       : 0;
 
     const assignmentScore = enrollment.assignmentSubmissions.length > 0
-      ? enrollment.assignmentSubmissions.reduce((sum, sub) => sum + (sub.grade || 0), 0) / enrollment.assignmentSubmissions.length
+      ? enrollment.assignmentSubmissions.reduce((sum, sub) => sum + (sub.score ?? 0), 0) / enrollment.assignmentSubmissions.length
       : 0;
 
     const finalGrade = Math.round((quizScore + assignmentScore) / 2);
@@ -154,38 +146,37 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         courseId,
+        title: enrollment.course.title,
         certificateNumber,
-        issuedAt: new Date(),
-        grade: finalGrade,
+        issuedDate: new Date(),
         qrCode: `https://impactedu.ng/verify/${certificateNumber}`,
       },
       include: {
-        course: {
-          include: {
-            instructor: true,
-          },
-        },
         user: true,
       },
     });
 
+    // Enrich certificate for downstream use (emails/PDF)
+    const certificateWithCourse = {
+      ...certificate,
+      course: {
+        title: enrollment.course.title,
+        instructor: enrollment.course.instructor,
+      },
+    };
+
     // Generate PDF certificate
     try {
-      const pdfBuffer = await generateCertificatePDF(certificate);
+      const pdfBuffer = await generateCertificatePDF(certificateWithCourse);
 
       // Send email with certificate
       const emailService = getEmailService();
-      await emailService.sendEmail({
+      const template = emailTemplates.certificateIssued(certificateWithCourse);
+
+      await emailService.send({
         to: certificate.user.email,
-        subject: `Congratulations! Your ${certificate.course.title} Certificate is Ready`,
-        html: emailTemplates.certificateIssued(certificate),
-        attachments: [
-          {
-            filename: `Certificate-${certificate.certificateNumber}.pdf`,
-            content: pdfBuffer,
-            contentType: 'application/pdf',
-          },
-        ],
+        subject: template.subject,
+        html: template.html,
       });
     } catch (error) {
       console.error("Error generating/sending certificate:", error);

@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
               userId: payment.userId,
               title: "Payment Successful 🎉",
               message: `Your payment of ${payment.currency} ${payment.amount} has been processed successfully. You now have full access to "${payment.enrollment.course.title}".`,
-              type: "PAYMENT_SUCCESS",
+              type: "COURSE_ENROLLMENT",
               link: `/dashboard/courses/${payment.enrollment.courseId}`,
             },
           });
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
           // Send email confirmation
           try {
             const emailService = getEmailService();
-            await emailService.sendEmail({
+            await emailService.send({
               to: payment.user.email,
               subject: `Payment Confirmed - ${payment.enrollment.course.title}`,
               html: `
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
       const paymentId = data.meta?.paymentId;
 
       if (paymentId) {
-        await prisma.payment.update({
+        const payment = await prisma.payment.update({
           where: { id: paymentId },
           data: {
             status: "FAILED",
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
             userId: payment.userId,
             title: "Payment Failed",
             message: `Your payment could not be processed. Reason: ${data.reason || "Payment declined"}. Please try again or contact support.`,
-            type: "PAYMENT_FAILED",
+            type: "SYSTEM",
             link: "/payments",
           },
         });

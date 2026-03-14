@@ -72,18 +72,18 @@ export async function GET(request: NextRequest) {
     // Quiz Analytics
     const totalQuizzes = await prisma.quiz.count();
     const quizAttempts = await prisma.quizAttempt.count({
-      where: { createdAt: { gte: startDate } },
+      where: { startedAt: { gte: startDate } },
     });
 
     const passedQuizzes = await prisma.quizAttempt.count({
       where: {
-        passed: true,
-        createdAt: { gte: startDate },
+        isPassed: true,
+        startedAt: { gte: startDate },
       },
     });
 
     const avgQuizScore = await prisma.quizAttempt.aggregate({
-      where: { createdAt: { gte: startDate } },
+      where: { startedAt: { gte: startDate } },
       _avg: { score: true },
     });
 
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     const gradedAssignments = await prisma.assignmentSubmission.count({
       where: {
-        grade: { not: null },
+        isGraded: true,
         submittedAt: { gte: startDate },
       },
     });
@@ -123,13 +123,13 @@ export async function GET(request: NextRequest) {
     });
 
     const eventRegistrations = await prisma.eventRegistration.count({
-      where: { createdAt: { gte: startDate } },
+      where: { registeredAt: { gte: startDate } },
     });
 
     // Certificate Analytics
     const totalCertificates = await prisma.certificate.count();
     const newCertificates = await prisma.certificate.count({
-      where: { issuedAt: { gte: startDate } },
+      where: { issuedDate: { gte: startDate } },
     });
 
     // User Role Distribution
@@ -150,11 +150,11 @@ export async function GET(request: NextRequest) {
       topCourses.map(async (item) => {
         const course = await prisma.course.findUnique({
           where: { id: item.courseId },
-          select: { title: true, instructor: { select: { firstName: true, lastName: true } } },
+          select: { title: true, instructor: true },
         });
         return {
           title: course?.title || 'Unknown Course',
-          instructor: course?.instructor ? `${course.instructor.firstName} ${course.instructor.lastName}` : 'Unknown',
+          instructor: course?.instructor || 'Unknown',
           enrollments: item._count.courseId,
         };
       })
