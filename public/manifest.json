@@ -1,0 +1,49 @@
+{
+  "name": "ImpactApp - Learning. Building. Leading.",
+  "short_name": "ImpactApp",
+  "description": "NCDF Impact Club digital platform for financial literacy, entrepreneurship development, and community participation",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#1FA774",
+  "background_color": "#051e3b",
+  "categories": ["education", "productivity"],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile-1.png",
+      "sizes": "540x720",
+      "form_factor": "narrow",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/mobile-2.png",
+      "sizes": "540x720",
+      "form_factor": "narrow",
+      "type": "image/png"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to your dashboard",
+      "url": "/dashboard",
+      "icons": []
+    },
+    {
+      "name": "Browse Courses",
+      "short_name": "Courses",
+      "description": "Browse available courses",
+      "url": "/dashboard/courses",
+      "icons": []
+    }
+  ]
+}

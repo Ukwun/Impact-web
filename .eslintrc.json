@@ -1,0 +1,14 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+
+    // Allow common JSX text (e.g., contractions and quotes) without requiring HTML entities.
+    // These were generating dozens of lint errors and do not impact runtime behavior.
+    "react/no-unescaped-entities": "off",
+
+    // This project uses a `module` variable name in a few places; this rule can be too strict.
+    "@next/next/no-assign-module-variable": "off"
+  }
+}

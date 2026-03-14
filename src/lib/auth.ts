@@ -1,0 +1,212 @@
+import jwt from "jsonwebtoken";
+import bcryptjs from "bcryptjs";
+import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_here_min_32_chars";
+
+// ============================================================================
+// JWT UTILITIES
+// ============================================================================
+
+export interface JWTPayload {
+  sub: string; // userId
+  email: string;
+  role: string;
+  iat: number;
+  exp: number;
+}
+
+/**
+ * Generate JWT token
+ */
+export function generateToken(payload: Omit<JWTPayload, "iat" | "exp">): string {
+  return jwt.sign(
+    {
+      ...payload,
+    },
+    JWT_SECRET,
+    {
+      expiresIn: "30d", // Token expires in 30 days
+    }
+  );
+}
+
+/**
+ * Verify JWT token
+ */
+export function verifyToken(token: string): JWTPayload | null {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Decode JWT token without verification (for inspection)
+ */
+export function decodeToken(token: string): JWTPayload | null {
+  try {
+    const decoded = jwt.decode(token) as JWTPayload;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================================
+// PASSWORD UTILITIES
+// ============================================================================
+
+/**
+ * Hash password with bcrypt
+ */
+export async function hashPassword(password: string): Promise<string> {
+  const saltRounds = 10;
+  return bcryptjs.hash(password, saltRounds);
+}
+
+/**
+ * Compare password with hash
+ */
+export async function comparePassword(
+  password: string,
+  hash: string
+): Promise<boolean> {
+  return bcryptjs.compare(password, hash);
+}
+
+// ============================================================================
+// VALIDATION UTILITIES
+// ============================================================================
+
+/**
+ * Validate email format
+ */
+export function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * Validate password strength
+ * Requirements:
+ * - At least 8 characters
+ * - At least one uppercase letter
+ * - At least one lowercase letter
+ * - At least one number
+ * - At least one special character
+ */
+export function validatePassword(password: string): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+
+  if (password.length < 8) {
+    errors.push("Password must be at least 8 characters long");
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push("Password must contain at least one uppercase letter");
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push("Password must contain at least one lowercase letter");
+  }
+
+  if (!/[0-9]/.test(password)) {
+    errors.push("Password must contain at least one number");
+  }
+
+  if (!/[!@#$%^&*]/.test(password)) {
+    errors.push(
+      "Password must contain at least one special character (!@#$%^&*)"
+    );
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Validate password strength (simpler version - can be used as default)
+ */
+export function validatePasswordSimple(password: string): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+
+  if (password.length < 6) {
+    errors.push("Password must be at least 6 characters long");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+// ============================================================================
+// REQUEST UTILITIES
+// ============================================================================
+
+/**
+ * Extract bearer token from request headers
+ */
+export function extractToken(authHeader?: string): string | null {
+  if (!authHeader) return null;
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer") return null;
+  return parts[1];
+}
+
+/**
+ * Authenticate user from request
+ * Extracts token from Authorization header and verifies it, then fetches user from database
+ */
+export async function authenticateUser(request: NextRequest): Promise<{
+  success: boolean;
+  user?: any;
+  error?: string;
+}> {
+  try {
+    const authHeader = request.headers.get("Authorization");
+    const token = extractToken(authHeader || "");
+
+    if (!token) {
+      return { success: false, error: "No token provided" };
+    }
+
+    const payload = verifyToken(token);
+    if (!payload) {
+      return { success: false, error: "Invalid token" };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
+
+    return { success: true, user };
+  } catch (error) {
+    return { success: false, error: "Authentication failed" };
+  }
+}
+
+/**
+ * Get user from request token (convenience function)
+ * Returns user directly or null if authentication fails
+ */
+export async function getUserFromToken(request: NextRequest): Promise<any | null> {
+  const authResult = await authenticateUser(request);
+  return authResult.success ? authResult.user : null;
+}
