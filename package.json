@@ -18,7 +18,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
     "db:reset": "prisma migrate reset",
-    "load-test": "npx k6 run load-test.js"
+    "load-test": "npx k6 run load-test.js",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1004.0",
