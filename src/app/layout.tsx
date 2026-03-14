@@ -26,7 +26,6 @@ export const metadata: Metadata = {
     "Nigeria",
     "learning",
   ],
-  viewport: "width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
@@ -43,6 +42,8 @@ export const metadata: Metadata = {
   applicationName: "ImpactApp",
   creator: "NCDF Impact Club",
 };
+
+export const viewport = "width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
