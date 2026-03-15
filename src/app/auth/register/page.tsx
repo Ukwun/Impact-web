@@ -195,7 +195,7 @@ export default function RegisterPage() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} method="POST" className="space-y-5">
+            <div className="space-y-5">
               {/* Step 1: Personal Details */}
               {step === 1 && (
                 <>
@@ -375,11 +375,11 @@ export default function RegisterPage() {
                   </Button>
                 )}
                 <Button
-                  type={step === 3 ? "submit" : "button"}
+                  type="button"
                   disabled={isLoading}
                   size="lg"
                   className="flex-1"
-                  onClick={step === 3 ? undefined : handleNext}
+                  onClick={step === 3 ? handleSubmit : handleNext}
                 >
                   {isLoading ? (
                     "Loading..."
@@ -396,7 +396,7 @@ export default function RegisterPage() {
                   )}
                 </Button>
               </div>
-            </form>
+            </div>
 
             {/* Divider */}
             <div className="relative pt-2">
