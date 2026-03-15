@@ -118,7 +118,6 @@ export interface Enrollment {
   lastAccessedAt: string | null;
   enrolledAt: string;
 }
-}
 
 export interface LessonProgress {
   id: string;

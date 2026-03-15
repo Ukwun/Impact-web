@@ -275,7 +275,7 @@ export default function StudentDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {enrolledCourses.slice(0, 2).map((enrollment, idx) => (
               <div
-                key={enrollment.id}
+                key={enrollment.enrollmentId}
                 className="group relative overflow-hidden rounded-2xl bg-dark-700/50 border-2 border-dark-600 hover:border-primary-300 hover:shadow-xl transition-all duration-300 animate-fade-in"
                 style={{ animationDelay: `${550 + idx * 100}ms` }}
               >
@@ -342,7 +342,7 @@ export default function StudentDashboard() {
                     className="w-full gap-2 group/btn"
                     asChild
                   >
-                    <a href={`/dashboard/learn/lesson?id=${enrollment.id}`}>
+                    <a href={`/dashboard/learn/lesson?id=${enrollment.enrollmentId}`}>
                       Continue Course <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                     </a>
                   </Button>

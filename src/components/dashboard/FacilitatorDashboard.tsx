@@ -40,7 +40,7 @@ export default function FacilitatorDashboard() {
   };
 
   const classes = enrollments.map((e) => ({
-    id: e.id,
+    id: e.enrollmentId,
     name: e.course.title,
     students: 1,
     progress: e.progress,
@@ -51,16 +51,15 @@ export default function FacilitatorDashboard() {
   }));
 
   const recentActivities = enrollments
-    .flatMap((e) =>
-      e.assignmentSubmissions.slice(0, 3).map((sub) => ({
-        id: sub.id,
-        student: e.course.title,
-        action: "Submitted Assignment",
-        course: e.course.title,
-        time: new Date(sub.submittedAt).toLocaleDateString(),
-      }))
-    )
-    .slice(0, 3);
+    .filter((e) => e.assignmentsSubmitted > 0)
+    .slice(0, 3)
+    .map((e) => ({
+      id: e.enrollmentId,
+      student: e.course.title,
+      action: `Submitted ${e.assignmentsSubmitted} assignment${e.assignmentsSubmitted !== 1 ? 's' : ''}`,
+      course: e.course.title,
+      time: e.lastAccessedAt ? new Date(e.lastAccessedAt).toLocaleDateString() : "Recent",
+    }));
 
   if (loading) {
     return (
