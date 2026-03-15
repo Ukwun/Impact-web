@@ -95,18 +95,29 @@ export interface SubmissionFile {
 
 export interface UserProgress {
   enrollments: Enrollment[];
+  total: number;
 }
 
 export interface Enrollment {
-  id: string;
-  courseId: string;
-  course: Course;
+  enrollmentId: string;
+  course: {
+    id: string;
+    title: string;
+    description: string;
+    thumbnail: string;
+    difficulty: string;
+    duration: number;
+  };
   progress: number;
   isCompleted: boolean;
   completedAt: string | null;
-  lessonProgress: LessonProgress[];
-  quizAttempts: QuizAttempt[];
-  assignmentSubmissions: AssignmentSubmission[];
+  lessonsCompleted: number;
+  totalLessons: number;
+  quizzesCompleted: number;
+  assignmentsSubmitted: number;
+  lastAccessedAt: string | null;
+  enrolledAt: string;
+}
 }
 
 export interface LessonProgress {
@@ -301,7 +312,7 @@ export function useUserProgress() {
           throw new Error(errData.error || `Failed to fetch progress (${response.status})`);
         }
         const data = await response.json();
-        setProgress(data);
+        setProgress(data.data); // Extract the actual data from the response
       } catch (err) {
         console.error("❌ Error fetching progress:", err);
         setError(err instanceof Error ? err.message : "Unknown error");

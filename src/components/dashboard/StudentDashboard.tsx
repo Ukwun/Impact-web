@@ -109,17 +109,11 @@ export default function StudentDashboard() {
   }, [user, isConnected, success, info]);
 
   const enrolledCourses = progress?.enrollments || [];
-  const upcomingAssignments = (progress?.enrollments || [])
-    .flatMap((e) =>
-      e.assignmentSubmissions.map((sub) => ({
-        id: sub.id,
-        title: `Assignment - ${e.course.title}`,
-        course: e.course.title,
-        dueDate: new Date(sub.submittedAt).toLocaleDateString(),
-        status: sub.isLate ? "late" : "submitted",
-      }))
-    )
-    .slice(0, 5);
+  // For now, just show total assignments submitted across all courses
+  const totalAssignmentsSubmitted = enrolledCourses.reduce(
+    (sum, course) => sum + (course.assignmentsSubmitted || 0),
+    0
+  );
 
   console.log("📊 Enrolled courses:", enrolledCourses.length);
 
@@ -240,7 +234,7 @@ export default function StudentDashboard() {
                 <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Due</span>
               </div>
               <p className="text-sm opacity-90 mb-2 font-medium">Assignments</p>
-              <p className="text-3xl font-black">{upcomingAssignments.length}</p>
+              <p className="text-3xl font-black">{totalAssignmentsSubmitted}</p>
             </div>
             <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
           </div>
@@ -329,14 +323,14 @@ export default function StudentDashboard() {
                     <div className="text-center sm:text-left">
                       <p className="text-xs text-gray-400 font-semibold mb-1">LESSONS</p>
                       <p className="text-2xl font-black text-text-500">
-                        {enrollment.lessonProgress.filter((l) => l.isCompleted).length}/
-                        {enrollment.lessonProgress.length}
+                        {enrollment.lessonsCompleted}/
+                        {enrollment.totalLessons}
                       </p>
                     </div>
                     <div className="text-center sm:text-right">
                       <p className="text-xs text-gray-400 font-semibold mb-1">QUIZZES</p>
                       <p className="text-2xl font-black text-secondary-600">
-                        {enrollment.quizAttempts.length}
+                        {enrollment.quizzesCompleted}
                       </p>
                     </div>
                   </div>
@@ -360,49 +354,11 @@ export default function StudentDashboard() {
       )}
 
       {/* Recent Assignments */}
-      {upcomingAssignments.length > 0 && (
+      {totalAssignmentsSubmitted > 0 && (
         <div ref={assignmentsSectionRef} className={`space-y-6 animate-fade-in scroll-slide-up ${assignmentsSectionVisible ? 'visible' : ''}`} style={{ animationDelay: "700ms" }}>
           <div>
-            <h2 className="text-3xl font-black text-text-500 mb-1">Recent Assignments</h2>
-            <p className="text-gray-300">Stay on top of your upcoming work</p>
-          </div>
-
-          <div className="space-y-4">
-            {upcomingAssignments.map((assignment, idx) => (
-              <div
-                key={assignment.id}
-                className="group relative overflow-hidden rounded-xl p-6 bg-dark-700/50 border border-dark-600 hover:border-primary-300 hover:shadow-lg transition-all duration-300 border-l-4 border-l-primary-500 animate-fade-in"
-                style={{ animationDelay: `${750 + idx * 100}ms` }}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h4 className="font-bold text-lg text-text-500 group-hover:text-primary-600 transition-colors">
-                        {assignment.title}
-                      </h4>
-                      {assignment.status === "submitted" && (
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wider">
-                          ✓ Submitted
-                        </span>
-                      )}
-                      {assignment.status === "late" && (
-                        <span className="px-3 py-1 bg-danger-100 text-danger-700 text-xs font-bold rounded-full uppercase tracking-wider">
-                          Late
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-300">{assignment.course}</p>
-                    <div className="flex items-center gap-2 text-sm text-gray-400 font-medium">
-                      <Clock className="w-4 h-4 text-primary-600" />
-                      {assignment.dueDate}
-                    </div>
-                  </div>
-                  <Button variant="primary" size="sm" className="flex-shrink-0">
-                    View
-                  </Button>
-                </div>
-              </div>
-            ))}
+            <h2 className="text-3xl font-black text-text-500 mb-1">Assignments</h2>
+            <p className="text-gray-300">You've submitted {totalAssignmentsSubmitted} assignment{totalAssignmentsSubmitted !== 1 ? 's' : ''} across your courses</p>
           </div>
         </div>
       )}

@@ -28,7 +28,7 @@ export default function FacilitatorDashboard() {
     ? Math.round(enrollments.reduce((sum, e) => sum + e.progress, 0) / enrollments.length)
     : 0;
   const assignmentsPending = enrollments.reduce(
-    (sum, e) => sum + e.assignmentSubmissions.length,
+    (sum, e) => sum + e.assignmentsSubmitted,
     0
   );
 
