@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { FeaturesSection } from "@/components/sections/FeaturesSection";
+import LogoIntro from "@/components/LogoIntro";
 import { CheckCircle, Users, Zap } from "lucide-react";
 
 export default function Home() {
   return (
     <main className="flex flex-col min-h-screen">
+      <LogoIntro />
       <HeroSection />
       <FeaturesSection />
 
