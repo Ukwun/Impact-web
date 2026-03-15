@@ -16,11 +16,11 @@ export default function LogoIntro() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900 animate-fade-in">
-      <div className="text-center">
-        <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900">
+      <div className="text-center text-white">
+        <div className="w-20 h-20 mx-auto mb-6 bg-blue-600 rounded-full flex items-center justify-center">
           <svg
-            className="w-12 h-12 text-white"
+            className="w-10 h-10 text-white"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -33,10 +33,10 @@ export default function LogoIntro() {
             />
           </svg>
         </div>
-        <h1 className="text-4xl font-black text-white mb-2">
-          Impact<span className="bg-gradient-to-r from-primary-300 to-secondary-400 bg-clip-text text-transparent">App</span>
+        <h1 className="text-4xl font-bold mb-2">
+          Impact<span className="text-blue-400">App</span>
         </h1>
-        <p className="text-lg text-gray-300 font-light">
+        <p className="text-lg text-gray-300">
           Learning. Building. Leading.
         </p>
       </div>
