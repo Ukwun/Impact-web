@@ -17,10 +17,7 @@
   NPM_CONFIG_PRODUCTION = "false"
 
 # Redirect all non-matching routes to Next.js
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/next"
-  status = 200
+# Removed - using _redirects file instead for SPA routing
 
 # Cache configuration for assets
 [[headers]]
