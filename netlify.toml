@@ -7,8 +7,6 @@
 [build]
   # Build command - generates Next.js optimized production build
   command = "npm run build"
-  # Output directory where Next.js creates production-ready files
-  publish = "."
   # Node version to use
   node_version = "18.17.0"
 
