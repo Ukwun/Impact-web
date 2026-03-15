@@ -58,7 +58,9 @@ export default function RegisterPage() {
   };
 
   const handleNext = () => {
+    console.log("handleNext called, current step:", step);
     setStep(step + 1);
+    console.log("step updated to:", step + 1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -379,7 +381,16 @@ export default function RegisterPage() {
                   disabled={isLoading}
                   size="lg"
                   className="flex-1"
-                  onClick={step === 3 ? handleSubmit : handleNext}
+                  onClick={() => {
+                    console.log("Button clicked, step:", step);
+                    if (step === 3) {
+                      console.log("Calling handleSubmit");
+                      handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+                    } else {
+                      console.log("Calling handleNext");
+                      handleNext();
+                    }
+                  }}
                 >
                   {isLoading ? (
                     "Loading..."
