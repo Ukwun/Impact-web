@@ -195,7 +195,7 @@ export default function RegisterPage() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} method="POST" className="space-y-5">
               {/* Step 1: Personal Details */}
               {step === 1 && (
                 <>
