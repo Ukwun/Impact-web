@@ -57,16 +57,14 @@ export default function RegisterPage() {
     }));
   };
 
+  const handleNext = () => {
+    setStep(step + 1);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
-    if (step < 3) {
-      setStep(step + 1);
-      setIsLoading(false);
-      return;
-    }
 
     try {
       // Register the user - register endpoint now returns token
@@ -377,10 +375,11 @@ export default function RegisterPage() {
                   </Button>
                 )}
                 <Button
-                  type="submit"
+                  type={step === 3 ? "submit" : "button"}
                   disabled={isLoading}
                   size="lg"
                   className="flex-1"
+                  onClick={step === 3 ? undefined : handleNext}
                 >
                   {isLoading ? (
                     "Loading..."
