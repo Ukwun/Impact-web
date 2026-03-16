@@ -43,7 +43,13 @@ export const metadata: Metadata = {
   creator: "NCDF Impact Club",
 };
 
-export const viewport = "width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes";
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover',
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

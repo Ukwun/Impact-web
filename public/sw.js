@@ -2,16 +2,24 @@ const CACHE_NAME = 'impactapp-v1';
 const STATIC_ASSETS = [
   '/',
   '/offline.html',
-  '/dashboard',
-  '/auth/login',
+  '/manifest.json',
 ];
 
 // Install Service Worker
 self.addEventListener('install', (event) => {
+  console.log('Service Worker: Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('Service Worker: Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
+      // Use add() instead of addAll() for better error handling
+      const cachePromises = STATIC_ASSETS.map(url => {
+        return cache.add(url).catch(err => {
+          console.warn(`Service Worker: Failed to cache ${url}:`, err);
+          // Don't fail the entire installation if one asset fails
+          return Promise.resolve();
+        });
+      });
+      return Promise.all(cachePromises);
     })
   );
   self.skipWaiting();

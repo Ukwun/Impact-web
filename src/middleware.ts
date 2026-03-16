@@ -13,8 +13,8 @@ export function middleware(request: NextRequest) {
 
   // Public routes that don't require auth
   const publicRoutes = [
-    '/login',
-    '/signup',
+    '/auth/login',
+    '/auth/register',
     '/forgot-password',
     '/about',
     '/community',
@@ -31,11 +31,11 @@ export function middleware(request: NextRequest) {
 
   // If trying to access protected route without auth
   if (isProtectedRoute && !token && !authHeader) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
   // If logged in and trying to access login/signup, redirect to dashboard
-  if ((pathname === '/login' || pathname === '/signup') && (token || authHeader)) {
+  if ((pathname === '/auth/login' || pathname === '/auth/register') && (token || authHeader)) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -54,10 +54,10 @@ export function middleware(request: NextRequest) {
   // Referrer policy
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-  // Content Security Policy (CSP) - allow Google Fonts to load
+  // Content Security Policy (CSP) - allow Google Fonts and WebSocket connections
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: ws: wss:;"
   );
 
   return response;

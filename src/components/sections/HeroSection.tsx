@@ -5,14 +5,14 @@ import { ArrowRight, Zap, Users, TrendingUp } from "lucide-react";
 
 export const HeroSection = () => {
   return (
-    <section className="min-h-screen flex items-center bg-gradient-dark relative overflow-hidden pt-20">
+    <section className="min-h-screen flex items-center bg-gradient-dark relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary-400 opacity-15 rounded-full blur-3xl -mr-48 -mt-48 animate-pulse-soft"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary-400 opacity-10 rounded-full blur-3xl -ml-48 -mb-48 animate-pulse-soft" style={{ animationDelay: "1s" }}></div>
       <div className="absolute top-1/2 right-1/4 w-72 h-72 bg-primary-500 opacity-5 rounded-full blur-3xl"></div>
 
       <Container className="relative z-10">
-        <div className="max-w-4xl mx-auto animate-slide-up">
+        <div className="max-w-4xl mx-auto text-center animate-slide-up">
           {/* Badge */}
           <div className="inline-block mb-8">
             <span className="px-5 py-2 bg-primary-500 bg-opacity-20 text-primary-100 text-sm font-bold rounded-full border border-primary-400 border-opacity-40 backdrop-blur-sm flex items-center gap-2">
@@ -51,22 +51,22 @@ export const HeroSection = () => {
             </Button>
           </div>
 
-          {/* Stats Row */}
+          {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 py-12 border-t border-white/10">
             <div className="text-center sm:text-left space-y-1">
-              <p className="text-4xl font-black text-secondary-400 flex items-baseline gap-2">
+              <p className="text-4xl font-black text-secondary-400 flex items-baseline gap-2 justify-center sm:justify-start">
                 500K+ <span className="text-lg text-gray-300">by 2026</span>
               </p>
               <p className="text-gray-400 font-medium">Users Onboarded</p>
             </div>
             <div className="text-center sm:text-left space-y-1">
-              <p className="text-4xl font-black text-primary-300 flex items-baseline gap-2">
+              <p className="text-4xl font-black text-primary-300 flex items-baseline gap-2 justify-center sm:justify-start">
                 1,200+ <span className="text-lg text-gray-300">Connected</span>
               </p>
               <p className="text-gray-400 font-medium">Schools Nationwide</p>
             </div>
             <div className="text-center sm:text-left space-y-1">
-              <p className="text-4xl font-black text-secondary-400 flex items-baseline gap-2">
+              <p className="text-4xl font-black text-secondary-400 flex items-baseline gap-2 justify-center sm:justify-start">
                 100+ <span className="text-lg text-gray-300">Active</span>
               </p>
               <p className="text-gray-400 font-medium">Universities Engaged</p>

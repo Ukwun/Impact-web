@@ -12,7 +12,7 @@ demoUsers.set("demo@example.com", {
   role: "STUDENT",
   state: "Lagos",
   institution: "Demo School",
-  passwordHash: "$2b$10$H8XYzHxWNKsKIpq9nC8nbu8bDm8gMiqOZsmfyYPvp4jHrOqWqYQHy",
+  passwordHash: "$2a$10$b4cQPeosYPKWmRQRTBAJJ.UZjInmZid/8V1mACovylm40uqhqfpGq",
   emailVerified: true,
   isActive: true,
   avatar: null,

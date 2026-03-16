@@ -16,7 +16,7 @@ export default function LoginPage() {
     password: "Test@1234",
   });
   const [successMessage, setSuccessMessage] = useState("");
-  const { login, isLoading, error } = useAuthStore();
+  const { login, user, error, isLoading } = useAuthStore();
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,8 +33,27 @@ export default function LoginPage() {
     const success = await login(formData.email, formData.password);
     if (success) {
       setSuccessMessage("Login successful! Redirecting...");
+
+      // Wait a bit for the store to update, then redirect
       setTimeout(() => {
-        router.push("/dashboard");
+        if (user?.role) {
+          const roleRoutes: Record<string, string> = {
+            'student': '/dashboard/student',
+            'facilitator': '/dashboard/facilitator',
+            'mentor': '/dashboard/mentor',
+            'admin': '/dashboard/admin',
+            'school_admin': '/dashboard/school-admin',
+            'parent': '/dashboard/parent',
+            'circle_member': '/dashboard/circle-member',
+            'uni_member': '/dashboard/student', // Use student dashboard for uni members
+          };
+
+          const dashboardRoute = roleRoutes[user.role.toLowerCase()] || '/dashboard';
+          router.push(dashboardRoute);
+        } else {
+          // Fallback if user role is not available yet
+          router.push("/dashboard");
+        }
       }, 1000);
     }
   };

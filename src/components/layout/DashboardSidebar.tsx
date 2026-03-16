@@ -45,7 +45,7 @@ export default function DashboardSidebar() {
     permissionBasedItems.push({ icon: BarChart3, label: 'Leaderboard', href: '/leaderboard' });
 
     // Achievements - all users
-    permissionBasedItems.push({ icon: Award, label: 'Achievements', href: '/leaderboard' });
+    permissionBasedItems.push({ icon: Award, label: 'Achievements', href: '/achievements' });
 
     // Courses - LMS access
     if (checkPermission('lms.view_courses')) {

@@ -69,11 +69,11 @@ export async function POST(req: NextRequest) {
     let isDemoUser = false;
 
     // First check demo users (in-memory)
-    console.log(`\n✓ Checking demo users...`);
+    console.log(`\n✓ Checking demo users for email: "${email}"`);
     user = demoUsers.get(email);
     console.log(`User found in demo: ${user ? '✅ YES' : '❌ NO'}`);
     if (user) {
-      console.log(`✅ DEMO USER FOUND: ${email}`);
+      console.log(`✅ DEMO USER FOUND: ${email} - Role: ${user.role}`);
       isDemoUser = true;
     }
 

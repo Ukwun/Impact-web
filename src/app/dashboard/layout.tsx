@@ -26,17 +26,25 @@ export default function DashboardLayout({
 
   if (!hasHydrated || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-dark-500">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-          <p className="mt-4 text-white font-semibold">Loading dashboard...</p>
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-primary-500 border-t-transparent"></div>
+          <p className="mt-6 text-white font-semibold text-lg">Loading your dashboard...</p>
+          <p className="mt-2 text-gray-400 text-sm">Preparing your personalized experience</p>
         </div>
       </div>
     );
   }
 
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dark-900 via-dark-800 to-dark-900">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          <p className="mt-4 text-white font-semibold">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

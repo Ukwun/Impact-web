@@ -5,8 +5,10 @@ import { useEffect, useRef, useState } from "react";
 export default function LogoIntro() {
   const [isVisible, setIsVisible] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
+  const [animationStage, setAnimationStage] = useState(0);
   const maxTimerRef = useRef<NodeJS.Timeout | null>(null);
   const fadeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const hide = (delay = 0) => {
     setIsFadingOut(true);
@@ -15,19 +17,34 @@ export default function LogoIntro() {
   };
 
   useEffect(() => {
-    // Ensure the intro never hangs - hide it after 3 seconds max
-    maxTimerRef.current = setTimeout(() => {
-      hide(400);
-    }, 3000);
+    // Animation sequence
+    const startAnimation = () => {
+      // Stage 1: Logo appears (0.5s)
+      setTimeout(() => setAnimationStage(1), 200);
 
-    // Fade out after 1.5 seconds for a faster experience
+      // Stage 2: Text appears (1s)
+      setTimeout(() => setAnimationStage(2), 700);
+
+      // Stage 3: Tagline appears (1.5s)
+      setTimeout(() => setAnimationStage(3), 1200);
+    };
+
+    startAnimation();
+
+    // Ensure the intro never hangs - hide it after 4 seconds max
+    maxTimerRef.current = setTimeout(() => {
+      hide(600);
+    }, 4000);
+
+    // Fade out after 2.5 seconds for a smooth experience
     fadeTimerRef.current = setTimeout(() => {
-      hide(400);
-    }, 1500);
+      hide(600);
+    }, 2500);
 
     return () => {
       if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
       if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
     };
   }, []);
 
@@ -35,20 +52,38 @@ export default function LogoIntro() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gray-900 transition-opacity duration-500 ${
-        isFadingOut ? "opacity-0" : "opacity-100"
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-gray-900 via-dark-900 to-black transition-all duration-700 ${
+        isFadingOut ? "opacity-0 scale-105" : "opacity-100 scale-100"
       }`}
       onClick={() => {
         // Allow skipping the intro by clicking anywhere
         if (!isFadingOut) {
-          hide(0);
+          hide(200);
         }
       }}
+      style={{
+        background: isFadingOut
+          ? "linear-gradient(135deg, #111827 0%, #0f172a 50%, #000000 100%)"
+          : "linear-gradient(135deg, #1f2937 0%, #111827 30%, #0f172a 70%, #000000 100%)"
+      }}
     >
-      <div className="text-center text-white">
-        <div className="w-20 h-20 mx-auto mb-6 bg-blue-600 rounded-full flex items-center justify-center">
+      <div className="text-center text-white relative">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 -z-10">
+          <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-primary-500/20 rounded-full blur-xl transition-all duration-1000 ${
+            animationStage >= 1 ? "opacity-100 scale-100" : "opacity-0 scale-50"
+          }`}></div>
+          <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-secondary-500/30 rounded-full blur-lg transition-all duration-1000 delay-300 ${
+            animationStage >= 2 ? "opacity-100 scale-100" : "opacity-0 scale-50"
+          }`}></div>
+        </div>
+
+        {/* Logo */}
+        <div className={`w-24 h-24 mx-auto mb-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-1000 transform ${
+          animationStage >= 1 ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-75 rotate-180"
+        }`}>
           <svg
-            className="w-10 h-10 text-white"
+            className="w-12 h-12 text-white"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -56,16 +91,47 @@ export default function LogoIntro() {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
+              strokeWidth={2.5}
               d="M13 10V3L4 14h7v7l9-11h-7z"
             />
           </svg>
         </div>
-        <h1 className="text-4xl font-bold mb-2">
-          Impact<span className="text-blue-400">App</span>
+
+        {/* Title */}
+        <h1 className={`text-5xl md:text-6xl font-black mb-4 transition-all duration-1000 transform ${
+          animationStage >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        }`}>
+          <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            Impact
+          </span>
+          <span className="bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent">
+            App
+          </span>
         </h1>
-        <p className="text-lg text-gray-300">
+
+        {/* Tagline */}
+        <p className={`text-xl text-gray-300 font-light transition-all duration-1000 transform ${
+          animationStage >= 3 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        }`}>
           Learning. Building. Leading.
+        </p>
+
+        {/* Loading indicator */}
+        <div className={`mt-8 flex justify-center transition-all duration-500 ${
+          animationStage >= 3 ? "opacity-100" : "opacity-0"
+        }`}>
+          <div className="flex space-x-2">
+            <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
+        </div>
+
+        {/* Skip hint */}
+        <p className={`text-xs text-gray-500 mt-6 transition-all duration-500 ${
+          animationStage >= 3 ? "opacity-100" : "opacity-0"
+        }`}>
+          Click anywhere to skip
         </p>
       </div>
     </div>
