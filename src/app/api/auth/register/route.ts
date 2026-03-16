@@ -119,21 +119,12 @@ export async function POST(req: NextRequest) {
     const lastName = body.lastName || 'Account';
 
     // ========================================================================
-    // CHECK IF USER ALREADY EXISTS (Demo or Database)
+    // CHECK IF USER ALREADY EXISTS (Database First)
     // ========================================================================
 
-    // Check demo users first
-    if (demoUsers.has(email)) {
-      return NextResponse.json(
-        { success: false, error: "Email already registered" },
-        { status: 409 }
-      );
-    }
-
-    // Try to use database if available
+    // Check database first (production priority)
     try {
       const { prisma } = await import("@/lib/prisma");
-      
       const existingUser = await prisma.user.findUnique({
         where: { email: email },
       });
@@ -144,11 +135,25 @@ export async function POST(req: NextRequest) {
           { status: 409 }
         );
       }
+    } catch (dbError) {
+      console.log("Database check failed, will check demo users:", (dbError as Error).message);
+    }
 
-      // ========================================================================
-      // CREATE NEW USER IN DATABASE
-      // ========================================================================
+    // Check demo users as fallback
+    if (demoUsers.has(email)) {
+      return NextResponse.json(
+        { success: false, error: "Email already registered" },
+        { status: 409 }
+      );
+    }
 
+    // ========================================================================
+    // CREATE NEW USER (Database First, Demo Fallback)
+    // ========================================================================
+
+    // Try database first (production priority)
+    try {
+      const { prisma } = await import("@/lib/prisma");
       const hashedPassword = await hashPassword(password);
 
       const user = await prisma.user.create({
@@ -157,7 +162,7 @@ export async function POST(req: NextRequest) {
           firstName: firstName,
           lastName: lastName,
           phone: body.phone || null,
-          role: (body.role || "STUDENT") as any,
+          role: (body.role || "STUDENT").toUpperCase() as any,
           state: body.state || "Unknown",
           institution: body.institution || null,
           passwordHash: hashedPassword,
@@ -183,18 +188,20 @@ export async function POST(req: NextRequest) {
         role: user.role,
       });
 
+      console.log(`✅ User registered in database: ${email} - Role: ${user.role}`);
+
       return NextResponse.json(
         {
           success: true,
-          message: "Registration successful! Logging you in...",
+          message: "Registration successful! Welcome to ImpactApp!",
           data: { user: userResponse, token, demoMode: false },
         },
         { status: 201 }
       );
     } catch (dbError) {
-      // Database unavailable - use demo mode
-      console.log("Database unavailable, using demo mode for registration");
+      console.log("Database registration failed, falling back to demo mode:", (dbError as Error).message);
 
+      // Database unavailable - use demo mode as last resort
       const hashedPassword = await hashPassword(password);
       const userId = "user-" + Math.random().toString(36).substr(2, 9);
 
@@ -204,7 +211,7 @@ export async function POST(req: NextRequest) {
         firstName: firstName,
         lastName: lastName,
         phone: body.phone || null,
-        role: body.role || "STUDENT",
+        role: (body.role || "STUDENT").toUpperCase(),
         state: body.state || "Unknown",
         institution: body.institution || null,
         passwordHash: hashedPassword,
@@ -216,7 +223,7 @@ export async function POST(req: NextRequest) {
       };
 
       demoUsers.set(email, newUser);
-      console.log(`New demo user registered: ${email}. Total demo users: ${demoUsers.size}`);
+      console.log(`⚠️ User registered in demo mode: ${email}. Total demo users: ${demoUsers.size}`);
 
       const userResponse = {
         id: newUser.id,
@@ -239,7 +246,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: true,
-          message: "Registration successful! Logging you in...",
+          message: "Registration successful! (Demo mode - database unavailable)",
           data: { user: userResponse, token, demoMode: true },
         },
         { status: 201 }

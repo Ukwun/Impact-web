@@ -62,33 +62,32 @@ export async function POST(req: NextRequest) {
     const { email, password } = validationResult.data;
 
     // ========================================================================
-    // TRY DATABASE FIRST, FALLBACK TO DEMO MODE
+    // AUTHENTICATION - DATABASE FIRST, DEMO FALLBACK
     // ========================================================================
 
     let user = null;
     let isDemoUser = false;
 
-    // First check demo users (in-memory)
-    console.log(`\n✓ Checking demo users for email: "${email}"`);
-    user = demoUsers.get(email);
-    console.log(`User found in demo: ${user ? '✅ YES' : '❌ NO'}`);
-    if (user) {
-      console.log(`✅ DEMO USER FOUND: ${email} - Role: ${user.role}`);
-      isDemoUser = true;
+    // First try database (production priority)
+    console.log(`\n🗄️ Checking database for user: "${email}"`);
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      user = await prisma.user.findUnique({
+        where: { email: email },
+      });
+      console.log(`Database user found: ${user ? '✅ YES' : '❌ NO'}`);
+    } catch (dbError) {
+      console.log("Database query failed:", (dbError as Error).message);
     }
 
-    // If not in demo, try database
+    // If not in database, check demo users (fallback only)
     if (!user) {
-      console.log(`\n🗄️ Checking database...`);
-      try {
-        const { prisma } = await import("@/lib/prisma");
-        user = await prisma.user.findUnique({
-          where: { email: email },
-        });
-        console.log(`Database user found: ${user ? '✅ YES' : '❌ NO'}`);
-      } catch (dbError) {
-        // Database connection failed - log it but continue
-        console.log("Database query failed:", (dbError as Error).message);
+      console.log(`\n✓ Checking demo users for email: "${email}"`);
+      user = demoUsers.get(email);
+      console.log(`Demo user found: ${user ? '✅ YES' : '❌ NO'}`);
+      if (user) {
+        console.log(`✅ DEMO USER FOUND: ${email} - Role: ${user.role}`);
+        isDemoUser = true;
       }
     }
 

@@ -12,8 +12,8 @@ import { ArrowRight, Lock, Mail, AlertCircle, CheckCircle, Loader } from "lucide
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
-    email: "demo@example.com",
-    password: "Test@1234",
+    email: "",
+    password: "",
   });
   const [successMessage, setSuccessMessage] = useState("");
   const { login, user, error, isLoading } = useAuthStore();
@@ -91,13 +91,6 @@ export default function LoginPage() {
                 <span className="text-red-300 text-sm font-medium">{error}</span>
               </div>
             )}
-
-            {/* Demo Credentials Note */}
-            <div className="p-4 bg-blue-900/30 border border-blue-600 rounded-lg">
-              <p className="text-xs text-blue-300 font-semibold mb-2">Demo Credentials:</p>
-              <p className="text-xs text-blue-400">Email: demo@example.com</p>
-              <p className="text-xs text-blue-400">Password: Test@1234</p>
-            </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
