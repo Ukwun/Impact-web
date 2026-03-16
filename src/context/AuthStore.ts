@@ -19,7 +19,7 @@ interface AuthStore {
   setError: (error: string | null) => void;
   setHasHydrated: (hasHydrated: boolean) => void;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (data: any) => Promise<boolean>;
+  register: (data: any) => Promise<{ success: boolean; token?: string; user?: User; error?: string }>;
   logout: () => void;
 }
 
@@ -101,12 +101,24 @@ export const useAuthStore = create<AuthStore>()(
             );
           }
 
+          const data_response = await response.json();
+          const { token, user } = data_response.data;
+
           set({
+            token,
+            user,
+            isAuthenticated: true,
             isLoading: false,
             error: null,
           });
 
-          return true;
+          // Store token AND user in localStorage for API calls and page reloads
+          if (typeof window !== "undefined") {
+            localStorage.setItem(AUTH_TOKEN_KEY, token);
+            localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+          }
+
+          return { success: true, token, user };
         } catch (err) {
           const errorMessage =
             err instanceof Error ? err.message : "Registration failed";
@@ -114,7 +126,7 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: errorMessage,
           });
-          return false;
+          return { success: false, error: errorMessage };
         }
       };
 

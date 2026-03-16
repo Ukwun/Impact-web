@@ -21,6 +21,11 @@ export default function DashboardPage() {
   const [user, setLocalUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Check if user needs onboarding (new user created within last hour)
+  const userCreatedAt = user ? new Date(user.createdAt) : null;
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const needsOnboarding = userCreatedAt && userCreatedAt > oneHourAgo;
+
   // Check auth AFTER Zustand hydrates
   useEffect(() => {
     // Wait for Zustand to hydrate from localStorage first
@@ -64,6 +69,14 @@ export default function DashboardPage() {
     setIsLoading(false);
     router.push("/auth/login");
   }, [hasHydrated, storeUser, router, setUser, setToken]); // Only run once on mount
+
+  // Redirect to onboarding if needed
+  useEffect(() => {
+    if (needsOnboarding && user) {
+      console.log("🔄 New user detected, redirecting to onboarding");
+      router.push("/onboarding");
+    }
+  }, [needsOnboarding, router, user]);
 
   // Show loading while checking auth
   if (isLoading) {

@@ -42,22 +42,48 @@ export async function POST(req: NextRequest) {
     console.log(`IP: ${clientIp} (Remaining signups: ${rateLimitResult.remaining})`);
 
     // ========================================================================
-    // INPUT VALIDATION (with password strength checking)
+    // INPUT VALIDATION (password strength depends on mode)
     // ========================================================================
 
-    // Pre-validate password strength before schema validation
-    const passwordStrengthCheck = validatePassword(body.password);
-    if (!passwordStrengthCheck.isValid) {
-      console.warn(`⚠️ Password too weak:`, passwordStrengthCheck.feedback);
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Password is too weak",
-          passwordFeedback: passwordStrengthCheck.feedback,
-          passwordStrength: passwordStrengthCheck.strength,
-        },
-        { status: 400 }
-      );
+    // Check if database is available first
+    let databaseAvailable = false;
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      await prisma.$connect();
+      databaseAvailable = true;
+    } catch (dbError) {
+      console.log("Database unavailable, will use demo mode");
+    }
+
+    // Strict password validation only for database users
+    if (databaseAvailable) {
+      const passwordStrengthCheck = validatePassword(body.password);
+      if (!passwordStrengthCheck.isValid) {
+        console.warn(`⚠️ Password too weak:`, passwordStrengthCheck.feedback);
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Password is too weak",
+            passwordFeedback: passwordStrengthCheck.feedback,
+            passwordStrength: passwordStrengthCheck.strength,
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      // Demo mode: basic password validation only
+      const passwordStrengthCheck = validatePasswordSimple(body.password);
+      if (!passwordStrengthCheck.valid) {
+        console.warn(`⚠️ Password too weak for demo:`, passwordStrengthCheck.errors);
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Password is too weak",
+            passwordErrors: passwordStrengthCheck.errors,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Validate against schema

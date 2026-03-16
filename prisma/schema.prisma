@@ -42,6 +42,10 @@ model User {
   // Onboarding
   onboardingResponse    OnboardingResponse?
   
+  // Parent-Child Relationships
+  children              ParentChild[] @relation("Parent")
+  parents               ParentChild[] @relation("Child")
+  
   // Relations
   enrollments           Enrollment[]
   quizAttempts          QuizAttempt[]
@@ -97,8 +101,41 @@ model OnboardingResponse {
 }
 
 // ============================================================================
-// LEARNING MANAGEMENT SYSTEM (LMS)
+// PARENT-CHILD RELATIONSHIPS
 // ============================================================================
+
+model ParentChild {
+  id                    String      @id @default(cuid())
+  parentId              String
+  parent                User        @relation("Parent", fields: [parentId], references: [id], onDelete: Cascade)
+  
+  childId               String
+  child                 User        @relation("Child", fields: [childId], references: [id], onDelete: Cascade)
+  
+  relationship          ParentalRelationship @default(PARENT)
+  isActive              Boolean     @default(true)
+  
+  // Permissions granted to parent
+  canViewProgress       Boolean     @default(true)
+  canViewAttendance     Boolean     @default(true)
+  canViewGrades         Boolean     @default(true)
+  canViewCertificates   Boolean     @default(true)
+  canReceiveAlerts      Boolean     @default(true)
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@unique([parentId, childId])
+  @@index([parentId])
+  @@index([childId])
+  @@index([isActive])
+}
+
+enum ParentalRelationship {
+  PARENT
+  GUARDIAN
+  LEGAL_GUARDIAN
+}
 
 model Course {
   id                    String      @id @default(cuid())

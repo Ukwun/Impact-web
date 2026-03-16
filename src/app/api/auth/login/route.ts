@@ -118,9 +118,17 @@ export async function POST(req: NextRequest) {
         );
       }
     } else {
-      // Demo/test mode: Accept any password for testing
-      // In production, this should never happen
-      console.log(`✓ Demo login: Password check skipped for ${email}`);
+      // Demo/test mode: Validate password properly for demo users
+      const isPasswordValid = await comparePassword(password, user.passwordHash);
+
+      if (!isPasswordValid) {
+        console.log(`Login failed: Invalid password for demo user ${email}`);
+        return NextResponse.json(
+          { success: false, error: "Invalid email or password" },
+          { status: 401 }
+        );
+      }
+      console.log(`✓ Demo login: Password validated for ${email}`);
     }
 
     // ========================================================================

@@ -24,88 +24,238 @@ export function getDashboardRoute(role: string | undefined): string {
 export function getPermissionsByRole(role: string | undefined): string[] {
   const permissions: Record<string, string[]> = {
     STUDENT: [
-      "learning.view",
-      "learning.complete",
-      "event.view",
-      "event.register",
-      "community.view",
+      // Authentication & Profile
+      "auth.register",
+      "profile.edit_own",
+
+      // Learning Management System
+      "lms.view_courses",
+      "lms.take_quiz",
+      "lms.upload_assignment",
+      "lms.mark_completion",
+
+      // Attendance
+      "attendance.view_own",
+
+      // Community
+      "community.view_groups",
       "community.post",
+      "community.report_content",
+
+      // Events
+      "events.view",
+      "events.register",
+
+      // Certification
       "certification.view",
       "certification.download",
-      "profile.edit",
+      "certification.validate_qr",
+
+      // Safeguarding
+      "safeguarding.report_incident",
+      "safeguarding.view_own_case",
     ],
     PARENT: [
-      "learning.view_child",
-      "event.view",
-      "event.register",
+      // Authentication & Profile
+      "auth.register",
+      "profile.edit_own",
+
+      // Learning Management System (child access)
+      "lms.view_child_courses",
+
+      // Attendance (child access)
+      "attendance.view_child",
+
+      // Events
+      "events.view",
+      "events.register",
+
+      // Payments
+      "payments.make",
+      "payments.view_own",
+
+      // Certification (child access)
       "certification.view_child",
-      "payment.make",
-      "profile.edit",
+      "certification.validate_qr",
+
+      // Safeguarding (child access)
+      "safeguarding.view_child_case",
+      "safeguarding.report_incident",
     ],
     FACILITATOR: [
-      "learning.view",
+      // Authentication & Profile
+      "auth.register",
+      "profile.edit_own",
+
+      // Learning Management System
+      "lms.view_courses",
+      "lms.grade_assignment",
+      "lms.create_course",
+
+      // Attendance
       "attendance.mark",
       "attendance.view",
-      "event.create_school",
-      "event.check_in",
+
+      // Community
+      "community.view_groups",
       "community.post",
       "community.moderate",
-      "assignment.grade",
-      "profile.edit",
+      "community.report_content",
+
+      // Events
+      "events.view",
+      "events.register",
+      "events.create_school",
+      "events.qr_check_in",
+
+      // Venture Lab (ImpactUni Only)
+      "venture.mentor_scheduling",
+
+      // Certification
+      "certification.view",
+      "certification.download",
+      "certification.validate_qr",
+
+      // Safeguarding
+      "safeguarding.report_incident",
+      "safeguarding.view_school_cases",
     ],
     SCHOOL_ADMIN: [
-      "learning.view",
+      // Authentication & Profile
+      "auth.register",
+      "auth.approve_users_school",
+      "profile.edit_own",
+
+      // Learning Management System
+      "lms.view_courses",
+      "lms.create_course",
+
+      // Attendance
+      "attendance.mark",
       "attendance.view",
       "attendance.export",
-      "event.create_school",
-      "user.approve_school",
+
+      // Community
+      "community.view_groups",
       "community.post",
       "community.moderate",
-      "analytics.view",
-      "payment.view",
-      "payment.generate_invoice",
-      "profile.edit",
+      "community.report_content",
+      "community.view_reports",
+
+      // Events
+      "events.view",
+      "events.register",
+      "events.create_school",
+      "events.qr_check_in",
+      "events.export_report",
+
+      // Payments
+      "payments.view_own",
+      "payments.generate_invoice",
+
+      // Certification
+      "certification.view",
+      "certification.download",
+      "certification.validate_qr",
+
+      // Safeguarding
+      "safeguarding.report_incident",
+      "safeguarding.view_school_cases",
     ],
     UNI_MEMBER: [
-      "learning.view",
-      "learning.complete",
-      "event.view",
-      "event.register",
-      "event.create_campus",
-      "community.view",
+      // Authentication & Profile
+      "auth.register",
+      "profile.edit_own",
+
+      // Learning Management System
+      "lms.view_courses",
+      "lms.take_quiz",
+      "lms.upload_assignment",
+      "lms.mark_completion",
+
+      // Community
+      "community.view_groups",
       "community.post",
-      "venture.create",
-      "venture.pitch",
+      "community.report_content",
+
+      // Events
+      "events.view",
+      "events.register",
+      "events.create_campus",
+
+      // Venture Lab
+      "venture.create_profile",
+      "venture.edit_milestones",
+      "venture.mentor_scheduling",
+      "venture.submit_pitch",
+
+      // Payments
+      "payments.make",
+      "payments.view_own",
+
+      // Certification
       "certification.view",
       "certification.download",
-      "payment.make",
-      "profile.edit",
+      "certification.validate_qr",
+
+      // Safeguarding
+      "safeguarding.report_incident",
+      "safeguarding.view_own_case",
     ],
     CIRCLE_MEMBER: [
-      "learning.view",
-      "event.view",
-      "event.register",
-      "event.create_circle",
-      "community.access_vault",
-      "community.view_directory",
-      "community.rsvp_roundtable",
+      // Authentication & Profile
+      "auth.register",
+      "profile.edit_own",
+
+      // Learning Management System
+      "lms.view_courses",
+
+      // Community
+      "community.view_groups",
+      "community.post",
+      "community.report_content",
+
+      // Events
+      "events.view",
+      "events.register",
+      "events.create_circle",
+
+      // ImpactCircle
+      "circle.view_directory",
+      "circle.access_resource_vault",
+      "circle.rsvp_roundtable",
+
+      // Payments
+      "payments.make",
+      "payments.view_own",
+
+      // Certification
       "certification.view",
       "certification.download",
-      "payment.make",
-      "profile.edit",
+      "certification.validate_qr",
+
+      // Safeguarding
+      "safeguarding.report_incident",
+      "safeguarding.view_own_case",
     ],
     ADMIN: [
-      "all.access", // Admin has access to everything
+      // All permissions
+      "all.access",
+
+      // Additional admin permissions
+      "auth.approve_users_all",
+      "auth.role_assignment",
       "analytics.export",
       "certificate.issue",
-      "user.assign_role",
       "safeguarding.assign_officer",
       "safeguarding.close_case",
-      "payment.reconcile",
+      "payments.reconcile",
+      "payments.export_report",
     ],
   };
 
-  return permissions[role?.toUpperCase() || "STUDENT"] || [];
+  if (!role) return [];
+  return permissions[role.toUpperCase()] || [];
 }
 
 /**

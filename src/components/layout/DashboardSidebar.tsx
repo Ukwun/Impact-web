@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   LayoutDashboard,
   BookOpen,
@@ -22,7 +22,7 @@ import {
 
 export default function DashboardSidebar() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout } = usePermissions();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = () => {
@@ -30,60 +30,74 @@ export default function DashboardSidebar() {
     router.push('/login');
   };
 
-  // Dynamic navigation items based on user role
+  // Dynamic navigation items based on permissions
   const getNavItems = () => {
     const baseItems = [
       { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
-      { icon: Calendar, label: 'Events', href: '/dashboard/events' },
-      { icon: BarChart3, label: 'Leaderboard', href: '/leaderboard' },
-      { icon: Award, label: 'Achievements', href: '/leaderboard' },
-      { icon: Network, label: 'Payments', href: '/payments' },
-      { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
     ];
 
-    const roleSpecificItems: Record<string, any[]> = {
-      student: [
-        { icon: BookOpen, label: 'My Courses', href: '/dashboard/courses' },
-        { icon: Award, label: 'Certificates', href: '/dashboard/certificates' },
-      ],
-      uni_member: [
-        { icon: BookOpen, label: 'My Courses', href: '/dashboard/courses' },
-        { icon: Award, label: 'Certificates', href: '/dashboard/certificates' },
-      ],
-      facilitator: [
-        { icon: Users, label: 'My Students', href: '/dashboard/students' },
-        { icon: BookOpen, label: 'My Courses', href: '/dashboard/courses' },
-        { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics' },
-      ],
-      school_admin: [
-        { icon: Users, label: 'Manage Users', href: '/dashboard/users' },
-        { icon: BookOpen, label: 'Manage Courses', href: '/dashboard/courses' },
-        { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics' },
-      ],
-      admin: [
-        { icon: Users, label: 'Users', href: '/dashboard/users' },
-        { icon: BookOpen, label: 'Courses', href: '/dashboard/courses' },
-        { icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics' },
-      ],
-      parent: [
-        { icon: Users, label: 'My Children', href: '/dashboard/children' },
-        { icon: BarChart3, label: 'Progress', href: '/dashboard/progress' },
-      ],
-      mentor: [
-        { icon: Users, label: 'My Mentees', href: '/dashboard/mentees' },
-        { icon: Target, label: 'Goals', href: '/dashboard/goals' },
-        { icon: MessageSquare, label: 'Messages', href: '/dashboard/messages' },
-      ],
-      circle_member: [
-        { icon: Network, label: 'My Network', href: '/dashboard/network' },
-        { icon: MessageSquare, label: 'Connections', href: '/dashboard/connections' },
-      ],
-    };
+    const permissionBasedItems = [];
 
-    const specificItems = user?.role ? roleSpecificItems[user.role] || [] : [];
-    return [...baseItems, ...specificItems];
+    // Events - all authenticated users can view
+    permissionBasedItems.push({ icon: Calendar, label: 'Events', href: '/dashboard/events' });
+
+    // Leaderboard - all users
+    permissionBasedItems.push({ icon: BarChart3, label: 'Leaderboard', href: '/leaderboard' });
+
+    // Achievements - all users
+    permissionBasedItems.push({ icon: Award, label: 'Achievements', href: '/leaderboard' });
+
+    // Courses - LMS access
+    if (checkPermission('lms.view_courses')) {
+      permissionBasedItems.push({ icon: BookOpen, label: 'My Courses', href: '/dashboard/courses' });
+    }
+
+    // Certificates - certification access
+    if (checkPermission('certification.view')) {
+      permissionBasedItems.push({ icon: Award, label: 'Certificates', href: '/dashboard/certificates' });
+    }
+
+    // User management - admin/facilitator/school_admin
+    if (checkPermission('auth.approve_users_school') || checkPermission('auth.approve_users_all')) {
+      permissionBasedItems.push({ icon: Users, label: 'Manage Users', href: '/dashboard/users' });
+    }
+
+    // Analytics - various admin roles
+    if (checkPermission('analytics.view') || checkPermission('analytics.export')) {
+      permissionBasedItems.push({ icon: BarChart3, label: 'Analytics', href: '/dashboard/analytics' });
+    }
+
+    // Parent specific
+    if (user?.role === 'parent') {
+      permissionBasedItems.push({ icon: Users, label: 'My Children', href: '/dashboard/children' });
+      permissionBasedItems.push({ icon: BarChart3, label: 'Progress', href: '/dashboard/progress' });
+    }
+
+    // Mentor specific
+    if (user?.role === 'mentor') {
+      permissionBasedItems.push({ icon: Users, label: 'My Mentees', href: '/dashboard/mentees' });
+      permissionBasedItems.push({ icon: Target, label: 'Goals', href: '/dashboard/goals' });
+      permissionBasedItems.push({ icon: MessageSquare, label: 'Messages', href: '/dashboard/messages' });
+    }
+
+    // Circle member specific
+    if (user?.role === 'circle_member') {
+      permissionBasedItems.push({ icon: Network, label: 'My Network', href: '/dashboard/network' });
+      permissionBasedItems.push({ icon: MessageSquare, label: 'Connections', href: '/dashboard/connections' });
+    }
+
+    // Payments - payment access
+    if (checkPermission('payments.make') || checkPermission('payments.view_own')) {
+      permissionBasedItems.push({ icon: Network, label: 'Payments', href: '/payments' });
+    }
+
+    // Settings - all users
+    permissionBasedItems.push({ icon: Settings, label: 'Settings', href: '/dashboard/settings' });
+
+    return [...baseItems, ...permissionBasedItems];
   };
 
+  const { checkPermission } = usePermissions();
   const navItems = getNavItems();
 
   return (

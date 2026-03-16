@@ -67,7 +67,7 @@ const TEACHING_DAYS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, hasHydrated } = useAuthStore();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -94,12 +94,21 @@ export default function OnboardingPage() {
     expertise: "",
   });
 
-  // Check authentication
+  // Check authentication - wait for hydration first
   useEffect(() => {
-    if (!user) {
+    if (hasHydrated && !user) {
       router.push("/auth/login");
     }
-  }, [user, router]);
+  }, [user, hasHydrated, router]);
+
+  // Show loading while hydrating
+  if (!hasHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader className="w-8 h-8 animate-spin text-primary-500" />
+      </div>
+    );
+  }
 
   if (!user) {
     return null;

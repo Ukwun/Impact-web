@@ -40,14 +40,14 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { setUser, setToken, user } = useAuthStore();
+  const { setUser, setToken, register: registerUser, user } = useAuthStore();
 
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
       router.push("/dashboard");
     }
-  }, []); // Only run once on mount
+  }, [user, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, type, value } = e.target as HTMLInputElement;
@@ -57,7 +57,8 @@ export default function RegisterPage() {
     }));
   };
 
-  const handleNext = () => {
+  const handleNext = (e: React.MouseEvent) => {
+    e.preventDefault();
     console.log("handleNext called, current step:", step);
     setStep(step + 1);
     console.log("step updated to:", step + 1);
@@ -69,55 +70,25 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      // Register the user - register endpoint now returns token
+      // Use the auth store's register method for proper state management
       console.log("📝 Submitting signup form...", formData);
-      
-      const registerResponse = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
 
-      console.log("📝 Register response status:", registerResponse.status);
+      const result = await registerUser(formData);
 
-      if (!registerResponse.ok) {
-        const errorData = await registerResponse.json();
-        console.error("❌ Registration failed:", errorData);
-        throw new Error(errorData.error || "Registration failed");
+      if (!result.success) {
+        throw new Error(result.error || "Registration failed");
       }
 
-      const registerData = await registerResponse.json();
-      console.log("📝 Register response data:", registerData);
-      
-      // Validate that we got a token
-      if (!registerData.data?.token) {
-        console.error("❌ No token in response:", registerData);
-        throw new Error("Registration successful but no authentication token received. Please try logging in manually.");
-      }
+      console.log("✅ Registration successful, user:", result.user);
 
-      if (!registerData.data?.user) {
-        console.error("❌ No user in response:", registerData);
-        throw new Error("Registration successful but no user data received. Please try logging in manually.");
-      }
-
-      // Use AuthStore to properly persist authentication
-      console.log("✅ Setting user in auth store...", registerData.data.user);
-      setToken(registerData.data.token);
-      setUser(registerData.data.user);
-      
-      // Store token in localStorage as backup
-      localStorage.setItem(AUTH_TOKEN_KEY, registerData.data.token);
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(registerData.data.user));
-      console.log("✅ Auth data saved to localStorage");
-
-      // Redirect to onboarding with a small delay to ensure state is set
-      console.log("🔄 Redirecting to onboarding...");
+      // Redirect to dashboard after successful registration
+      console.log("🔄 Redirecting to dashboard...");
       setError("");
-      
+
       // Give React time to update state before redirecting
       setTimeout(() => {
-        router.push(`/onboarding?role=${formData.role}`);
-      }, 100);
+        router.push(`/dashboard`);
+      }, 500); // Increased delay to ensure persistence
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred. Please try again.";
       console.error("⚠️ Signup error:", errorMsg);
@@ -197,7 +168,7 @@ export default function RegisterPage() {
             )}
 
             {/* Form */}
-            <div className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Step 1: Personal Details */}
               {step === 1 && (
                 <>
@@ -371,25 +342,27 @@ export default function RegisterPage() {
                     variant="light"
                     size="lg"
                     className="flex-1"
-                    onClick={() => setStep(step - 1)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setStep(step - 1);
+                    }}
                   >
                     Back
                   </Button>
                 )}
                 <Button
-                  type="button"
+                  type={step === 3 ? "submit" : "button"}
                   disabled={isLoading}
                   size="lg"
                   className="flex-1"
-                  onClick={() => {
-                    console.log("Button clicked, step:", step);
+                  onClick={(e) => {
                     if (step === 3) {
-                      console.log("Calling handleSubmit");
-                      handleSubmit({ preventDefault: () => {} } as React.FormEvent);
-                    } else {
-                      console.log("Calling handleNext");
-                      handleNext();
+                      // Let the form handle submission
+                      return;
                     }
+                    e.preventDefault();
+                    console.log("Next button clicked, step:", step);
+                    handleNext(e);
                   }}
                 >
                   {isLoading ? (
@@ -407,7 +380,7 @@ export default function RegisterPage() {
                   )}
                 </Button>
               </div>
-            </div>
+            </form>
 
             {/* Divider */}
             <div className="relative pt-2">

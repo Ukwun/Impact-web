@@ -1,22 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function LogoIntro() {
   const [isVisible, setIsVisible] = useState(true);
+  const [isFadingOut, setIsFadingOut] = useState(false);
+  const maxTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const fadeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const hide = (delay = 0) => {
+    setIsFadingOut(true);
+    if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+    fadeTimerRef.current = setTimeout(() => setIsVisible(false), delay);
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-    }, 2000);
+    // Ensure the intro never hangs - hide it after 3 seconds max
+    maxTimerRef.current = setTimeout(() => {
+      hide(400);
+    }, 3000);
 
-    return () => clearTimeout(timer);
+    // Fade out after 1.5 seconds for a faster experience
+    fadeTimerRef.current = setTimeout(() => {
+      hide(400);
+    }, 1500);
+
+    return () => {
+      if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+    };
   }, []);
 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900">
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-gray-900 transition-opacity duration-500 ${
+        isFadingOut ? "opacity-0" : "opacity-100"
+      }`}
+      onClick={() => {
+        // Allow skipping the intro by clicking anywhere
+        if (!isFadingOut) {
+          hide(0);
+        }
+      }}
+    >
       <div className="text-center text-white">
         <div className="w-20 h-20 mx-auto mb-6 bg-blue-600 rounded-full flex items-center justify-center">
           <svg

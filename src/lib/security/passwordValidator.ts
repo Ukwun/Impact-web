@@ -168,7 +168,7 @@ export function validatePassword(password: string): PasswordStrengthResult {
     4: 'strong',
   };
 
-  const isValid = finalScore >= 3 && feedback.length === 0;
+  const isValid = finalScore >= 2 && password.length >= PASSWORD_REQUIREMENTS.minLength;
 
   return {
     score: finalScore,
