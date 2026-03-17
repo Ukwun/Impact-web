@@ -60,7 +60,7 @@ export default function FinalCTA() {
               </button>
             </Link>
 
-            <Link href="/login">
+            <Link href="/auth/login">
               <div className="relative p-6 rounded-2xl bg-white bg-opacity-10 border-2 border-white border-opacity-30 hover:border-opacity-100 transition-all duration-300">
                 <button className="w-full text-white font-black text-lg flex items-center justify-center gap-3 group">
                   Already have an account? Login

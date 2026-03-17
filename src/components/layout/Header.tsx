@@ -143,7 +143,7 @@ export default function Header() {
             ))}
 
             <div className="border-t border-dark-700/30 pt-4 mt-4 space-y-2 flex flex-col">
-              <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/auth/login" onClick={() => setIsMenuOpen(false)}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -152,7 +152,7 @@ export default function Header() {
                   Login
                 </Button>
               </Link>
-              <Link href="/signup" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/auth/register" onClick={() => setIsMenuOpen(false)}>
                 <Button variant="primary" size="sm" className="w-full">
                   Sign Up
                 </Button>

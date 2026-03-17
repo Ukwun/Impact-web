@@ -66,7 +66,7 @@ export default function ForgotPasswordPage() {
         )}
         <p className="mt-4 text-sm">
           Remembered?{' '}
-          <a href="/login" className="text-primary-400 underline">
+          <a href="/auth/login" className="text-primary-400 underline">
             Sign in
           </a>
         </p>
