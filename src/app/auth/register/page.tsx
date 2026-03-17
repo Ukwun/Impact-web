@@ -140,15 +140,14 @@ export default function RegisterPage() {
         return;
       }
 
-      // Redirect to appropriate dashboard based on user role
-      console.log("🔄 Redirecting to role-specific dashboard...");
-      const { getDashboardRoute } = await import("@/lib/rbac");
-      const dashboardRoute = getDashboardRoute(result.user.role);
-
-      // Give React time to update state before redirecting
+      // Ensure user state is updated before redirecting
+      console.log("🔄 Updating user state and redirecting...");
+      
+      // Give more time for state updates and cookie processing
       setTimeout(() => {
+        console.log("🔄 Executing redirect to:", dashboardRoute);
         router.push(dashboardRoute);
-      }, 500); // Increased delay to ensure persistence
+      }, 1000); // Increased delay to ensure cookies are processed
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred. Please try again.";
       console.error("⚠️ Signup error:", errorMsg);
