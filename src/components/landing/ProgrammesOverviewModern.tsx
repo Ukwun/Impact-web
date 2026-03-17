@@ -13,7 +13,7 @@ export default function ProgrammesOverviewModern() {
       icon: BookOpen,
       color: "from-primary-500",
       stats: "50K+ Students",
-      href: "/programmes/schools",
+      href: "/programmes",
     },
     {
       id: 2,
@@ -22,7 +22,7 @@ export default function ProgrammesOverviewModern() {
       icon: Users,
       color: "from-secondary-500",
       stats: "15K+ Active",
-      href: "/programmes/uni",
+      href: "/programmes",
     },
     {
       id: 3,
@@ -31,7 +31,7 @@ export default function ProgrammesOverviewModern() {
       icon: Network,
       color: "from-green-500",
       stats: "8K+ Members",
-      href: "/programmes/circle",
+      href: "/programmes",
     },
     {
       id: 4,
@@ -40,7 +40,7 @@ export default function ProgrammesOverviewModern() {
       icon: Zap,
       color: "from-blue-500",
       stats: "100+ Events/Year",
-      href: "/programmes/events",
+      href: "/programmes",
     },
   ];
 

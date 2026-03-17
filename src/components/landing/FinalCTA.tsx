@@ -53,7 +53,7 @@ export default function FinalCTA() {
 
           {/* Right: CTA Buttons */}
           <div className="space-y-4">
-            <Link href="/signup">
+            <Link href="/auth/register">
               <button className="w-full p-6 rounded-2xl bg-white text-primary-600 font-black text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 group">
                 Create Account Now
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />

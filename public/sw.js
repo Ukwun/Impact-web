@@ -98,6 +98,11 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Cache first for other requests
+  // Only cache http/https requests, skip other schemes (chrome-extension, etc)
+  if (!request.url.startsWith('http://') && !request.url.startsWith('https://')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(request).then((response) => {
       return (

@@ -39,7 +39,7 @@ export default function HeroSection() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Link href="/signup">
+              <Link href="/auth/register">
                 <Button variant="primary" size="lg" className="gap-3 group w-full sm:w-auto shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50 transition-all">
                   Join Impact Club
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
