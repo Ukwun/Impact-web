@@ -3,23 +3,17 @@
 import { Button } from "@/components/ui/Button";
 import { Calendar, MapPin, Users, ArrowRight } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
-import { useState, useEffect } from "react";
 
 export default function UpcomingEvents() {
   const { events, loading, error } = useEvents(3);
-  const [displayEvents, setDisplayEvents] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (loading) {
-      setDisplayEvents([
+  const displayEvents = loading
+    ? [
         { id: "skeleton-1", isLoading: true },
         { id: "skeleton-2", isLoading: true },
         { id: "skeleton-3", isLoading: true },
-      ]);
-    } else {
-      setDisplayEvents(events || []);
-    }
-  }, [events, loading]);
+      ]
+    : (events || []);
 
   const colorClasses: Record<number, string> = {
     0: "from-primary-500 to-primary-600 border-primary-400",

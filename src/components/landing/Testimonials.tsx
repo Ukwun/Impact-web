@@ -2,26 +2,20 @@
 
 import { Star, Quote } from "lucide-react";
 import { useTestimonials } from "@/hooks/useTestimonials";
-import { useState, useEffect } from "react";
 
 export default function Testimonials() {
   const { testimonials, loading, error } = useTestimonials(6);
-  const [displayTestimonials, setDisplayTestimonials] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (loading) {
-      setDisplayTestimonials([
+  const displayTestimonials = loading
+    ? [
         { id: "skeleton-1", isLoading: true },
         { id: "skeleton-2", isLoading: true },
         { id: "skeleton-3", isLoading: true },
         { id: "skeleton-4", isLoading: true },
         { id: "skeleton-5", isLoading: true },
         { id: "skeleton-6", isLoading: true },
-      ]);
-    } else {
-      setDisplayTestimonials(testimonials || []);
-    }
-  }, [testimonials, loading]);
+      ]
+    : (testimonials || []);
 
   const categoryColors: Record<string, string> = {
     student: "from-primary-500 to-primary-600",
