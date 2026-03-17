@@ -23,6 +23,33 @@ const ROLES = [
   { value: "admin", label: "Platform Admin" },
 ];
 
+const validateFormData = (data: typeof formData, step: number) => {
+  const errors: string[] = [];
+
+  if (step >= 1) {
+    if (!data.firstName.trim()) errors.push("First name is required");
+    if (!data.lastName.trim()) errors.push("Last name is required");
+    if (!data.email.trim()) errors.push("Email is required");
+    if (!data.phone.trim()) errors.push("Phone number is required");
+    if (!/^[a-zA-Z\s'-]+$/.test(data.firstName + ' ' + data.lastName)) {
+      errors.push("Name can only contain letters, spaces, hyphens, and apostrophes");
+    }
+  }
+
+  if (step >= 2) {
+    if (!data.role) errors.push("Please select your role");
+    if (!data.state.trim()) errors.push("State is required");
+  }
+
+  if (step >= 3) {
+    if (!data.password) errors.push("Password is required");
+    if (data.password !== data.passwordConfirm) errors.push("Passwords do not match");
+    if (!data.agreeToTerms) errors.push("You must agree to the terms and conditions");
+  }
+
+  return errors;
+};
+
 export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -58,13 +85,25 @@ export default function RegisterPage() {
 
   const handleNext = (e: React.MouseEvent) => {
     e.preventDefault();
+    const validationErrors = validateFormData(formData, step);
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join('. '));
+      return;
+    }
     console.log("handleNext called, current step:", step);
     setStep(step + 1);
+    setError(""); // Clear error on successful step
     console.log("step updated to:", step + 1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationErrors = validateFormData(formData, 3);
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join('. '));
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setError("");
 

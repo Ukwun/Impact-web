@@ -68,6 +68,11 @@ export const ValidationSchemas = {
     },
     { message: 'Invalid JSON string' }
   ),
+
+  // Role validation
+  role: z.enum(['student', 'parent', 'facilitator', 'school_admin', 'uni_member', 'circle_member', 'mentor', 'admin'], {
+    errorMap: () => ({ message: 'Invalid role selected' }),
+  }),
 };
 
 /**
@@ -86,6 +91,7 @@ export const APIValidationSchemas = {
     password: ValidationSchemas.password,
     confirmPassword: z.string(),
     fullName: ValidationSchemas.fullName,
+    role: ValidationSchemas.role,
     agreeToTerms: z.boolean().refine((val) => val === true, {
       message: 'You must agree to the terms and conditions',
     }),

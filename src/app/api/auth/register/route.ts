@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
       password: body.password,
       confirmPassword: body.confirmPassword || body.passwordConfirm,
       fullName: `${body.firstName || ''} ${body.lastName || ''}`.trim(),
+      role: body.role,
       agreeToTerms: body.agreeToTerms || body.agreedToTerms || true,
     };
 
