@@ -81,7 +81,7 @@ export default function UpcomingEvents() {
                   <p className={`text-xs font-bold uppercase tracking-wider opacity-90 mb-2 ${
                     event.isLoading ? "bg-gray-700 rounded w-1/3 h-4" : ""
                   }`}>
-                    {!event.isLoading && event.eventType}
+                    {event.isLoading ? "" : (event as any).eventType}
                   </p>
                 </div>
               </div>
@@ -92,14 +92,14 @@ export default function UpcomingEvents() {
                 <h3 className={`text-2xl font-black text-white leading-tight group-hover:text-primary-400 transition-colors ${
                   event.isLoading ? "bg-gray-700 rounded h-8" : ""
                 }`}>
-                  {!event.isLoading && event.title}
+                  {event.isLoading ? "" : (event as any).title}
                 </h3>
 
                 {/* Description */}
                 <p className={`text-gray-400 text-sm leading-relaxed ${
                   event.isLoading ? "bg-gray-700 rounded h-16" : ""
                 }`}>
-                  {!event.isLoading && event.description}
+                  {event.isLoading ? "" : (event as any).description}
                 </p>
 
                 {/* Event details */}
@@ -113,7 +113,7 @@ export default function UpcomingEvents() {
                       <p className={`text-gray-300 font-semibold ${
                         event.isLoading ? "bg-gray-700 rounded w-1/2 h-5" : ""
                       }`}>
-                        {!event.isLoading && formatDate(event.eventDate)}
+                        {event.isLoading ? "" : formatDate((event as any).eventDate)}
                       </p>
                     </div>
                   </div>
@@ -127,7 +127,7 @@ export default function UpcomingEvents() {
                       <p className={`text-gray-300 font-semibold ${
                         event.isLoading ? "bg-gray-700 rounded w-1/2 h-5" : ""
                       }`}>
-                        {!event.isLoading && event.location}
+                        {event.isLoading ? "" : (event as any).location}
                       </p>
                     </div>
                   </div>
@@ -141,7 +141,7 @@ export default function UpcomingEvents() {
                       <p className={`text-gray-300 font-semibold ${
                         event.isLoading ? "bg-gray-700 rounded w-1/2 h-5" : ""
                       }`}>
-                        {!event.isLoading && event.registrationCount}
+                        {event.isLoading ? "" : (event as any).registrationCount}
                       </p>
                     </div>
                   </div>
