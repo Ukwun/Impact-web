@@ -9,6 +9,8 @@ if (!JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is required");
 }
 
+const jwtSecret: string = JWT_SECRET;
+
 // ============================================================================
 // JWT UTILITIES
 // ============================================================================
@@ -29,7 +31,7 @@ export function generateToken(payload: Omit<JWTPayload, "iat" | "exp">): string 
     {
       ...payload,
     },
-    JWT_SECRET,
+    jwtSecret,
     {
       expiresIn: "30d", // Token expires in 30 days
     }
@@ -41,7 +43,7 @@ export function generateToken(payload: Omit<JWTPayload, "iat" | "exp">): string 
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, jwtSecret) as JWTPayload;
     return decoded;
   } catch (error) {
     return null;

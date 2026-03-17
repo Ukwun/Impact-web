@@ -97,7 +97,7 @@ export const useAuthStore = create<AuthStore>()(
           if (!response.ok) {
             const responseData = await response.json();
             const errorMessage = responseData.errors
-              ? responseData.errors.map((err: any) => err.message).join(', ')
+              ? Object.values(responseData.errors).join(', ')
               : responseData.error || "Registration failed";
             throw new Error(errorMessage);
           }
