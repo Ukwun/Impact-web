@@ -10,17 +10,17 @@ import { initializeSocket, disconnectSocket } from '@/lib/socket-client';
  * Sets up listeners for real-time events
  */
 export function WebSocketInitializer() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   useEffect(() => {
-    if (!user?.id || !user?.token) {
+    if (!user?.id || !token) {
       // Disconnect if user logs out
       disconnectSocket();
       return;
     }
 
     try {
-      const socket = initializeSocket(user.id, user.token);
+      const socket = initializeSocket(user.id, token);
 
       // Set up event listeners for key real-time features
       
