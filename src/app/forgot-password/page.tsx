@@ -51,8 +51,8 @@ export default function ForgotPasswordPage() {
 
         <Card className="p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-black text-white mb-2">Forgot Password?</h1>
-            <p className="text-gray-400">Enter your email and we'll send you a reset link</p>
+            <h1 className="heading-h1 mb-2">Forgot Password?</h1>
+            <p className="text-body-lg text-gray-400">Enter your email and we'll send you a reset link</p>
           </div>
 
           {status === "sent" ? (
@@ -68,9 +68,9 @@ export default function ForgotPasswordPage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-form">
               <div>
-                <label htmlFor="email" className="block text-sm font-bold text-white mb-2">
+                <label htmlFor="email" className="block label-primary mb-2">
                   Email Address
                 </label>
                 <div className="relative">

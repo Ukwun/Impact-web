@@ -25,14 +25,14 @@ export default function HeroSection() {
 
             {/* Main Headline */}
             <div className="space-y-6">
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-tight tracking-tight">
+              <h1 className="heading-h1">
                 Empowering Nigeria's
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-secondary-400 to-primary-300 animate-gradient">
                   Next Generation
                 </span>
               </h1>
-              <p className="text-lg sm:text-xl text-gray-300 leading-relaxed font-light max-w-2xl">
+              <p className="text-body-lg text-gray-300 leading-relaxed max-w-2xl">
                 Master in-demand skills, connect with industry mentors, and launch your career with Africa's most comprehensive learning and innovation ecosystem.
               </p>
             </div>

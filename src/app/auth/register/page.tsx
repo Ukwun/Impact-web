@@ -282,12 +282,12 @@ export default function RegisterPage() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-form">
               {/* Step 1: Personal Details */}
               {step === 1 && (
                 <>
                   <div>
-                    <label className="block text-sm font-bold text-white mb-2">
+                    <label className="block label-primary mb-2">
                       First Name
                     </label>
                     <Input
@@ -301,7 +301,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-white mb-2">
+                    <label className="block label-primary mb-2">
                       Last Name
                     </label>
                     <Input
@@ -315,7 +315,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-white mb-2">
+                    <label className="block label-primary mb-2">
                       Email Address
                     </label>
                     <Input
@@ -329,7 +329,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-text-500 mb-2">
+                    <label className="block label-secondary mb-2">
                       Phone Number
                     </label>
                     <Input
@@ -348,7 +348,7 @@ export default function RegisterPage() {
               {step === 2 && (
                 <>
                   <div>
-                    <label className="block text-sm font-bold text-text-500 mb-2">
+                    <label className="block label-secondary mb-2">
                       Your Role
                     </label>
                     <Select value={formData.role} name="role" onChange={handleChange} required>
@@ -362,7 +362,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-text-500 mb-2">
+                    <label className="block label-secondary mb-2">
                       State of Residence
                     </label>
                     <Input
@@ -376,7 +376,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-text-500 mb-2">
+                    <label className="block label-secondary mb-2">
                       School / Institution (Optional)
                     </label>
                     <Input
@@ -394,7 +394,7 @@ export default function RegisterPage() {
               {step === 3 && (
                 <>
                   <div>
-                    <label className="block text-sm font-bold text-text-500 mb-2">
+                    <label className="block label-secondary mb-2">
                       Password
                     </label>
                     <Input
@@ -411,7 +411,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-text-500 mb-2">
+                    <label className="block label-secondary mb-2">
                       Confirm Password
                     </label>
                     <Input

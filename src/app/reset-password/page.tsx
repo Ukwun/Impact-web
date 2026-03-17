@@ -76,8 +76,8 @@ function ResetPasswordContent() {
 
         <Card className="p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-black text-white mb-2">Reset Password</h1>
-            <p className="text-gray-400">Enter your new password below</p>
+            <h1 className="heading-h1 mb-2">Reset Password</h1>
+            <p className="text-body-lg text-gray-400">Enter your new password below</p>
           </div>
 
           {status === "success" ? (
@@ -87,9 +87,9 @@ function ResetPasswordContent() {
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-form">
               <div>
-                <label htmlFor="password" className="block text-sm font-bold text-white mb-2">
+                <label htmlFor="password" className="block label-primary mb-2">
                   New Password
                 </label>
                 <div className="relative">
@@ -107,7 +107,7 @@ function ResetPasswordContent() {
               </div>
 
               <div>
-                <label htmlFor="confirm" className="block text-sm font-bold text-white mb-2">
+                <label htmlFor="confirm" className="block label-primary mb-2">
                   Confirm Password
                 </label>
                 <div className="relative">

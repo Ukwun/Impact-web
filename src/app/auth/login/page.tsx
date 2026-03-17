@@ -92,8 +92,8 @@ export default function LoginPage() {
               <div className="w-14 h-14 bg-gradient-primary rounded-xl flex items-center justify-center mx-auto">
                 <Lock className="w-7 h-7 text-white" />
               </div>
-              <h1 className="text-3xl font-black text-white">Welcome Back</h1>
-              <p className="text-gray-400">Sign in to access your ImpactApp account</p>
+                <h1 className="heading-h1">Welcome Back</h1>
+                <p className="text-body-lg text-gray-400">Sign in to access your ImpactApp account</p>
             </div>
 
             {/* Success Message */}
@@ -113,9 +113,9 @@ export default function LoginPage() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-form">
               <div>
-                <label htmlFor="email" className="block text-sm font-bold text-white mb-2">
+                <label htmlFor="email" className="block label-primary mb-2">
                   Email Address
                 </label>
                 <div className="relative">
@@ -136,7 +136,7 @@ export default function LoginPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="password" className="block text-sm font-bold text-white">
+                  <label htmlFor="password" className="block label-primary">
                     Password
                   </label>
                   <Link href="/forgot-password" className="text-sm text-primary-400 hover:text-primary-300 font-semibold">

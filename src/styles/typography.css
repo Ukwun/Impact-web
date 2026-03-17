@@ -1,0 +1,121 @@
+/* Typography and visual hierarchy standards */
+
+/* Headings - Clear hierarchy */
+.heading-h1 {
+  @apply text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight;
+}
+
+.heading-h2 {
+  @apply text-3xl sm:text-4xl font-black text-white leading-tight;
+}
+
+.heading-h3 {
+  @apply text-2xl sm:text-3xl font-bold text-white leading-snug;
+}
+
+.heading-h4 {
+  @apply text-xl sm:text-2xl font-bold text-white;
+}
+
+.heading-h5 {
+  @apply text-lg font-bold text-white;
+}
+
+.heading-h6 {
+  @apply text-base font-bold text-white;
+}
+
+/* Body text - Proper hierarchy and contrast */
+.text-body-lg {
+  @apply text-lg text-gray-100 leading-relaxed;
+}
+
+.text-body {
+  @apply text-base text-gray-200 leading-relaxed;
+}
+
+.text-body-sm {
+  @apply text-sm text-gray-300 leading-relaxed;
+}
+
+/* Labels - High contrast for accessibility */
+.label-primary {
+  @apply text-sm font-bold text-white;
+}
+
+.label-secondary {
+  @apply text-sm font-semibold text-gray-200;
+}
+
+.label-tertiary {
+  @apply text-xs font-semibold text-gray-300 uppercase tracking-wide;
+}
+
+/* Descriptive text - Lower emphasis */
+.text-description {
+  @apply text-gray-400 leading-relaxed;
+}
+
+.text-caption {
+  @apply text-xs text-gray-500;
+}
+
+/* Spacing utilities for consistency */
+.space-section {
+  @apply space-y-8;
+}
+
+.space-form {
+  @apply space-y-5;
+}
+
+.space-items {
+  @apply space-y-4;
+}
+
+.space-compact {
+  @apply space-y-2;
+}
+
+/* Grid spacing */
+.gap-section {
+  @apply gap-8;
+}
+
+.gap-content {
+  @apply gap-6;
+}
+
+.gap-items {
+  @apply gap-4;
+}
+
+.gap-compact {
+  @apply gap-2;
+}
+
+/* Padding standards */
+.p-section {
+  @apply p-8;
+}
+
+.p-content {
+  @apply p-6;
+}
+
+.p-card {
+  @apply p-4;
+}
+
+/* Contrast helpers */
+.contrast-high {
+  @apply bg-dark-900 border border-dark-800;
+}
+
+.contrast-medium {
+  @apply bg-dark-800 border border-dark-700;
+}
+
+.contrast-low {
+  @apply bg-dark-700 border border-dark-600;
+}
