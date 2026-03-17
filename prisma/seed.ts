@@ -147,14 +147,23 @@ async function main() {
   });
 
   // ============================================================================
-  // CREATE MODULES
+  // CREATE MODULES (IDEMPOTENT - uses upsert)
   // ============================================================================
 
-  const module1 = await prisma.module.create({
-    data: {
+  const module1 = await prisma.module.upsert({
+    where: {
+      courseId_order: {
+        courseId: course1.id,
+        order: 1,
+      },
+    },
+    create: {
       courseId: course1.id,
       title: "Module 1: Money Basics",
       order: 1,
+    },
+    update: {
+      title: "Module 1: Money Basics",
     },
   });
 
@@ -222,11 +231,17 @@ async function main() {
   });
 
   // ============================================================================
-  // CREATE QUIZ QUESTIONS
+  // CREATE QUIZ QUESTIONS (IDEMPOTENT - uses upsert)
   // ============================================================================
 
-  await prisma.quizQuestion.create({
-    data: {
+  await prisma.quizQuestion.upsert({
+    where: {
+      quizId_order: {
+        quizId: quiz1.id,
+        order: 1,
+      },
+    },
+    create: {
       quizId: quiz1.id,
       order: 1,
       type: "MULTIPLE_CHOICE",
@@ -242,10 +257,27 @@ async function main() {
       explanation:
         "Money serves all three functions: as a store of value, as a medium of exchange, and as a unit of account.",
     },
+    update: {
+      questionText: "Which of the following is the primary function of money?",
+      options: [
+        "A store of value",
+        "A medium of exchange",
+        "A unit of account",
+        "All of the above",
+      ],
+      correctAnswer: "3",
+      points: 10,
+    },
   });
 
-  await prisma.quizQuestion.create({
-    data: {
+  await prisma.quizQuestion.upsert({
+    where: {
+      quizId_order: {
+        quizId: quiz1.id,
+        order: 2,
+      },
+    },
+    create: {
       quizId: quiz1.id,
       order: 2,
       type: "TRUE_FALSE",
@@ -256,6 +288,13 @@ async function main() {
       points: 10,
       explanation:
         "False - Fiat money is not backed by physical commodities but by government decree and trust in the government.",
+    },
+    update: {
+      questionText:
+        "Fiat money is backed by a physical commodity like gold or silver.",
+      options: ["True", "False"],
+      correctAnswer: "1",
+      points: 10,
     },
   });
 
@@ -304,32 +343,49 @@ async function main() {
   });
 
   // ============================================================================
-  // CREATE ENROLLMENTS
+  // CREATE ENROLLMENTS (IDEMPOTENT - uses upsert)
   // ============================================================================
 
-  await prisma.enrollment.create({
-    data: {
+  const enrollment1 = await prisma.enrollment.upsert({
+    where: {
+      courseId_userId: {
+        courseId: course1.id,
+        userId: student.id,
+      },
+    },
+    create: {
       courseId: course1.id,
       userId: student.id,
       progress: 60,
       enrolledAt: new Date(),
       lastAccessedAt: new Date(),
     },
+    update: {
+      progress: 60,
+      lastAccessedAt: new Date(),
+    },
   });
 
   // ============================================================================
-  // CREATE LESSON PROGRESS
+  // CREATE LESSON PROGRESS (IDEMPOTENT - uses upsert)
   // ============================================================================
 
-  await prisma.lessonProgress.create({
-    data: {
+  await prisma.lessonProgress.upsert({
+    where: {
+      lessonId_enrollmentId: {
+        lessonId: lesson1.id,
+        enrollmentId: enrollment1.id,
+      },
+    },
+    create: {
       lessonId: lesson1.id,
-      enrollmentId: (
-        await prisma.enrollment.findFirst({
-          where: { courseId: course1.id, userId: student.id },
-        })
-      )!.id,
+      enrollmentId: enrollment1.id,
       secondsWatched: 2700, // 45 minutes
+      isCompleted: true,
+      completedAt: new Date(),
+    },
+    update: {
+      secondsWatched: 2700,
       isCompleted: true,
       completedAt: new Date(),
     },
