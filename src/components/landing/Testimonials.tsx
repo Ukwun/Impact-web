@@ -15,7 +15,7 @@ export default function Testimonials() {
         { id: "skeleton-5", isLoading: true },
         { id: "skeleton-6", isLoading: true },
       ]
-    : (testimonials || []);
+    : (testimonials || []).map(t => ({ ...t, isLoading: false }));
 
   const categoryColors: Record<string, string> = {
     student: "from-primary-500 to-primary-600",
@@ -61,7 +61,38 @@ export default function Testimonials() {
         {/* Testimonials Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayTestimonials.map((testimonial) => {
-            const category = (testimonial.category || "student").toLowerCase();
+            // Handle loading state
+            if (testimonial.isLoading) {
+              return (
+                <div
+                  key={testimonial.id}
+                  className="group relative rounded-2xl bg-white border-2 border-gray-100 p-8 animate-pulse"
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="w-24 h-4 bg-gray-200 rounded"></div>
+                        <div className="w-16 h-3 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="w-full h-4 bg-gray-200 rounded"></div>
+                      <div className="w-3/4 h-4 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <div key={star} className="w-4 h-4 bg-gray-200 rounded"></div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            // Type assertion - we know this is not loading at this point
+            const fullTestimonial = testimonial as any;
+            const category = (fullTestimonial.category || "student").toLowerCase();
             const categoryColor = categoryColors[category] || categoryColors.student;
             const categoryLabel = categoryLabels[category] || categoryLabels.student;
 
@@ -107,7 +138,7 @@ export default function Testimonials() {
                 <p className={`text-gray-300 leading-relaxed mb-6 italic line-clamp-5 ${
                   testimonial.isLoading ? "bg-dark-600 rounded h-20" : ""
                 }`}>
-                  {!testimonial.isLoading && `"${testimonial.quote}"`}
+                  {!testimonial.isLoading && fullTestimonial.quote}
                 </p>
 
                 {/* Author */}
@@ -115,18 +146,18 @@ export default function Testimonials() {
                   <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-sm ${
                     testimonial.isLoading ? "bg-gray-300" : ""
                   }`}>
-                    {!testimonial.isLoading && testimonial.authorName?.split(" ").map((n: string) => n[0]).join("")}
+                    {!testimonial.isLoading && fullTestimonial.authorName?.split(" ").map((n: string) => n[0]).join("")}
                   </div>
                   <div className="flex-1">
                     <p className={`font-black text-text-500 ${
                       testimonial.isLoading ? "bg-dark-600 rounded w-1/2 h-5" : ""
                     }`}>
-                      {!testimonial.isLoading && testimonial.authorName}
+                      {!testimonial.isLoading && fullTestimonial.authorName}
                     </p>
                     <p className={`text-xs text-gray-300 ${
                       testimonial.isLoading ? "bg-dark-600 rounded w-2/3 h-4 mt-1" : ""
                     }`}>
-                      {!testimonial.isLoading && testimonial.authorRole}
+                      {!testimonial.isLoading && fullTestimonial.authorRole}
                     </p>
                   </div>
                 </div>

@@ -13,7 +13,7 @@ export default function UpcomingEvents() {
         { id: "skeleton-2", isLoading: true },
         { id: "skeleton-3", isLoading: true },
       ]
-    : (events || []);
+    : (events || []).map(event => ({ ...event, isLoading: false }));
 
   const colorClasses: Record<number, string> = {
     0: "from-primary-500 to-primary-600 border-primary-400",
