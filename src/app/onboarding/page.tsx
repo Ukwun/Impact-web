@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/context/AuthStore";
 import { Button } from "@/components/ui/Button";
@@ -68,6 +68,7 @@ const TEACHING_DAYS = [
 export default function OnboardingPage() {
   const router = useRouter();
   const { user, hasHydrated } = useAuthStore();
+  const redirectedRef = useRef(false); // Prevent infinite redirect loops
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -96,10 +97,11 @@ export default function OnboardingPage() {
 
   // Check authentication - wait for hydration first
   useEffect(() => {
-    if (hasHydrated && !user) {
+    if (!redirectedRef.current && hasHydrated && !user) {
+      redirectedRef.current = true;
       router.push("/auth/login");
     }
-  }, [user, hasHydrated, router]);
+  }, [hasHydrated, user, router]);
 
   // Show loading while hydrating
   if (!hasHydrated) {
@@ -170,6 +172,10 @@ export default function OnboardingPage() {
   };
 
   const handleSubmit = async () => {
+    if (redirectedRef.current) {
+      return; // Prevent duplicate submissions
+    }
+
     setIsLoading(true);
     try {
       console.log("📝 Saving onboarding data...", formData);
@@ -191,12 +197,14 @@ export default function OnboardingPage() {
 
       console.log("✅ Onboarding saved successfully");
       // Redirect to role-specific dashboard instead of login
+      redirectedRef.current = true; // Mark as redirected to prevent re-submission
       const { getDashboardRoute } = await import("@/lib/rbac");
       const dashboardRoute = getDashboardRoute(user.role);
       router.push(dashboardRoute);
     } catch (err) {
       console.error("❌ Onboarding error:", err);
       setError(err instanceof Error ? err.message : "An error occurred");
+      redirectedRef.current = false; // Reset on error so they can retry
       setIsLoading(false);
     }
   };
