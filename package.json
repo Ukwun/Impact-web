@@ -16,7 +16,7 @@
     "test:coverage": "jest --coverage",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "ts-node --project tsconfig.seed.json prisma/seed.ts",
+    "db:seed": "ts-node -r tsconfig-paths/register --project tsconfig.seed.json prisma/seed.ts",
     "db:reset": "prisma migrate reset",
     "load-test": "npx k6 run load-test.js",
     "postinstall": "prisma generate && npm run db:seed"
@@ -57,6 +57,7 @@
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "tailwindcss": "^3.4.0",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.3.0",
     "zod": "^3.22.0",
     "zustand": "^4.4.0"
