@@ -40,14 +40,13 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const { setUser, setToken, register: registerUser, user } = useAuthStore();
+  const { setUser, setToken, register: registerUser, user, logout } = useAuthStore();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (user) {
-      router.push("/dashboard");
-    }
-  }, [user, router]);
+  // If already authenticated, show a helpful message instead of redirecting.
+  // This avoids forcing users into the demo student account when they want to register.
+  const isAlreadyAuthenticated = Boolean(user);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, type, value } = e.target as HTMLInputElement;
@@ -144,6 +143,57 @@ export default function RegisterPage() {
       </div>
     );
   };
+
+  if (isAlreadyAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-dark px-4 py-12 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500 opacity-10 rounded-full blur-3xl -mr-48 -mt-48"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary-500 opacity-10 rounded-full blur-3xl -ml-48 -mb-48"></div>
+
+        <Container className="max-w-md relative z-10">
+          <Card className="p-8 shadow-2xl">
+            <div className="space-y-6">
+              <div className="text-center space-y-2">
+                <h1 className="text-3xl font-black text-white">You're already signed in</h1>
+                <p className="text-gray-300">
+                  You are currently signed in as <span className="font-semibold text-white">{user?.email}</span> (
+                  <span className="text-primary-300">{user?.role?.toLowerCase()}</span>).
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-gray-300">
+                  If you want to create a new account or register with a different role, please log out first.
+                </p>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => router.push("/dashboard")}
+                    className="w-full py-3 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold"
+                  >
+                    Go to my dashboard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsLoggingOut(true);
+                      await logout();
+                      setIsLoggingOut(false);
+                    }}
+                    className="w-full py-3 rounded-lg bg-dark-700 border border-white/20 text-white font-semibold hover:bg-dark-600"
+                    disabled={isLoggingOut}
+                  >
+                    {isLoggingOut ? "Logging out..." : "Log out & create new account"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </Container>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-dark px-4 py-12 relative overflow-hidden">

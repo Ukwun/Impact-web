@@ -59,7 +59,7 @@ export default function Header() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
-            <Link href="/login">
+            <Link href="/auth/login">
               <Button
                 variant="ghost"
                 size="sm"
@@ -68,7 +68,7 @@ export default function Header() {
                 Login
               </Button>
             </Link>
-            <Link href="/signup">
+            <Link href="/auth/register">
               <Button variant="primary" size="sm" className="shadow-lg shadow-primary-500/20">
                 Sign Up
               </Button>

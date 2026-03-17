@@ -130,7 +130,18 @@ export const useAuthStore = create<AuthStore>()(
         }
       };
 
-      const logout = () => {
+      const logout = async () => {
+        // Clear server-side auth cookie
+        try {
+          await fetch("/api/auth/logout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+        } catch (err) {
+          // Ignore errors, but log to console for debugging
+          console.warn("Logout endpoint failed:", err);
+        }
+
         set({
           user: null,
           token: null,
