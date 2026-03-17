@@ -20,6 +20,7 @@ export interface User {
   state: string;
   institution?: string;
   avatar?: string;
+  verified?: boolean;
   createdAt: string;
   updatedAt: string;
 }

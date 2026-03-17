@@ -67,7 +67,7 @@ const TEACHING_DAYS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, hasHydrated } = useAuthStore();
+  const { user, hasHydrated, setUser } = useAuthStore();
   const redirectedRef = useRef(false); // Prevent infinite redirect loops
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -195,7 +195,17 @@ export default function OnboardingPage() {
         throw new Error(errorData.error || "Failed to save onboarding");
       }
 
+      const data = await response.json();
+
       console.log("✅ Onboarding saved successfully");
+      
+      // Update user in Zustand store with verified flag
+      const updatedUser = {
+        ...user,
+        verified: true,
+      };
+      setUser(updatedUser);
+
       // Redirect to role-specific dashboard instead of login
       redirectedRef.current = true; // Mark as redirected to prevent re-submission
       const { getDashboardRoute } = await import("@/lib/rbac");

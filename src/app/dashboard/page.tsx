@@ -21,10 +21,8 @@ export default function DashboardPage() {
   const [user, setLocalUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user needs onboarding (new user created within last hour)
-  const userCreatedAt = user ? new Date(user.createdAt) : null;
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  const needsOnboarding = userCreatedAt && userCreatedAt > oneHourAgo;
+  // Check if user needs onboarding (not yet verified/completed onboarding)
+  const needsOnboarding = user && user.verified !== true;
 
   // Check auth AFTER Zustand hydrates
   useEffect(() => {
