@@ -161,7 +161,7 @@ export default function CommunityPage() {
             <Users className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-4xl font-black text-text-500">Community</h1>
+            <h1 className="text-4xl font-black text-white">Community</h1>
             <p className="text-gray-300 font-medium">Connect with impact-driven learners</p>
           </div>
         </div>

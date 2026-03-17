@@ -16,8 +16,18 @@ export default function LoginPage() {
     password: "",
   });
   const [successMessage, setSuccessMessage] = useState("");
-  const { login, user, error, isLoading } = useAuthStore();
+  const { login, user, error, isLoading, hasHydrated } = useAuthStore();
   const router = useRouter();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!hasHydrated) return; // Wait for hydration to complete
+
+    if (user) {
+      // User is already authenticated, redirect to dashboard
+      router.push('/dashboard');
+    }
+  }, [user, hasHydrated, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -36,27 +46,24 @@ export default function LoginPage() {
 
       // Wait a bit for the store to update, then redirect
       setTimeout(() => {
-        if (user?.role) {
-          const roleRoutes: Record<string, string> = {
-            'student': '/dashboard/student',
-            'facilitator': '/dashboard/facilitator',
-            'mentor': '/dashboard/mentor',
-            'admin': '/dashboard/admin',
-            'school_admin': '/dashboard/school-admin',
-            'parent': '/dashboard/parent',
-            'circle_member': '/dashboard/circle-member',
-            'uni_member': '/dashboard/student', // Use student dashboard for uni members
-          };
-
-          const dashboardRoute = roleRoutes[user.role.toLowerCase()] || '/dashboard';
-          router.push(dashboardRoute);
-        } else {
-          // Fallback if user role is not available yet
-          router.push("/dashboard");
-        }
+        // The useEffect above will handle the redirect based on user role
+        // No need to manually redirect here
       }, 1000);
     }
   };
+
+  // Show loading while checking authentication status
+  if (!hasHydrated || (user && !isLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-dark">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-primary-500 border-t-transparent"></div>
+          <p className="mt-6 text-white font-semibold text-lg">Checking authentication...</p>
+          <p className="mt-2 text-gray-400 text-sm">Redirecting to your dashboard</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-dark px-4 py-12 relative overflow-hidden">

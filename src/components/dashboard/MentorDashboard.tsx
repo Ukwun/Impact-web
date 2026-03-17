@@ -89,7 +89,7 @@ export default function MentorDashboard() {
       {/* Header */}
       <div className="flex items-start justify-between animate-fade-in" style={{ animationDelay: "0ms" }}>
         <div>
-          <h1 className="text-5xl font-black text-text-500 mb-2">
+          <h1 className="text-5xl font-black text-white mb-2">
             Mentor Dashboard 🎯
           </h1>
           <p className="text-lg text-gray-300">Guide and support your mentees to reach their full potential</p>

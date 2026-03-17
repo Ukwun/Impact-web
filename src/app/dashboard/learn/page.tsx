@@ -247,7 +247,7 @@ export default function LearnPage() {
             <BookOpen className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-4xl font-black text-text-500">Learning Hub</h1>
+            <h1 className="text-4xl font-black text-white">Learning Hub</h1>
             <p className="text-gray-300 font-medium">Explore courses and expand your skills</p>
           </div>
         </div>

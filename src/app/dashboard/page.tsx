@@ -84,7 +84,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-center min-h-screen bg-gradient-dark">
         <div className="text-center space-y-4">
           <Loader className="w-8 h-8 animate-spin text-primary-500 mx-auto" />
-          <p className="text-gray-400">Loading your dashboard...</p>
+          <p className="text-white">Loading your dashboard...</p>
         </div>
       </div>
     );

@@ -81,13 +81,14 @@ export default function RegisterPage() {
 
       console.log("✅ Registration successful, user:", result.user);
 
-      // Redirect to dashboard after successful registration
-      console.log("🔄 Redirecting to dashboard...");
+      // Redirect to appropriate dashboard based on user role
+      console.log("🔄 Redirecting to role-specific dashboard...");
       setError("");
 
       // Give React time to update state before redirecting
       setTimeout(() => {
-        router.push(`/dashboard`);
+        // Redirect to general dashboard - it handles role-specific content
+        router.push('/dashboard');
       }, 500); // Increased delay to ensure persistence
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred. Please try again.";
@@ -129,7 +130,7 @@ export default function RegisterPage() {
         <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
           <CurrentIcon className="w-6 h-6 text-white" />
         </div>
-        <h2 className="text-2xl font-black text-text-500">
+        <h2 className="text-2xl font-black text-white">
           {stepTitles[step - 1].title}
         </h2>
       </div>
@@ -173,7 +174,7 @@ export default function RegisterPage() {
               {step === 1 && (
                 <>
                   <div>
-                    <label className="block text-sm font-bold text-text-500 mb-2">
+                    <label className="block text-sm font-bold text-white mb-2">
                       First Name
                     </label>
                     <Input
@@ -187,7 +188,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-text-500 mb-2">
+                    <label className="block text-sm font-bold text-white mb-2">
                       Last Name
                     </label>
                     <Input
@@ -201,7 +202,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-text-500 mb-2">
+                    <label className="block text-sm font-bold text-white mb-2">
                       Email Address
                     </label>
                     <Input

@@ -103,7 +103,7 @@ export default function ParentDashboard() {
     <div className="space-y-8 pb-12">
       {/* Header */}
       <div className="animate-fade-in" style={{ animationDelay: "0ms" }}>
-        <h1 className="text-5xl font-black text-text-500 mb-2">
+        <h1 className="text-5xl font-black text-white mb-2">
           Parent Dashboard 👨‍👩‍👧‍👦
         </h1>
         <p className="text-lg text-gray-300">Monitor your children's learning progress and celebrate achievements</p>

@@ -27,7 +27,7 @@ export default function DashboardSidebar() {
 
   const handleLogout = () => {
     logout();
-    router.push('/login');
+    router.push('/auth/login');
   };
 
   // Dynamic navigation items based on permissions

@@ -71,7 +71,7 @@ export const FeaturesSection = () => {
             return (
               <div
                 key={feature.title}
-                className="group p-8 bg-dark-700/50 border-2 border-dark-600 rounded-2xl hover:border-primary-500 hover:shadow-xl hover:shadow-primary-600/20 transition-all overflow-hidden relative"
+                className="group p-8 bg-dark-700/50 border-2 border-dark-600 rounded-3xl hover:border-primary-500 hover:shadow-xl hover:shadow-primary-600/20 transition-all overflow-hidden relative"
               >
                 {/* Gradient background on hover */}
                 <div

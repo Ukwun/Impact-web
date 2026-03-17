@@ -157,7 +157,7 @@ export default function StudentDashboard() {
         }`}
       >
         <div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-text-500 mb-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-2">
             Ready to Learn Today? 📚
           </h1>
           <p className="text-base sm:text-lg text-gray-300">Track your progress and continue your learning journey</p>

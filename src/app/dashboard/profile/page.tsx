@@ -40,7 +40,7 @@ export default function ProfilePage() {
             <Mail className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-4xl font-black text-text-500">My Profile</h1>
+            <h1 className="text-4xl font-black text-white">My Profile</h1>
             <p className="text-gray-300 font-medium">Manage your account information</p>
           </div>
         </div>

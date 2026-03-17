@@ -90,7 +90,7 @@ export default function SchoolAdminDashboard() {
       {/* Header */}
       <div className="flex items-start justify-between animate-fade-in" style={{ animationDelay: "0ms" }}>
         <div>
-          <h1 className="text-5xl font-black text-text-500 mb-2">
+          <h1 className="text-5xl font-black text-white mb-2">
             School Admin Dashboard 🏫
           </h1>
           <p className="text-lg text-gray-300">Manage your school's learning ecosystem</p>
