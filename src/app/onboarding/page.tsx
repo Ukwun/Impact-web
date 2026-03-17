@@ -190,7 +190,10 @@ export default function OnboardingPage() {
       }
 
       console.log("✅ Onboarding saved successfully");
-      router.push("/auth/login");
+      // Redirect to role-specific dashboard instead of login
+      const { getDashboardRoute } = await import("@/lib/rbac");
+      const dashboardRoute = getDashboardRoute(user.role);
+      router.push(dashboardRoute);
     } catch (err) {
       console.error("❌ Onboarding error:", err);
       setError(err instanceof Error ? err.message : "An error occurred");

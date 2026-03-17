@@ -24,8 +24,13 @@ export default function LoginPage() {
     if (!hasHydrated) return; // Wait for hydration to complete
 
     if (user) {
-      // User is already authenticated, redirect to dashboard
-      router.push('/dashboard');
+      // User is already authenticated, redirect to role-specific dashboard
+      const redirectToDashboard = async () => {
+        const { getDashboardRoute } = await import("@/lib/rbac");
+        const dashboardRoute = getDashboardRoute(user.role);
+        router.push(dashboardRoute);
+      };
+      redirectToDashboard();
     }
   }, [user, hasHydrated, router]);
 
@@ -44,22 +49,30 @@ export default function LoginPage() {
     if (success) {
       setSuccessMessage("Login successful! Redirecting...");
 
-      // Wait a bit for the store to update, then redirect
-      setTimeout(() => {
-        // The useEffect above will handle the redirect based on user role
-        // No need to manually redirect here
+      // Wait a bit for the store to update, then redirect to role-specific dashboard
+      setTimeout(async () => {
+        const { getDashboardRoute } = await import("@/lib/rbac");
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+          const dashboardRoute = getDashboardRoute(currentUser.role);
+          router.push(dashboardRoute);
+        }
       }, 1000);
     }
   };
 
-  // Show loading while checking authentication status
-  if (!hasHydrated || (user && !isLoading)) {
+  // Show loading while checking authentication status or during login
+  if (!hasHydrated || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-dark">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-primary-500 border-t-transparent"></div>
-          <p className="mt-6 text-white font-semibold text-lg">Checking authentication...</p>
-          <p className="mt-2 text-gray-400 text-sm">Redirecting to your dashboard</p>
+          <p className="mt-6 text-white font-semibold text-lg">
+            {!hasHydrated ? "Loading..." : "Signing you in..."}
+          </p>
+          <p className="mt-2 text-gray-400 text-sm">
+            {!hasHydrated ? "Checking authentication status" : "Redirecting to your dashboard"}
+          </p>
         </div>
       </div>
     );

@@ -83,12 +83,12 @@ export default function RegisterPage() {
 
       // Redirect to appropriate dashboard based on user role
       console.log("🔄 Redirecting to role-specific dashboard...");
-      setError("");
+      const { getDashboardRoute } = await import("@/lib/rbac");
+      const dashboardRoute = getDashboardRoute(result.user.role);
 
       // Give React time to update state before redirecting
       setTimeout(() => {
-        // Redirect to general dashboard - it handles role-specific content
-        router.push('/dashboard');
+        router.push(dashboardRoute);
       }, 500); // Increased delay to ensure persistence
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred. Please try again.";
