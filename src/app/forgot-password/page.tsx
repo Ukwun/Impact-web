@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Mail, ArrowLeft } from "lucide-react";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -34,42 +38,80 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-dark-900 px-6 py-12">
-      <div className="w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4">Forgot your password?</h2>
-        {status === "sent" ? (
-          <p className="text-green-400">
-            If that email is registered, a reset link has been sent. Check your
-            inbox.
-          </p>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium">Email address</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
+    <div className="min-h-screen bg-dark-900 py-12 px-4">
+      <div className="max-w-md mx-auto">
+        {/* Back Button */}
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+
+        <Card className="p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-black text-white mb-2">Forgot Password?</h1>
+            <p className="text-gray-400">Enter your email and we'll send you a reset link</p>
+          </div>
+
+          {status === "sent" ? (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+              <p className="text-green-400 text-sm">
+                ✓ If that email is registered, a reset link has been sent. Check your inbox (and spam folder).
+              </p>
+              <button
+                onClick={() => router.push("/auth/login")}
+                className="mt-4 w-full text-center text-primary-400 hover:text-primary-300 transition-colors font-semibold"
+              >
+                Return to Login
+              </button>
             </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button
-              type="submit"
-              disabled={status === "sending"}
-              className="w-full bg-primary-600 text-white py-2 rounded-md disabled:opacity-50"
-            >
-              {status === "sending" ? "Sending..." : "Send reset link"}
-            </button>
-          </form>
-        )}
-        <p className="mt-4 text-sm">
-          Remembered?{' '}
-          <a href="/auth/login" className="text-primary-400 underline">
-            Sign in
-          </a>
-        </p>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-sm font-bold text-white mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-4 w-5 h-5 text-gray-500 pointer-events-none" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-12"
+                    required
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                  <p className="text-red-400 text-sm">{error}</p>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                disabled={status === "sending"}
+              >
+                {status === "sending" ? "Sending..." : "Send Reset Link"}
+              </Button>
+
+              <p className="text-center text-sm text-gray-400">
+                Remember your password?{' '}
+                <a href="/auth/login" className="text-primary-400 hover:text-primary-300 font-semibold">
+                  Sign in
+                </a>
+              </p>
+            </form>
+          )}
+        </Card>
       </div>
     </div>
   );

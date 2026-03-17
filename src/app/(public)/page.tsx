@@ -48,9 +48,6 @@ export default function LandingPage() {
 
       {/* Final CTA */}
       <FinalCTA />
-
-      {/* Footer */}
-      <Footer />
     </main>
   );
 }

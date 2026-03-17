@@ -483,7 +483,15 @@ export default function OnboardingPage() {
 
           {/* Skip Option */}
           <p className="text-center text-gray-400 text-sm mt-6">
-            <button onClick={() => router.push("/auth/login")} className="text-primary-500 hover:underline">
+            <button 
+              onClick={async () => {
+                redirectedRef.current = true;
+                const { getDashboardRoute } = await import("@/lib/rbac");
+                const dashboardRoute = getDashboardRoute(user.role);
+                router.push(dashboardRoute);
+              }} 
+              className="text-primary-500 hover:underline"
+            >
               Skip for now — you can complete later
             </button>
           </p>

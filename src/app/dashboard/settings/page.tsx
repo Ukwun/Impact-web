@@ -520,11 +520,25 @@ export default function SettingsPage() {
                 <h3 className="text-lg font-semibold text-white mb-4">Data & Privacy</h3>
 
                 <div className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      alert("Data download feature coming soon. Contact support at hello@impactedu.com");
+                    }}
+                  >
                     📥 Download my data
                   </Button>
 
-                  <Button variant="outline" className="w-full justify-start text-red-400 border-red-400 hover:bg-red-400/10">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-red-400 border-red-400 hover:bg-red-400/10"
+                    onClick={() => {
+                      if (confirm("Are you sure? This action cannot be undone and will permanently delete all your account data.")) {
+                        alert("Account deletion feature coming soon. Contact support at hello@impactedu.com");
+                      }
+                    }}
+                  >
                     🗑️ Delete my account
                   </Button>
                 </div>

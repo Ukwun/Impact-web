@@ -2,6 +2,10 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Lock, ArrowLeft } from "lucide-react";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -34,7 +38,7 @@ function ResetPasswordContent() {
       const data = await res.json();
       if (data.success) {
         setStatus("success");
-        setTimeout(() => router.push("/login"), 2000);
+        setTimeout(() => router.push("/auth/login"), 2000);
       } else {
         setError(data.error || "Failed to reset password");
         setStatus("error");
@@ -47,52 +51,104 @@ function ResetPasswordContent() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-500">Invalid or missing token.</p>
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center px-4">
+        <Card className="p-8 text-center">
+          <p className="text-red-400 font-semibold">Invalid or missing reset token.</p>
+          <Button onClick={() => router.push("/auth/login")} variant="primary" className="mt-4">
+            Return to Login
+          </Button>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-dark-900 px-6 py-12">
-      <div className="w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4">Reset password</h2>
-        {status === "success" ? (
-          <p className="text-green-400">
-            Your password has been reset. Redirecting to login...
-          </p>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium">New password</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
+    <div className="min-h-screen bg-dark-900 py-12 px-4">
+      <div className="max-w-md mx-auto">
+        {/* Back Button */}
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+
+        <Card className="p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-black text-white mb-2">Reset Password</h1>
+            <p className="text-gray-400">Enter your new password below</p>
+          </div>
+
+          {status === "success" ? (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+              <p className="text-green-400 text-sm">
+                ✓ Your password has been reset successfully. Redirecting to login...
+              </p>
             </div>
-            <div>
-              <label className="block text-sm font-medium">Confirm password</label>
-              <input
-                type="password"
-                required
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button
-              type="submit"
-              disabled={status === "submitting"}
-              className="w-full bg-primary-600 text-white py-2 rounded-md disabled:opacity-50"
-            >
-              {status === "submitting" ? "Resetting..." : "Reset Password"}
-            </button>
-          </form>
-        )}
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="password" className="block text-sm font-bold text-white mb-2">
+                  New Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-4 w-5 h-5 text-gray-500 pointer-events-none" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-12"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="confirm" className="block text-sm font-bold text-white mb-2">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-4 w-5 h-5 text-gray-500 pointer-events-none" />
+                  <Input
+                    id="confirm"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    className="pl-12"
+                    required
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                  <p className="text-red-400 text-sm">{error}</p>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                disabled={status === "submitting"}
+              >
+                {status === "submitting" ? "Resetting..." : "Reset Password"}
+              </Button>
+
+              <p className="text-center text-sm text-gray-400">
+                Know your password?{' '}
+                <a href="/auth/login" className="text-primary-400 hover:text-primary-300 font-semibold">
+                  Sign in
+                </a>
+              </p>
+            </form>
+          )}
+        </Card>
       </div>
     </div>
   );

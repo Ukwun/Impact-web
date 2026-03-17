@@ -1,6 +1,7 @@
 "use client";
 
 import { Mail, MapPin, Phone, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -16,16 +17,16 @@ export default function Footer() {
               Empowering Nigeria's next generation of leaders through accessible, quality education and mentorship.
             </p>
             <div className="flex gap-3 pt-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-dark-400 hover:bg-primary-500 flex items-center justify-center transition-colors">
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-dark-400 hover:bg-primary-500 flex items-center justify-center transition-colors">
                 <Facebook className="w-5 h-5" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-dark-400 hover:bg-secondary-500 flex items-center justify-center transition-colors">
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-dark-400 hover:bg-secondary-500 flex items-center justify-center transition-colors">
                 <Twitter className="w-5 h-5" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-dark-400 hover:bg-primary-500 flex items-center justify-center transition-colors">
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-dark-400 hover:bg-primary-500 flex items-center justify-center transition-colors">
                 <Linkedin className="w-5 h-5" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-dark-400 hover:bg-secondary-500 flex items-center justify-center transition-colors">
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-dark-400 hover:bg-secondary-500 flex items-center justify-center transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
             </div>
@@ -35,10 +36,10 @@ export default function Footer() {
           <div>
             <h4 className="font-black text-white mb-4">Product</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Features</a></li>
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Pricing</a></li>
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Courses</a></li>
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Events</a></li>
+              <li><Link href="/learning" className="hover:text-primary-400 transition-colors">Features</Link></li>
+              <li><Link href="/programmes" className="hover:text-primary-400 transition-colors">Programmes</Link></li>
+              <li><Link href="/learning" className="hover:text-primary-400 transition-colors">Courses</Link></li>
+              <li><Link href="/events" className="hover:text-primary-400 transition-colors">Events</Link></li>
             </ul>
           </div>
 
@@ -46,10 +47,10 @@ export default function Footer() {
           <div>
             <h4 className="font-black text-white mb-4">Company</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-primary-400 transition-colors">About Us</a></li>
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Careers</a></li>
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Press</a></li>
+              <li><Link href="/about" className="hover:text-primary-400 transition-colors">About Us</Link></li>
+              <li><Link href="/#" className="hover:text-primary-400 transition-colors">Careers</Link></li>
+              <li><Link href="/#" className="hover:text-primary-400 transition-colors">Blog</Link></li>
+              <li><Link href="/#" className="hover:text-primary-400 transition-colors">Press</Link></li>
             </ul>
           </div>
 
@@ -57,10 +58,10 @@ export default function Footer() {
           <div>
             <h4 className="font-black text-white mb-4">Resources</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Help Center</a></li>
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Documentation</a></li>
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Community</a></li>
-              <li><a href="#" className="hover:text-primary-400 transition-colors">Contact</a></li>
+              <li><Link href="/#" className="hover:text-primary-400 transition-colors">Help Center</Link></li>
+              <li><Link href="/#" className="hover:text-primary-400 transition-colors">Documentation</Link></li>
+              <li><Link href="/community" className="hover:text-primary-400 transition-colors">Community</Link></li>
+              <li><a href="mailto:hello@impactedu.com" className="hover:text-primary-400 transition-colors">Contact</a></li>
             </ul>
           </div>
 
@@ -95,9 +96,9 @@ export default function Footer() {
               © 2026 ImpactEdu. All rights reserved. Empowering Africa, one leader at a time.
             </p>
             <div className="flex gap-6 text-sm">
-              <a href="#" className="hover:text-primary-400 transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-primary-400 transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-primary-400 transition-colors">Cookie Policy</a>
+              <Link href="/#" className="hover:text-primary-400 transition-colors">Privacy Policy</Link>
+              <Link href="/#" className="hover:text-primary-400 transition-colors">Terms of Service</Link>
+              <Link href="/#" className="hover:text-primary-400 transition-colors">Cookie Policy</Link>
             </div>
           </div>
         </div>
