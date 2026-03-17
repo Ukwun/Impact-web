@@ -9,7 +9,7 @@ import { Select } from "@/components/ui/Select";
 import { Container } from "@/components/ui/Container";
 import { Card } from "@/components/ui/Card";
 import { useAuthStore } from "@/context/AuthStore";
-import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
+import { getDashboardRoute } from "@/lib/rbac";
 import { ArrowRight, CheckCircle2, Lock, User, MapPin } from "lucide-react";
 
 const ROLES = [
@@ -143,10 +143,14 @@ export default function RegisterPage() {
       // Ensure user state is updated before redirecting
       console.log("🔄 Updating user state and redirecting...");
       
+      // Redirect to appropriate dashboard based on user role
+      const dashboardRoute = getDashboardRoute(result.user.role);
+      const finalRoute = dashboardRoute || "/dashboard";
+      
       // Give more time for state updates and cookie processing
       setTimeout(() => {
-        console.log("🔄 Executing redirect to:", dashboardRoute);
-        router.push(dashboardRoute);
+        console.log("🔄 Executing redirect to:", finalRoute);
+        router.push(finalRoute);
       }, 1000); // Increased delay to ensure cookies are processed
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred. Please try again.";
