@@ -11,15 +11,18 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
-    // Show splash for 3.5 seconds then fade out
+    console.log("SplashScreen: Starting splash screen");
+    // Show splash for 2 seconds then fade out (reduced from 3.5s for faster loading)
     const timer = setTimeout(() => {
+      console.log("SplashScreen: Starting fade out");
       setFadeOut(true);
       // Complete animation after fade transition
       setTimeout(() => {
+        console.log("SplashScreen: Completing, calling onComplete");
         setIsVisible(false);
         onComplete();
       }, 600);
-    }, 3500);
+    }, 2000); // Reduced from 3500ms to 2000ms
 
     return () => clearTimeout(timer);
   }, [onComplete]);

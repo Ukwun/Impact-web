@@ -14,11 +14,12 @@ import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/layout/Footer";
 
 export default function LandingPage() {
-  const [showSplash, setShowSplash] = useState(true);
+  // Temporarily skip splash screen for debugging
+  // const [showSplash, setShowSplash] = useState(true);
 
-  if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  }
+  // if (showSplash) {
+  //   return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  // }
 
   return (
     <main className="overflow-hidden">
