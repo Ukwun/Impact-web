@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, X, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useAuthStore } from "@/context/AuthStore";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
 
   const navigationLinks = [
     { label: "Programmes", href: "/programmes" },
@@ -59,20 +63,51 @@ export default function Header() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
-            <Link href="/auth/login">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-300 hover:text-primary-400 hover:bg-dark-800/50 transition-all"
-              >
-                Login
-              </Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button variant="primary" size="sm" className="shadow-lg shadow-primary-500/20">
-                Sign Up
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-300 hover:text-primary-400 hover:bg-dark-800/50 transition-all"
+                  onClick={() => router.push("/dashboard")}
+                >
+                  <LayoutDashboard className="w-4 h-4 mr-1" />
+                  Dashboard
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-white border-white/30 hover:bg-white/10 hover:border-white/60"
+                  onClick={async () => {
+                    setIsLoggingOut(true);
+                    await logout();
+                    setIsLoggingOut(false);
+                    router.push("/auth/register");
+                  }}
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? "Logging out..." : "Switch account"}
+                  <LogOut className="w-4 h-4 ml-1" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/auth/login">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-300 hover:text-primary-400 hover:bg-dark-800/50 transition-all"
+                  >
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/auth/register">
+                  <Button variant="primary" size="sm" className="shadow-lg shadow-primary-500/20">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}

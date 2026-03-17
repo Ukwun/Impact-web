@@ -34,10 +34,9 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
-  // If logged in and trying to access login/signup, redirect to dashboard
-  if ((pathname === '/auth/login' || pathname === '/auth/register') && (token || authHeader)) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+  // Allow authenticated users to access the login/register pages so they can
+  // log out / switch accounts. These pages will display a prompt when already signed in.
+  // NOTE: This prevents the middleware from stealing users back to /dashboard.
 
   // Add security headers to all responses
   const response = NextResponse.next();
