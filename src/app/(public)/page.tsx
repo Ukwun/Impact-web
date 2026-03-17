@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import SplashScreen from "@/components/landing/SplashScreen";
 import HeroSection from "@/components/landing/HeroSection";
@@ -12,43 +14,43 @@ import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/layout/Footer";
 
 export default function LandingPage() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  if (showSplash) {
+    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+  }
+
   return (
-    <>
-      {/* Splash Screen - Commented out for testing */}
-      {/* {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />} */}
+    <main className="overflow-hidden">
+      {/* Hero Section */}
+      <HeroSection />
 
-      {/* Main Landing Page */}
-      <main className="overflow-hidden">
-        {/* Hero Section */}
-        <HeroSection />
+      {/* Impact Numbers */}
+      <ImpactNumbersModern />
 
-        {/* Impact Numbers */}
-        <ImpactNumbersModern />
+      {/* Programmes Overview */}
+      <ProgrammesOverviewModern />
 
-        {/* Programmes Overview */}
-        <ProgrammesOverviewModern />
+      {/* How It Works */}
+      <HowItWorksModern />
 
-        {/* How It Works */}
-        <HowItWorksModern />
+      {/* Featured Courses */}
+      <FeaturedCourses />
 
-        {/* Featured Courses */}
-        <FeaturedCourses />
+      {/* Upcoming Events */}
+      <UpcomingEvents />
 
-        {/* Upcoming Events */}
-        <UpcomingEvents />
+      {/* Testimonials */}
+      <Testimonials />
 
-        {/* Testimonials */}
-        <Testimonials />
+      {/* Partners */}
+      <Partners />
 
-        {/* Partners */}
-        <Partners />
+      {/* Final CTA */}
+      <FinalCTA />
 
-        {/* Final CTA */}
-        <FinalCTA />
-
-        {/* Footer */}
-        <Footer />
-      </main>
-    </>
+      {/* Footer */}
+      <Footer />
+    </main>
   );
 }
