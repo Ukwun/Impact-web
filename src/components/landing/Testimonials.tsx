@@ -19,7 +19,7 @@ export default function Testimonials() {
         { id: "skeleton-6", isLoading: true },
       ]);
     } else {
-      setDisplayTestimonials(testimonials);
+      setDisplayTestimonials(testimonials || []);
     }
   }, [testimonials, loading]);
 

@@ -49,7 +49,7 @@ export function useCourses(limit: number = 10, difficulty?: string): UseCoursesR
         }
 
         const data = await response.json();
-        setCourses(data.data.courses);
+        setCourses(data.data?.courses || []);
         setError(null);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'An error occurred';

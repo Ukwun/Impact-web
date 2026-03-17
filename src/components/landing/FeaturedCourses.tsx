@@ -39,7 +39,7 @@ export default function FeaturedCourses() {
         createdAt: new Date().toISOString(),
         isLoading: true,
       }))
-    : courses.slice(0, 3);
+    : (courses || []).slice(0, 3);
 
   return (
     <section className="relative py-24 lg:py-32 bg-white overflow-hidden">

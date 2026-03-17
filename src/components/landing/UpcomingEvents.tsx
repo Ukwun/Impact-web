@@ -17,7 +17,7 @@ export default function UpcomingEvents() {
         { id: "skeleton-3", isLoading: true },
       ]);
     } else {
-      setDisplayEvents(events);
+      setDisplayEvents(events || []);
     }
   }, [events, loading]);
 

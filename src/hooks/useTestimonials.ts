@@ -45,7 +45,7 @@ export function useTestimonials(limit: number = 10, category?: string): UseTesti
         }
 
         const data = await response.json();
-        setTestimonials(data.data.testimonials);
+        setTestimonials(data.data?.testimonials || []);
         setError(null);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'An error occurred';

@@ -46,7 +46,7 @@ export function useEvents(limit: number = 10): UseEventsReturn {
         }
 
         const data = await response.json();
-        setEvents(data.data.events);
+        setEvents(data.data?.events || []);
         setError(null);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'An error occurred';
