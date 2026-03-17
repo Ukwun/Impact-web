@@ -112,7 +112,7 @@ export function WebSocketInitializer() {
     } catch (error) {
       console.error('Failed to initialize WebSocket:', error);
     }
-  }, [user?.id, user?.token]);
+  }, [user?.id, token]);
 
   // This component doesn't render anything
   return null;
