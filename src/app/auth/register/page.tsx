@@ -81,6 +81,14 @@ export default function RegisterPage() {
 
       console.log("✅ Registration successful, user:", result.user);
 
+      // Ensure user object exists before proceeding
+      if (!result.user) {
+        console.error("Registration succeeded but no user object returned:", result);
+        setError("Registration completed but user data is missing. Please contact support.");
+        setIsLoading(false);
+        return;
+      }
+
       // Redirect to appropriate dashboard based on user role
       console.log("🔄 Redirecting to role-specific dashboard...");
       const { getDashboardRoute } = await import("@/lib/rbac");
