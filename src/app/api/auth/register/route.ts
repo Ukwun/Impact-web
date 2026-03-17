@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
 
       console.log(`✅ User registered in database: ${email} - Role: ${user.role}`);
 
-      return NextResponse.json(
+      const response = NextResponse.json(
         {
           success: true,
           message: "Registration successful! Welcome to ImpactApp!",
@@ -199,6 +199,16 @@ export async function POST(req: NextRequest) {
         },
         { status: 201 }
       );
+
+      // Set auth token cookie for middleware authentication
+      response.cookies.set('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
+
+      return response;
     } catch (dbError) {
       console.log("Database registration failed, falling back to demo mode:", (dbError as Error).message);
 
@@ -223,7 +233,6 @@ export async function POST(req: NextRequest) {
         updatedAt: new Date(),
       };
 
-      demoUsers.set(email, newUser);
       console.log(`⚠️ User registered in demo mode: ${email}. Total demo users: ${demoUsers.size}`);
 
       const userResponse = {
@@ -244,7 +253,7 @@ export async function POST(req: NextRequest) {
         role: newUser.role,
       });
 
-      return NextResponse.json(
+      const response = NextResponse.json(
         {
           success: true,
           message: "Registration successful! (Demo mode - database unavailable)",
@@ -252,6 +261,16 @@ export async function POST(req: NextRequest) {
         },
         { status: 201 }
       );
+
+      // Set auth token cookie for middleware authentication
+      response.cookies.set('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
+
+      return response;
     }
   } catch (error) {
     console.error("Registration error:", error);

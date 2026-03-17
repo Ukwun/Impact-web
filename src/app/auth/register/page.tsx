@@ -23,7 +23,20 @@ const ROLES = [
   { value: "admin", label: "Platform Admin" },
 ];
 
-const validateFormData = (data: typeof formData, step: number) => {
+type FormDataType = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  passwordConfirm: string;
+  role: string;
+  institution: string;
+  state: string;
+  agreeToTerms: boolean;
+};
+
+const validateFormData = (data: FormDataType, step: number) => {
   const errors: string[] = [];
 
   if (step >= 1) {
