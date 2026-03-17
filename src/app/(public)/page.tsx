@@ -1,57 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import SplashScreen from "@/components/landing/SplashScreen";
-import HeroSection from "@/components/landing/HeroSection";
-import ImpactNumbersModern from "@/components/landing/ImpactNumbersModern";
-import ProgrammesOverviewModern from "@/components/landing/ProgrammesOverviewModern";
-import HowItWorksModern from "@/components/landing/HowItWorksModern";
-import FeaturedCourses from "@/components/landing/FeaturedCourses";
-import UpcomingEvents from "@/components/landing/UpcomingEvents";
-import Testimonials from "@/components/landing/Testimonials";
-import Partners from "@/components/landing/Partners";
-import FinalCTA from "@/components/landing/FinalCTA";
-import Footer from "@/components/layout/Footer";
-
 export default function LandingPage() {
-  // Temporarily skip splash screen for debugging
-  // const [showSplash, setShowSplash] = useState(true);
-
-  // if (showSplash) {
-  //   return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  // }
-
   return (
-    <main className="overflow-hidden">
-      {/* Hero Section */}
-      <HeroSection />
+    <div className="min-h-screen bg-blue-500 text-white p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-4xl font-bold mb-6">ImpactEdu Landing Page</h1>
+        <p className="text-xl mb-4">If you can read this with proper spacing, CSS is working.</p>
 
-      {/* Impact Numbers */}
-      <ImpactNumbersModern />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          <div className="bg-white text-black p-6 rounded-lg">
+            <h2 className="text-2xl font-semibold mb-3">Column 1</h2>
+            <p>This should be in a white box with proper padding.</p>
+            <button className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              Test Button
+            </button>
+          </div>
 
-      {/* Programmes Overview */}
-      <ProgrammesOverviewModern />
+          <div className="bg-green-500 text-white p-6 rounded-lg">
+            <h2 className="text-2xl font-semibold mb-3">Column 2</h2>
+            <p>This should be in a green box with proper padding.</p>
+            <button className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+              Another Button
+            </button>
+          </div>
+        </div>
 
-      {/* How It Works */}
-      <HowItWorksModern />
-
-      {/* Featured Courses */}
-      <FeaturedCourses />
-
-      {/* Upcoming Events */}
-      <UpcomingEvents />
-
-      {/* Testimonials */}
-      <Testimonials />
-
-      {/* Partners */}
-      <Partners />
-
-      {/* Final CTA */}
-      <FinalCTA />
-
-      {/* Footer */}
-      <Footer />
-    </main>
+        <div className="mt-12 text-center">
+          <p className="text-lg">If this looks properly formatted, the issue is with the complex components.</p>
+          <p className="text-lg mt-2">If text is all jumbled together, CSS is broken.</p>
+        </div>
+      </div>
+    </div>
   );
 }
