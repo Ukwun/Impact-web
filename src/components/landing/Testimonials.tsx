@@ -1,6 +1,7 @@
 "use client";
 
 import { Star, Quote } from "lucide-react";
+import Link from "next/link";
 import { useTestimonials } from "@/hooks/useTestimonials";
 
 export default function Testimonials() {
@@ -168,9 +169,11 @@ export default function Testimonials() {
 
         {/* CTA */}
         <div className="mt-20 text-center">
-          <button className="px-8 py-4 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold text-lg hover:shadow-xl hover:shadow-primary-500/50 transition-all duration-300 transform hover:scale-105">
-            Join Thousands of Success Stories
-          </button>
+          <Link href="/auth/register">
+            <button className="px-8 py-4 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold text-lg hover:shadow-xl hover:shadow-primary-500/50 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+              Join Thousands of Success Stories
+            </button>
+          </Link>
         </div>
       </div>
     </section>

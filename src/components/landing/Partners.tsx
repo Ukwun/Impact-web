@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 interface Partner {
   id: string;
   name: string;
@@ -103,9 +105,9 @@ export default function Partners() {
           <p className="text-gray-300 mb-6 max-w-xl mx-auto">
             Join our network of organizations committed to empowering Africa's next generation
           </p>
-          <button className="px-8 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold hover:shadow-xl hover:shadow-primary-500/50 transition-all duration-300 transform hover:scale-105">
+          <a href="mailto:partnerships@impactclub.com?subject=Partnership%20Inquiry%20-%20ImpactClub" className="inline-block px-8 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold hover:shadow-xl hover:shadow-primary-500/50 transition-all duration-300 transform hover:scale-105 cursor-pointer">
             Partner With Us
-          </button>
+          </a>
         </div>
       </div>
     </section>
