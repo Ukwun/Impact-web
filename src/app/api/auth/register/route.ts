@@ -9,6 +9,7 @@ import {
   APIValidationSchemas,
   RATE_LIMIT_CONFIGS,
 } from "@/lib/security";
+import { getMembershipTierForRole, getTierIdFromType } from "@/lib/membershipTierMapping";
 
 export async function POST(req: NextRequest) {
   try {
@@ -156,6 +157,11 @@ export async function POST(req: NextRequest) {
     try {
       const { prisma } = await import("@/lib/prisma");
       const hashedPassword = await hashPassword(password);
+      
+      // Determine membership tier based on role
+      const userRole = (body.role || "STUDENT").toUpperCase() as any;
+      const tierType = getMembershipTierForRole(userRole);
+      const tierId = getTierIdFromType(tierType);
 
       const user = await prisma.user.create({
         data: {
@@ -163,11 +169,15 @@ export async function POST(req: NextRequest) {
           firstName: firstName,
           lastName: lastName,
           phone: body.phone || null,
-          role: (body.role || "STUDENT").toUpperCase() as any,
+          role: userRole,
           state: body.state || "Unknown",
           institution: body.institution || null,
           passwordHash: hashedPassword,
           emailVerified: false,
+          // Assign membership tier based on role
+          membershipTierId: tierId,
+          membershipStatus: "ACTIVE",
+          membershipJoinedAt: new Date(),
         },
       });
 
@@ -177,6 +187,8 @@ export async function POST(req: NextRequest) {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        membershipTierId: user.membershipTierId,
+        membershipStatus: user.membershipStatus,
         state: user.state,
         institution: user.institution,
         createdAt: user.createdAt,
@@ -189,7 +201,7 @@ export async function POST(req: NextRequest) {
         role: user.role,
       });
 
-      console.log(`✅ User registered in database: ${email} - Role: ${user.role}`);
+      console.log(`✅ User registered in database: ${email} - Role: ${user.role} - Tier: ${tierType}`);
 
       const response = NextResponse.json(
         {

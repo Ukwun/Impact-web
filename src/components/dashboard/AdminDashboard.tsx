@@ -13,7 +13,11 @@ import {
   FileText,
   ArrowRight,
   Download,
+  Crown,
+  Lock,
+  Unlock,
 } from "lucide-react";
+import { getAllTiers } from "@/lib/membershipTierMapping";
 
 export default function AdminDashboard() {
   const analyticsData = [
@@ -165,6 +169,69 @@ export default function AdminDashboard() {
               Export Data
             </Button>
           </div>
+        </div>
+      </div>
+
+      {/* Membership Tier Management */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Crown className="w-6 h-6 text-primary-500" />
+            Membership Tier Management
+          </h2>
+          <Button variant="primary" size="sm" className="gap-2">
+            Manage Tiers
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {getAllTiers().map((tier, idx) => (
+            <div key={tier.id} className="animate-fade-in" style={{ animationDelay: `${900 + idx * 100}ms` }}>
+              <Card className="p-6 hover:shadow-lg transition-all h-full">
+              <div className="space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-bold text-white text-lg">{tier.name}</h3>
+                    <p className="text-xs text-gray-400 mt-1">{tier.description}</p>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center">
+                    <Crown className="w-4 h-4 text-primary-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-t border-dark-600 pt-4">
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Features</div>
+                  <div className="space-y-1.5">
+                    {[
+                      { icon: tier.canAccessLearning ? Unlock : Lock, label: "Learning Access", value: tier.canAccessLearning },
+                      { icon: tier.canParticipateEvents ? Unlock : Lock, label: "Events", value: tier.canParticipateEvents },
+                      { icon: tier.canAccessCommunity ? Unlock : Lock, label: "Community", value: tier.canAccessCommunity },
+                      { icon: tier.canAccessMentorship ? Unlock : Lock, label: "Mentorship", value: tier.canAccessMentorship },
+                      { icon: tier.canCreateContent ? Unlock : Lock, label: "Content Creation", value: tier.canCreateContent },
+                      { icon: tier.canManageChapter ? Unlock : Lock, label: "Chapter Management", value: tier.canManageChapter },
+                    ].map((feature, fidx) => {
+                      const FeatureIcon = feature.icon;
+                      return (
+                        <div key={fidx} className="flex items-center gap-2">
+                          <FeatureIcon className={`w-3.5 h-3.5 ${feature.value ? 'text-green-500' : 'text-gray-600'}`} />
+                          <span className={`text-xs ${feature.value ? 'text-gray-300' : 'text-gray-500'}`}>
+                            {feature.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="border-t border-dark-600 pt-3">
+                  <Button variant="outline" size="sm" className="w-full text-xs">
+                    View Details
+                  </Button>
+                </div>
+              </div>
+              </Card>
+            </div>
+          ))}
         </div>
       </div>
 
