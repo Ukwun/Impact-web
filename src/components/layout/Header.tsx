@@ -35,9 +35,9 @@ export default function Header() {
               IE
             </div>
             <div className="hidden sm:flex flex-col">
-              <span className="text-base font-black text-white leading-tight">ImpactEdu</span>
+              <span className="text-base font-black text-white leading-tight">ImpactClub</span>
               <span className="text-xs text-gray-400 font-semibold leading-tight">
-                Learn. Build. Lead.
+                Empowering Africa's Next Generation
               </span>
             </div>
           </Link>

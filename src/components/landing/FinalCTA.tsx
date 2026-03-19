@@ -53,20 +53,18 @@ export default function FinalCTA() {
 
           {/* Right: CTA Buttons */}
           <div className="space-y-4">
-            <Link href="/auth/register">
-              <button className="w-full p-6 rounded-2xl bg-white text-primary-600 font-black text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 group">
+            <Link href="/auth/register" className="block">
+              <button className="w-full p-6 rounded-2xl bg-white text-primary-600 font-black text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 group cursor-pointer">
                 Create Account Now
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
               </button>
             </Link>
 
-            <Link href="/auth/login">
-              <div className="relative p-6 rounded-2xl bg-white bg-opacity-10 border-2 border-white border-opacity-30 hover:border-opacity-100 transition-all duration-300">
-                <button className="w-full text-white font-black text-lg flex items-center justify-center gap-3 group">
-                  Already have an account? Login
-                  <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
-                </button>
-              </div>
+            <Link href="/auth/login" className="block relative p-6 rounded-2xl bg-white bg-opacity-10 border-2 border-white border-opacity-30 hover:border-opacity-100 transition-all duration-300">
+              <button className="w-full text-white font-black text-lg flex items-center justify-center gap-3 group cursor-pointer bg-transparent border-0 p-0">
+                Already have an account? Login
+                <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+              </button>
             </Link>
 
             {/* Trust badges */}

@@ -14,7 +14,7 @@ export default function Footer() {
               IE
             </div>
             <p className="text-sm leading-relaxed max-w-xs">
-              Empowering Nigeria's next generation of leaders through accessible, quality education and mentorship.
+              Empowering Africa's next generation of leaders through accessible, quality education and mentorship.
             </p>
             <div className="flex gap-3 pt-4">
               <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-dark-400 hover:bg-primary-500 flex items-center justify-center transition-colors">
@@ -61,7 +61,7 @@ export default function Footer() {
               <li><Link href="/#" className="hover:text-primary-400 transition-colors">Help Center</Link></li>
               <li><Link href="/#" className="hover:text-primary-400 transition-colors">Documentation</Link></li>
               <li><Link href="/community" className="hover:text-primary-400 transition-colors">Community</Link></li>
-              <li><a href="mailto:hello@impactedu.com" className="hover:text-primary-400 transition-colors">Contact</a></li>
+              <li><a href="mailto:hello@impactclub.com" className="hover:text-primary-400 transition-colors">Contact</a></li>
             </ul>
           </div>
 
@@ -71,8 +71,8 @@ export default function Footer() {
             <div className="space-y-3 text-sm">
               <div className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-primary-400" />
-                <a href="mailto:hello@impactedu.com" className="hover:text-primary-400 transition-colors">
-                  hello@impactedu.com
+                <a href="mailto:hello@impactclub.com" className="hover:text-primary-400 transition-colors">
+                  hello@impactclub.com
                 </a>
               </div>
               <div className="flex items-center gap-3">
@@ -93,7 +93,7 @@ export default function Footer() {
         <div className="border-t border-gray-700 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
             <p>
-              © 2026 ImpactEdu. All rights reserved. Empowering Africa, one leader at a time.
+              © 2026 ImpactClub. All rights reserved. Empowering Africa, one leader at a time.
             </p>
             <div className="flex gap-6 text-sm">
               <Link href="/#" className="hover:text-primary-400 transition-colors">Privacy Policy</Link>
