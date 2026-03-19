@@ -16,15 +16,18 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
 
 
 export const metadata: Metadata = {
-  title: "ImpactApp - Learning. Building. Leading.",
+  title: "ImpactClub - Learn, Lead, Impact",
   description:
-    "NCDF Impact Club digital platform for financial literacy, entrepreneurship development, and community participation",
+    "A digital community and growth platform for learning, networks, opportunities, and pathways for leadership, entrepreneurship, and impact. Part of the NCDF Impact Club ecosystem.",
   keywords: [
-    "education",
-    "entrepreneurship",
-    "financial literacy",
-    "Nigeria",
+    "community",
     "learning",
+    "leadership",
+    "entrepreneurship",
+    "networking",
+    "membership",
+    "Africa",
+    "NCDF",
   ],
   manifest: "/manifest.json",
   icons: {
@@ -34,12 +37,12 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "ImpactApp",
+    title: "ImpactClub",
   },
   formatDetection: {
     telephone: false,
   },
-  applicationName: "ImpactApp",
+  applicationName: "ImpactClub",
   creator: "NCDF Impact Club",
 };
 

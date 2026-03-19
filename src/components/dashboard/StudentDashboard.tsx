@@ -158,9 +158,9 @@ export default function StudentDashboard() {
       >
         <div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-2">
-            Ready to Learn Today? 📚
+            Welcome on Your Impact Journey 🚀
           </h1>
-          <p className="text-base sm:text-lg text-gray-300">Track your progress and continue your learning journey</p>
+          <p className="text-base sm:text-lg text-gray-300">Learn, connect, participate, grow, and lead. Track your progress and unlock your potential</p>
         </div>
 
         {/* Key Metrics - Staggered Animation */}

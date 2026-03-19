@@ -28,6 +28,12 @@ model User {
   institution           String?
   verified              Boolean     @default(false)
   
+  // Membership Tier (NEW)
+  membershipTierId      String?
+  membershipTier        MembershipTier? @relation(fields: [membershipTierId], references: [id], onDelete: SetNull)
+  membershipStatus      MembershipStatus @default(ACTIVE)
+  membershipJoinedAt    DateTime?
+  
   // Account status
   emailVerified         Boolean     @default(false)
   emailVerifiedAt       DateTime?
@@ -68,6 +74,8 @@ model User {
   @@index([email])
   @@index([role])
   @@index([state])
+  @@index([membershipTierId])
+  @@index([membershipStatus])
 }
 
 enum UserRole {
@@ -79,6 +87,53 @@ enum UserRole {
   CIRCLE_MEMBER
   MENTOR
   ADMIN
+}
+
+// ============================================================================
+// MEMBERSHIP TIER SYSTEM (NEW)
+// ============================================================================
+
+enum MembershipTierType {
+  STUDENT_MEMBER
+  CAMPUS_MEMBER
+  YOUNG_PROFESSIONAL_MEMBER
+  MENTOR_FACULTY_MEMBER
+  CHAPTER_LEAD_AMBASSADOR
+  INSTITUTIONAL_PARTNER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  EXPIRED
+}
+
+model MembershipTier {
+  id                    String              @id @default(cuid())
+  tierType              MembershipTierType  @unique
+  name                  String              // Human-readable name
+  description           String?
+  
+  // Benefits/Features
+  canAccessLearning     Boolean             @default(true)
+  canParticipateEvents  Boolean             @default(true)
+  canAccessCommunity    Boolean             @default(true)
+  canAccessMentorship   Boolean             @default(false)
+  canCreateContent      Boolean             @default(false)
+  canManageChapter      Boolean             @default(false)
+  
+  // Learning Pathways (linked to this tier)
+  maxCoursesAccess      Int?                // null = unlimited
+  maxEventsAccess       Int?                // null = unlimited
+  
+  // Member relations
+  users                 User[]
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([tierType])
 }
 
 // ============================================================================

@@ -19,6 +19,7 @@ export default function Header() {
     { label: "Learning", href: "/learning" },
     { label: "Events", href: "/events" },
     { label: "Community", href: "/community" },
+    { label: "Membership", href: "/membership" },
     { label: "About", href: "/about" },
   ];
 

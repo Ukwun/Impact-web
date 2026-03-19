@@ -26,14 +26,14 @@ export default function HeroSection() {
             {/* Main Headline */}
             <div className="space-y-6">
               <h1 className="heading-h1">
-                Empowering Nigeria's
+                ImpactClub:
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-secondary-400 to-primary-300 animate-gradient">
-                  Next Generation
+                  Learn, Lead, Impact
                 </span>
               </h1>
               <p className="text-body-lg text-gray-300 leading-relaxed max-w-2xl">
-                Master in-demand skills, connect with industry mentors, and launch your career with Africa's most comprehensive learning and innovation ecosystem.
+                A digital community and growth platform equipping members with knowledge, networks, opportunities, and pathways for leadership, entrepreneurship, and lasting impact across Africa.
               </p>
             </div>
 

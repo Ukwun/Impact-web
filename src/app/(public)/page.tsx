@@ -6,6 +6,7 @@ import HeroSection from "@/components/landing/HeroSection";
 import ImpactNumbersModern from "@/components/landing/ImpactNumbersModern";
 import ProgrammesOverviewModern from "@/components/landing/ProgrammesOverviewModern";
 import HowItWorksModern from "@/components/landing/HowItWorksModern";
+import MembershipBenefitsTeaser from "@/components/landing/MembershipBenefitsTeaser";
 import FeaturedCourses from "@/components/landing/FeaturedCourses";
 import UpcomingEvents from "@/components/landing/UpcomingEvents";
 import Testimonials from "@/components/landing/Testimonials";
@@ -31,8 +32,11 @@ export default function LandingPage() {
       {/* Programmes Overview */}
       <ProgrammesOverviewModern />
 
-      {/* How It Works */}
+      {/* Core Pillars - How It Works */}
       <HowItWorksModern />
+
+      {/* Membership Benefits */}
+      <MembershipBenefitsTeaser />
 
       {/* Featured Courses */}
       <FeaturedCourses />
