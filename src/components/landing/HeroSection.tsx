@@ -26,15 +26,20 @@ export default function HeroSection() {
             {/* Main Headline */}
             <div className="space-y-6">
               <h1 className="heading-h1">
-                Building Africa's Next Generation of
+                From Learning to Ownership.
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-secondary-400 to-primary-300 animate-gradient">
-                  Financially Intelligent Leaders
+                  Build the Future You Were Never Taught.
                 </span>
               </h1>
-              <p className="text-body-lg text-gray-300 leading-relaxed max-w-2xl">
-                NCDF Impact Club is a platform transforming financial literacy into entrepreneurship, investment readiness, and long-term wealth creation — from classrooms to capital participation.
-              </p>
+              <div className="space-y-4 text-body-lg text-gray-300 leading-relaxed max-w-2xl">
+                <p>
+                  Impact Club transforms financial literacy into real-world capability — helping you grow from understanding money to building enterprises and participating in long-term wealth creation.
+                </p>
+                <p className="text-gray-400">
+                  A structured pathway from classrooms to capital participation.
+                </p>
+              </div>
             </div>
 
             {/* CTA Buttons */}
@@ -63,21 +68,21 @@ export default function HeroSection() {
                   <TrendingUp className="w-5 h-5 text-primary-400" />
                   <p className="text-3xl font-black text-white group-hover:text-primary-400 transition-colors">50K+</p>
                 </div>
-                <p className="text-sm text-gray-400 font-medium">Active Learners</p>
+                <p className="text-sm text-gray-400 font-medium">Learners</p>
               </div>
               <div className="space-y-2 group">
                 <div className="flex items-center gap-2">
                   <Award className="w-5 h-5 text-secondary-400" />
                   <p className="text-3xl font-black text-white group-hover:text-secondary-400 transition-colors">200+</p>
                 </div>
-                <p className="text-sm text-gray-400 font-medium">Expert Courses</p>
+                <p className="text-sm text-gray-400 font-medium">Courses</p>
               </div>
               <div className="space-y-2 group">
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-primary-300" />
                   <p className="text-3xl font-black text-white group-hover:text-primary-300 transition-colors">95%</p>
                 </div>
-                <p className="text-sm text-gray-400 font-medium">Success Rate</p>
+                <p className="text-sm text-gray-400 font-medium">Engagement</p>
               </div>
             </div>
           </div>
@@ -104,7 +109,7 @@ export default function HeroSection() {
                   {[
                     { icon: "📚", title: "Structured Learning Paths", color: "from-primary-500/20" },
                     { icon: "👨‍🏫", title: "Expert Mentorship", color: "from-secondary-500/20" },
-                    { icon: "🚀", title: "Real-world Projects", color: "from-green-500/20" },
+                    { icon: "🚀", title: "Real-World Projects", color: "from-green-500/20" },
                   ].map((item, i) => (
                     <div
                       key={i}
@@ -127,7 +132,7 @@ export default function HeroSection() {
                     <div className="w-8 h-8 rounded-full bg-primary-500/30 border border-primary-400/50"></div>
                     <div className="w-8 h-8 rounded-full bg-secondary-500/30 border border-secondary-400/50 -ml-2"></div>
                     <div className="w-8 h-8 rounded-full bg-green-500/30 border border-green-400/50 -ml-2"></div>
-                    <span className="text-xs text-gray-400 ml-1 flex items-center">+2.5K this month</span>
+                    <span className="text-xs text-gray-400 ml-1 flex items-center">+2,500 new members this month</span>
                   </div>
                 </div>
               </div>
