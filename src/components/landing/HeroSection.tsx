@@ -26,7 +26,7 @@ export default function HeroSection() {
             {/* Main Headline */}
             <div className="space-y-6">
               <h1 className="heading-h1">
-                Building Nigeria's Next Generation of
+                Building Africa's Next Generation of
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-secondary-400 to-primary-300 animate-gradient">
                   Financially Intelligent Leaders
