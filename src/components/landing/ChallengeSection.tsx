@@ -1,37 +1,87 @@
 "use client";
 
-import { AlertCircle, TrendingDown, Users, DollarSign } from "lucide-react";
+import {
+  GraduationCap,
+  Lightbulb,
+  TrendingUp,
+  Network,
+} from "lucide-react";
 
 export default function ChallengeSection() {
   const challenges = [
     {
-      icon: BookOpen,
-      title: "Millions lack financial education",
-      description: "Young people graduate without structured financial literacy",
-      stat: "95%",
+      icon: GraduationCap,
+      color: "blue",
+      title: "No Early Financial Foundation",
+      description:
+        "We are raising children in a complex economy without teaching them the language of value.",
+      support:
+        "Financial habits, discipline, and value creation are formed too late—when correction is harder than formation.",
     },
     {
-      icon: TrendingDown,
-      title: "SMEs face high failure rates",
-      description: "Entrepreneurs struggle without capital discipline",
-      stat: "60%",
+      icon: Lightbulb,
+      color: "green",
+      title: "Talent Is Not Becoming Enterprise",
+      description:
+        "Nigeria is full of talent, but talent alone does not become enterprise.",
+      support:
+        "Young people have ideas, but lack structured pathways, mentorship, and execution support to become builders.",
     },
     {
-      icon: DollarSign,
-      title: "Limited investment participation",
-      description: "Few opportunities to access trusted capital networks",
-      stat: "8%",
+      icon: TrendingUp,
+      color: "purple",
+      title: "Capital Intelligence Is Missing",
+      description:
+        "Access to money is not enough when the discipline to manage and multiply it is missing.",
+      support:
+        "Entrepreneurs struggle not just from lack of funding, but from weak financial systems, strategy, and networks.",
     },
     {
-      icon: Users,
-      title: "Capital intelligence gap",
-      description: "Missing structured pathways from education to investment",
-      stat: "Gap",
+      icon: Network,
+      color: "amber",
+      title: "The Path to Ownership Is Broken",
+      description:
+        "Too many people are taught how to earn, but not how to build, belong, and own.",
+      support:
+        "There are few trusted pathways guiding individuals from effort to investment participation and long-term wealth.",
     },
   ];
 
+  const getColorClasses = (color: string) => {
+    const colors: Record<
+      string,
+      { bg: string; border: string; text: string; accent: string }
+    > = {
+      blue: {
+        bg: "from-blue-500/10 to-blue-500/5",
+        border: "border-blue-500/30",
+        text: "text-blue-400",
+        accent: "bg-blue-500/20",
+      },
+      green: {
+        bg: "from-green-500/10 to-green-500/5",
+        border: "border-green-500/30",
+        text: "text-green-400",
+        accent: "bg-green-500/20",
+      },
+      purple: {
+        bg: "from-purple-500/10 to-purple-500/5",
+        border: "border-purple-500/30",
+        text: "text-purple-400",
+        accent: "bg-purple-500/20",
+      },
+      amber: {
+        bg: "from-amber-500/10 to-amber-500/5",
+        border: "border-amber-500/30",
+        text: "text-amber-400",
+        accent: "bg-amber-500/20",
+      },
+    };
+    return colors[color] || colors.blue;
+  };
+
   return (
-    <section className="relative py-24 lg:py-32 bg-gradient-to-b from-dark-800 to-dark-900 overflow-hidden">
+    <section className="relative py-24 lg:py-32 bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/10 rounded-full blur-3xl"></div>
@@ -40,68 +90,82 @@ export default function ChallengeSection() {
 
       <div className="relative z-10 container mx-auto px-6">
         {/* Header */}
-        <div className="text-center mb-20 space-y-4 max-w-3xl mx-auto">
+        <div className="text-center mb-20 space-y-6 max-w-4xl mx-auto">
           <h2 className="text-5xl lg:text-6xl font-black text-white">
-            THE CHALLENGE
+            Four Missing Links in Africa's Economic Journey
           </h2>
-          <p className="text-xl text-gray-300 leading-relaxed">
-            Why Financial Literacy Matters Now More Than Ever
+          <p className="text-2xl lg:text-3xl font-bold text-gray-200">
+            From financial awareness to enterprise to ownership — the pathway is still broken.
           </p>
-          <p className="text-body-md text-gray-400">
-            Nigeria's economic future depends on financially informed citizens. Millions of young people lack structured financial education, while entrepreneurs struggle to access disciplined capital and investors need trusted networks.
-          </p>
+          <div className="space-y-4 text-lg text-gray-300 leading-relaxed">
+            <p className="font-semibold">
+              Africa has talent, ambition, and energy.
+            </p>
+            <p>
+              What is missing is a structured system that helps people grow from learning to building to 
+              ownership.
+            </p>
+            <p className="text-gray-400">
+              These are the four gaps holding back true economic participation.
+            </p>
+          </div>
         </div>
 
-        {/* Challenge Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {challenges.map((challenge, i) => (
-            <div
-              key={i}
-              className="group relative rounded-2xl bg-gradient-to-br from-dark-700 to-dark-800 border-2 border-dark-600 hover:border-primary-500/50 p-8 transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/10"
-            >
-              {/* Yellow accent border on hover */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+        {/* Challenge Grid - 4 Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+          {challenges.map((challenge, i) => {
+            const IconComponent = challenge.icon;
+            const colors = getColorClasses(challenge.color);
 
-              {/* Icon */}
-              <div className="relative mb-6">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary-500/20 group-hover:bg-primary-500/30 transition-colors">
-                  <AlertCircle className="w-7 h-7 text-primary-400" />
+            return (
+              <div
+                key={i}
+                className={`group relative rounded-2xl bg-gradient-to-br ${colors.bg} border-2 ${colors.border} hover:border-opacity-100 p-8 transition-all duration-300 hover:shadow-lg hover:shadow-current/10`}
+              >
+                {/* Icon Container */}
+                <div className="mb-6">
+                  <div
+                    className={`inline-flex items-center justify-center w-14 h-14 rounded-xl ${colors.accent}`}
+                  >
+                    <IconComponent
+                      className={`w-7 h-7 ${colors.text}`}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Stat */}
-              <div className="mb-4">
-                <p className="text-3xl font-black text-primary-400 group-hover:text-primary-300 transition-colors">
-                  {challenge.stat}
+                {/* Title */}
+                <h3 className="text-xl font-black text-white mb-3">
+                  {challenge.title}
+                </h3>
+
+                {/* Main Description */}
+                <p className="text-gray-200 font-semibold mb-4">
+                  {challenge.description}
+                </p>
+
+                {/* Support Line */}
+                <p className="text-sm text-gray-400 leading-relaxed">
+                  <span className="text-gray-500 text-xs uppercase tracking-wide block mb-2">
+                    Support:
+                  </span>
+                  {challenge.support}
                 </p>
               </div>
-
-              {/* Title */}
-              <h3 className="text-lg font-black text-white mb-2">
-                {challenge.title}
-              </h3>
-
-              {/* Description */}
-              <p className="text-sm text-gray-300 leading-relaxed">
-                {challenge.description}
-              </p>
-
-              {/* Bottom accent line */}
-              <div className="absolute bottom-0 left-8 right-8 h-1 bg-gradient-to-r from-primary-500/0 via-primary-500/50 to-primary-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full"></div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Key takeaway */}
-        <div className="mt-20 p-8 rounded-2xl bg-gradient-to-r from-primary-500/20 to-secondary-500/20 border-2 border-primary-500/50 text-center">
-          <p className="text-lg text-white font-bold leading-relaxed max-w-2xl mx-auto">
-            NCDF Impact Club was created to bridge this gap — building a structured pathway from education to economic participation.
+        {/* Bottom Transition */}
+        <div className="mt-20 p-12 rounded-3xl bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border-2 border-primary-500/30 text-center space-y-6">
+          <h3 className="text-3xl lg:text-4xl font-black text-white">
+            Impact Club exists to reconnect these four missing links.
+          </h3>
+          <p className="text-lg text-gray-300 leading-relaxed max-w-3xl mx-auto">
+            Building a clear pathway from early financial formation to enterprise capability 
+            and ultimately to economic ownership.
           </p>
         </div>
       </div>
     </section>
   );
 }
-
-// Placeholder for proper icon - using AlertCircle temporarily
-const BookOpen = AlertCircle;
