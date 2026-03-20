@@ -1,25 +1,34 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
   Users,
   BookOpen,
   TrendingUp,
-  BarChart3,
+  AlertCircle,
   Activity,
   MessageSquare,
   CheckCircle,
   Clock,
-  Award,
-  Plus,
   Loader,
-  AlertCircle,
+  Plus,
 } from "lucide-react";
 import { useUserProgress } from "@/hooks/useLMS";
+import {
+  KPICard,
+  ActionCard,
+  InsightCard,
+} from "@/components/dashboard/cards";
 
 export default function FacilitatorDashboard() {
+  const [isVisible, setIsVisible] = useState(false);
   const { progress, loading, error } = useUserProgress();
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
   const enrollments = progress?.enrollments || [];
   const totalStudents = enrollments.length;
@@ -31,35 +40,6 @@ export default function FacilitatorDashboard() {
     (sum, e) => sum + e.assignmentsSubmitted,
     0
   );
-
-  const facilitatorStats = {
-    totalStudents,
-    activeClasses,
-    avgEngagement,
-    assignmentsPending,
-  };
-
-  const classes = enrollments.map((e) => ({
-    id: e.enrollmentId,
-    name: e.course.title,
-    students: 1,
-    progress: e.progress,
-    nextLesson: e.course.description,
-    nextDate: e.completedAt
-      ? new Date(e.completedAt).toLocaleDateString()
-      : "Ongoing",
-  }));
-
-  const recentActivities = enrollments
-    .filter((e) => e.assignmentsSubmitted > 0)
-    .slice(0, 3)
-    .map((e) => ({
-      id: e.enrollmentId,
-      student: e.course.title,
-      action: `Submitted ${e.assignmentsSubmitted} assignment${e.assignmentsSubmitted !== 1 ? 's' : ''}`,
-      course: e.course.title,
-      time: e.lastAccessedAt ? new Date(e.lastAccessedAt).toLocaleDateString() : "Recent",
-    }));
 
   if (loading) {
     return (
@@ -89,202 +69,107 @@ export default function FacilitatorDashboard() {
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
-      <div className="space-y-6 animate-fade-in" style={{ animationDelay: "0ms" }}>
-        <h1 className="text-5xl font-black text-white mb-2">
-          Facilitator Dashboard 👨‍🏫
-        </h1>
-        <p className="text-lg text-gray-300">Manage your classes and track student success</p>
-      </div>
-
-      {/* Key Stats - Redesigned */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Students Card */}
-        <div className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-primary-500 to-primary-600 text-white hover:shadow-xl transition-all duration-300 border border-primary-400 border-opacity-50 animate-fade-in" style={{ animationDelay: "100ms" }}>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <Users className="w-6 h-6 opacity-90" />
-              <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Total</span>
-            </div>
-            <p className="text-sm opacity-90 mb-2 font-medium">Students</p>
-            <p className="text-3xl font-black">{facilitatorStats.totalStudents}</p>
-          </div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
-        </div>
-
-        {/* Active Classes Card */}
-        <div className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-secondary-500 to-secondary-600 text-white hover:shadow-xl transition-all duration-300 border border-secondary-400 border-opacity-50 animate-fade-in" style={{ animationDelay: "200ms" }}>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <BookOpen className="w-6 h-6 opacity-90" />
-              <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Active</span>
-            </div>
-            <p className="text-sm opacity-90 mb-2 font-medium">Classes</p>
-            <p className="text-3xl font-black">{facilitatorStats.activeClasses}</p>
-          </div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
-        </div>
-
-        {/* Engagement Card */}
-        <div className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-green-500 to-green-600 text-white hover:shadow-xl transition-all duration-300 border border-green-400 border-opacity-50 animate-fade-in" style={{ animationDelay: "300ms" }}>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <TrendingUp className="w-6 h-6 opacity-90" />
-              <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Avg</span>
-            </div>
-            <p className="text-sm opacity-90 mb-2 font-medium">Engagement</p>
-            <p className="text-3xl font-black">{facilitatorStats.avgEngagement}%</p>
-          </div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
-        </div>
-
-        {/* Pending Card */}
-        <div className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:shadow-xl transition-all duration-300 border border-blue-400 border-opacity-50 animate-fade-in" style={{ animationDelay: "400ms" }}>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <Clock className="w-6 h-6 opacity-90" />
-              <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Pending</span>
-            </div>
-            <p className="text-sm opacity-90 mb-2 font-medium">To Grade</p>
-            <p className="text-3xl font-black">{facilitatorStats.assignmentsPending}</p>
-          </div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
+      <div
+        className={`space-y-4 transition-all duration-700 transform ${
+          isVisible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-10"
+        }`}
+      >
+        <div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-2">
+            Facilitator Dashboard 👨‍🏫
+          </h1>
+          <p className="text-base sm:text-lg text-gray-300">
+            Manage classes, review assignments, and track student success
+          </p>
         </div>
       </div>
 
-      {/* Classes Section */}
-      {classes.length > 0 && (
-        <div className="space-y-6 animate-fade-in" style={{ animationDelay: "550ms" }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-black text-text-500 mb-1">Your Classes</h2>
-              <p className="text-gray-300">Manage and monitor all your active classes</p>
-            </div>
-            <Button variant="primary" size="sm" className="gap-2">
-              <Plus className="w-4 h-4" />
-              New Class
-            </Button>
-          </div>
+      {/* TOP ROW: Status, Next Action, Progress (3 cards) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* CARD 1: Today's Classes - Status */}
+        <KPICard
+          icon={BookOpen}
+          label="Active Classes"
+          value={activeClasses}
+          status="In Session"
+          gradientFrom="from-primary-500"
+          gradientTo="to-primary-600"
+          borderColor="border-primary-400"
+        />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {classes.map((cls, idx) => (
-              <div
-                key={cls.id}
-                className="group relative overflow-hidden rounded-2xl bg-dark-700/50 border-2 border-dark-600 hover:border-primary-300 hover:shadow-xl transition-all duration-300 animate-fade-in"
-                style={{ animationDelay: `${600 + idx * 100}ms` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-600 opacity-0 group-hover:opacity-5 transition-opacity"></div>
+        {/* CARD 2: Assignments to Review - Next Action */}
+        <ActionCard
+          title="Assignments to Review"
+          description={`${assignmentsPending} awaiting your feedback`}
+          icon={CheckCircle}
+          primaryAction={{
+            label: "Review Now",
+            onClick: () => (window.location.href = "/dashboard/grading"),
+          }}
+        />
 
-                <div className="relative p-8 space-y-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-black text-text-500 mb-2 group-hover:text-primary-600 transition-colors">
-                        {cls.name}
-                      </h3>
-                      <p className="text-gray-300 text-sm">{cls.students} students enrolled</p>
-                    </div>
-                    <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                      <span className="text-white font-black text-xl">{cls.progress}%</span>
-                    </div>
-                  </div>
+        {/* CARD 3: Engagement Overview - Progress Insight */}
+        <InsightCard
+          title="Class Engagement"
+          icon={TrendingUp}
+          stats={[
+            { label: "Students", value: totalStudents },
+            { label: "Avg Progress", value: `${avgEngagement}%` },
+            { label: "Active", value: activeClasses },
+          ]}
+        >
+          <p className="text-xs text-gray-400">
+            {avgEngagement > 75 ? "Excellent engagement" : avgEngagement > 50 ? "Good progress" : "Needs attention"}
+          </p>
+        </InsightCard>
+      </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">Progress</span>
-                      <span className="text-sm font-bold text-primary-600">{cls.progress}%</span>
-                    </div>
-                    <div className="w-full h-3 bg-dark-600 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full transition-all duration-500"
-                        style={{ width: `${cls.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
+      {/* CARD 4: Student Alerts & Needs */}
+      <ActionCard
+        title="Student Alerts"
+        description={`${totalStudents - activeClasses} students may need support`}
+        icon={AlertCircle}
+        primaryAction={{
+          label: "View Details",
+          onClick: () => console.log("View student alerts"),
+        }}
+        secondaryAction={{
+          label: "Send Message",
+          onClick: () => (window.location.href = "/dashboard/messages"),
+        }}
+        variant="warning"
+      />
 
-                  <div className="pt-4 border-t border-gray-100 space-y-3">
-                    <div>
-                      <p className="text-xs text-gray-300 font-semibold mb-1">NEXT LESSON</p>
-                      <p className="text-sm font-bold text-text-500">{cls.nextLesson}</p>
-                    </div>
-                    <p className="text-xs text-gray-500">Due: {cls.nextDate}</p>
-                  </div>
+      {/* CARD 5: Messages & Communication */}
+      <ActionCard
+        title="Class Messages"
+        description="Stay connected with your students and facilitators"
+        icon={MessageSquare}
+        primaryAction={{
+          label: "Go to Messages",
+          onClick: () => (window.location.href = "/dashboard/messages"),
+        }}
+        variant="primary"
+      />
 
-                  <Button variant="primary" size="md" className="w-full">
-                    Manage Class
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent Activity and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in" style={{ animationDelay: "800ms" }}>
-        {/* Recent Activity */}
-        <div className="lg:col-span-2 space-y-6">
-          <div>
-            <h2 className="text-3xl font-black text-text-500 mb-1">Recent Activity</h2>
-            <p className="text-gray-300">Latest updates from your classes</p>
-          </div>
-
-          <div className="space-y-3">
-            {recentActivities.length > 0 ? (
-              recentActivities.map((activity, idx) => (
-                <div
-                  key={activity.id}
-                  className="group rounded-xl bg-dark-700/50 border-l-4 border-l-primary-500 hover:border-l-secondary-500 p-4 hover:shadow-lg transition-all duration-300 animate-fade-in"
-                  style={{ animationDelay: `${850 + idx * 100}ms` }}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white">
-                      <Activity className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-text-500">
-                        {activity.student} <span className="text-gray-300 font-normal">{activity.action}</span>
-                      </p>
-                      <p className="text-sm text-gray-300">{activity.course}</p>
-                      <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary-100 to-secondary-100 mb-4">
-                  <Activity className="w-8 h-8 text-primary-600" />
-                </div>
-                <p className="text-gray-300 font-medium">No recent activity yet</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-6 animate-fade-in" style={{ animationDelay: "900ms" }}>
-          <div>
-            <h2 className="text-3xl font-black text-text-500 mb-1">Quick Actions</h2>
-            <p className="text-gray-300">Get things done faster</p>
-          </div>
-
-          <div className="space-y-3">
-            <Button variant="primary" size="lg" className="w-full justify-center gap-2 animate-fade-in" style={{ animationDelay: "950ms" }}>
-              <CheckCircle className="w-5 h-5" />
-              Grade Assignments
-            </Button>
-            <Button variant="secondary" size="lg" className="w-full justify-center gap-2 animate-fade-in" style={{ animationDelay: "1050ms" }}>
-              <MessageSquare className="w-5 h-5" />
-              Message Students
-            </Button>
-            <Button variant="outline" size="lg" className="w-full justify-center gap-2 animate-fade-in" style={{ animationDelay: "1150ms" }}>
-              <BarChart3 className="w-5 h-5" />
-              View Analytics
-            </Button>
-            <Button variant="outline" size="lg" className="w-full justify-center gap-2 animate-fade-in" style={{ animationDelay: "1250ms" }}>
-              <Award className="w-5 h-5" />
-              Award Certificates
-            </Button>
-          </div>
+      {/* Quick Actions Section */}
+      <div className="space-y-6 pt-6 border-t border-dark-600">
+        <h2 className="text-2xl font-bold text-white">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Button variant="primary" size="lg" className="w-full justify-center gap-2">
+            <Plus className="w-5 h-5" />
+            Create Class
+          </Button>
+          <Button variant="secondary" size="lg" className="w-full justify-center gap-2">
+            <Activity className="w-5 h-5" />
+            View Analytics
+          </Button>
+          <Button variant="outline" size="lg" className="w-full justify-center gap-2">
+            <BookOpen className="w-5 h-5" />
+            Manage Content
+          </Button>
         </div>
       </div>
     </div>

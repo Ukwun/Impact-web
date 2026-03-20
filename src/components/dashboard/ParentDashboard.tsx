@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -11,12 +12,15 @@ import {
   AlertCircle,
   MessageSquare,
   Calendar,
-  CheckCircle,
-  Clock,
-  Target,
+  Bell,
   Loader,
   Plus,
 } from "lucide-react";
+import {
+  KPICard,
+  ActionCard,
+  InsightCard,
+} from "@/components/dashboard/cards";
 
 interface ChildData {
   id: string;
@@ -35,8 +39,10 @@ export default function ParentDashboard() {
   const [children, setChildren] = useState<ChildData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    setIsVisible(true);
     fetchChildren();
   }, []);
 
@@ -55,24 +61,6 @@ export default function ParentDashboard() {
       setLoading(false);
     }
   };
-
-  const alerts = children.length > 0
-    ? children.map(child => ({
-        id: child.id,
-        type: child.overallProgress > 80 ? "success" : child.overallProgress > 50 ? "warning" : "info",
-        child: child.name,
-        message: `Progress: ${child.overallProgress}% - ${child.overallProgress > 80 ? 'Excellent work!' : child.overallProgress > 50 ? 'Keep it up!' : 'Needs attention'}`,
-        date: "Today",
-      }))
-    : [
-        {
-          id: "no-children",
-          type: "info" as const,
-          child: "No Children Linked",
-          message: "Link your children's accounts to monitor their progress",
-          date: "Now",
-        },
-      ];
 
   if (loading) {
     return (
@@ -99,179 +87,175 @@ export default function ParentDashboard() {
     );
   }
 
-  return (
-    <div className="space-y-8 pb-12">
-      {/* Header */}
-      <div className="animate-fade-in" style={{ animationDelay: "0ms" }}>
-        <h1 className="text-5xl font-black text-white mb-2">
-          Parent Dashboard 👨‍👩‍👧‍👦
-        </h1>
-        <p className="text-lg text-gray-300">Monitor your children's learning progress and celebrate achievements</p>
-      </div>
-
-      {/* Children Overview */}
-      <div className="space-y-6 animate-fade-in" style={{ animationDelay: "100ms" }}>
-        {children.length === 0 ? (
-          <Card className="p-8 text-center">
-            <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-300 mb-2">No Children Linked</h3>
-            <p className="text-gray-400 mb-6">Link your children's accounts to start monitoring their progress</p>
-            <Button variant="primary" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Link Child Account
-            </Button>
-          </Card>
-        ) : (
-          children.map((child, idx) => (
-            <div key={child.id} className="rounded-2xl bg-dark-700/50 border-2 border-dark-600 hover:border-primary-300 hover:shadow-xl transition-all duration-300 overflow-hidden animate-fade-in" style={{ animationDelay: `${150 + idx * 100}ms` }}>
-              <div className="bg-gradient-to-r from-primary-500 to-secondary-500 p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-3xl font-black mb-1">{child.name}</h2>
-                    <p className="text-primary-100">{child.grade} Level</p>
-                  </div>
-                  <Button variant="primary" size="sm" className="bg-dark-700/50 text-primary-300 hover:bg-dark-600">
-                    View Details
-                  </Button>
-                </div>
-              </div>
-
-              <div className="p-8 space-y-6">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
-                    <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">Progress</p>
-                    <p className="text-2xl font-black text-blue-600">{child.overallProgress}%</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 border border-green-200">
-                    <p className="text-xs font-bold text-green-700 uppercase tracking-wider mb-2">Avg Score</p>
-                    <p className="text-2xl font-black text-green-600">{child.averageScore}%</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200">
-                    <p className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-2">Attendance</p>
-                    <p className="text-2xl font-black text-purple-600">{child.attendanceRate}%</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200">
-                    <p className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-2">Completed</p>
-                    <p className="text-2xl font-black text-orange-600">{child.completedCourses}/{child.enrolledCourses}</p>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-bold text-gray-700 uppercase tracking-wider">Learning Progress</span>
-                    <span className="text-sm font-bold text-primary-600">{child.overallProgress}%</span>
-                  </div>
-                  <div className="w-full h-3 bg-dark-600 rounded-full overflow-hidden">
-                    <div
-                      style={{ width: `${child.overallProgress}%` }}
-                      className="h-full bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full transition-all duration-500"
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Last Activity */}
-                <div className="pt-4 border-t border-gray-100">
-                  <p className="text-sm">
-                    <span className="font-bold text-text-500">Last Activity:</span>
-                    <span className="text-gray-300 ml-2">{child.lastActivity}</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Alerts & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Alerts */}
-        <div className="lg:col-span-2 space-y-6">
+  // Show child linking state if no children linked
+  if (children.length === 0) {
+    return (
+      <div className="space-y-8 pb-12">
+        <div
+          className={`space-y-4 transition-all duration-700 transform ${
+            isVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-10"
+          }`}
+        >
           <div>
-            <h2 className="text-3xl font-black text-text-500 mb-1">Alerts & Updates</h2>
-            <p className="text-gray-300">Important updates about your children's learning</p>
-          </div>
-
-          <div className="space-y-3">
-            {alerts.map((alert) => (
-              <div
-                key={alert.id}
-                className={`rounded-xl border-l-4 p-4 ${
-                  alert.type === "success"
-                    ? "bg-green-50 border-l-green-500"
-                    : alert.type === "warning"
-                      ? "bg-yellow-50 border-l-yellow-500"
-                      : "bg-blue-50 border-l-blue-500"
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 flex-1">
-                    {alert.type === "success" && (
-                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    )}
-                    {alert.type === "warning" && (
-                      <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                    )}
-                    {alert.type === "info" && (
-                      <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-text-500 text-sm">
-                      {alert.child}: {alert.message}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">{alert.date}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-3xl font-black text-text-500 mb-1">Quick Actions</h2>
-            <p className="text-gray-300">Get things done quickly</p>
-          </div>
-
-          <div className="space-y-3">
-            <Button variant="primary" size="lg" className="w-full justify-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              Message Facilitator
-            </Button>
-            <Button variant="secondary" size="lg" className="w-full justify-center gap-2">
-              <Calendar className="w-5 h-5" />
-              View Calendar
-            </Button>
-            <Button variant="outline" size="lg" className="w-full justify-center gap-2">
-              <Award className="w-5 h-5" />
-              View Certificates
-            </Button>
-            <Button variant="outline" size="lg" className="w-full justify-center gap-2">
-              <BookOpen className="w-5 h-5" />
-              Suggest Courses
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Parental Guidance */}
-      <div className="rounded-2xl bg-gradient-to-br from-primary-500 to-secondary-500 text-white p-8 border-2 border-primary-400 border-opacity-50">
-        <div className="flex items-start gap-6">
-          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white bg-opacity-20 flex items-center justify-center">
-            <Target className="w-6 h-6" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-2xl font-black mb-3">Parental Tips for Success</h3>
-            <p className="text-primary-50 leading-relaxed">
-              Regular communication with facilitators and consistent encouragement help students succeed. 
-              Check in weekly to celebrate wins and address challenges. Your involvement makes a real difference!
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-2">
+              Parent Dashboard 👨‍👩‍👧‍👦
+            </h1>
+            <p className="text-base sm:text-lg text-gray-300">
+              Monitor your children's learning and celebrate their achievements
             </p>
           </div>
         </div>
+
+        <Card className="p-12 text-center animate-fade-in">
+          <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-2xl font-bold text-white mb-2">No Children Linked</h3>
+          <p className="text-gray-300 mb-6">
+            Link your children's accounts to start monitoring their learning progress
+          </p>
+          <Button variant="primary" size="lg" className="gap-2">
+            <Plus className="w-4 h-4" />
+            Link Child Account
+          </Button>
+        </Card>
       </div>
+    );
+  }
+
+  // Use first child as primary for dashboard overview
+  const primaryChild = children[0];
+  const secondaryChildren = children.slice(1);
+
+  return (
+    <div className="space-y-8 pb-12">
+      {/* Header Section */}
+      <div
+        className={`space-y-4 transition-all duration-700 transform ${
+          isVisible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-10"
+        }`}
+      >
+        <div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-2">
+            Parent Dashboard 👨‍👩‍👧‍👦
+          </h1>
+          <p className="text-base sm:text-lg text-gray-300">
+            Monitor {children.length} child{children.length > 1 ? "ren" : ""}'s learning progress and celebrate achievements
+          </p>
+        </div>
+      </div>
+
+      {/* TOP ROW: Status, Next Action, Progress (3 cards) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* CARD 1: Child Progress Snapshot - Status */}
+        <KPICard
+          icon={User}
+          label={`${primaryChild.name}'s Progress`}
+          value={primaryChild.overallProgress}
+          unit="%"
+          status={primaryChild.overallProgress > 75 ? "Excellent" : primaryChild.overallProgress > 50 ? "Good" : "Needs Help"}
+          gradientFrom={primaryChild.overallProgress > 75 ? "from-green-500" : primaryChild.overallProgress > 50 ? "from-blue-500" : "from-amber-500"}
+          gradientTo={primaryChild.overallProgress > 75 ? "to-green-600" : primaryChild.overallProgress > 50 ? "to-blue-600" : "to-amber-600"}
+          borderColor={primaryChild.overallProgress > 75 ? "border-green-400" : primaryChild.overallProgress > 50 ? "border-blue-400" : "border-amber-400"}
+        />
+
+        {/* CARD 2: Course Engagement - Next Action */}
+        <ActionCard
+          title="Courses & Learning"
+          description={`${primaryChild.completedCourses}/${primaryChild.enrolledCourses} courses completed`}
+          icon={BookOpen}
+          primaryAction={{
+            label: "View Progress",
+            onClick: () => console.log("View progress details"),
+          }}
+        />
+
+        {/* CARD 3: Achievements & Certificates - Progress Insight */}
+        <InsightCard
+          title="Achievements"
+          icon={Award}
+          stats={[
+            { label: "Certificates", value: primaryChild.certificates },
+            { label: "Avg Score", value: `${primaryChild.averageScore}%` },
+            { label: "Attendance", value: `${primaryChild.attendanceRate}%` },
+          ]}
+        >
+          <p className="text-xs text-gray-400">
+            {primaryChild.name} is performing {primaryChild.averageScore > 80 ? "excellently" : primaryChild.averageScore > 60 ? "well" : "keep supporting"}
+          </p>
+        </InsightCard>
+      </div>
+
+      {/* CARD 4: Recent Feedback & Updates */}
+      <ActionCard
+        title="Latest Updates"
+        description={`Last activity: ${primaryChild.lastActivity}`}
+        icon={Calendar}
+        primaryAction={{
+          label: "View Timeline",
+          onClick: () => console.log("View activity timeline"),
+        }}
+        secondaryAction={{
+          label: "Message Facilitator",
+          onClick: () => console.log("Open message composer"),
+        }}
+        variant="secondary"
+      />
+
+      {/* CARD 5: Communication & Notifications */}
+      <ActionCard
+        title="Messages & Notifications"
+        description={`Stay connected with ${primaryChild.name}'s learning team`}
+        icon={MessageSquare}
+        primaryAction={{
+          label: "Go to Messages",
+          onClick: () => (window.location.href = "/dashboard/messages"),
+        }}
+        variant="primary"
+      />
+
+      {/* Additional Children (if more than 1) */}
+      {secondaryChildren.length > 0 && (
+        <div className="space-y-6 pt-6 border-t border-dark-600">
+          <h2 className="text-2xl font-bold text-white">Other Children</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {secondaryChildren.map((child) => (
+              <Card key={child.id} className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">{child.name}</h3>
+                    <p className="text-sm text-gray-400">{child.grade} Level</p>
+                  </div>
+                  <div className="text-2xl font-black text-primary-400">
+                    {child.overallProgress}%
+                  </div>
+                </div>
+                <div className="h-2 bg-dark-600 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary-500 to-secondary-500"
+                    style={{ width: `${child.overallProgress}%` }}
+                  ></div>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <Button size="sm" variant="outline" className="flex-1">
+                    View Profile
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Info Card */}
+      <Card className="p-6 bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border-l-4 border-primary-500">
+        <h3 className="text-lg font-bold text-white mb-2">💡 Tip for Success</h3>
+        <p className="text-gray-300 text-sm">
+          Regular communication with facilitators and consistent encouragement help students succeed. Check in weekly to celebrate wins!
+        </p>
+      </Card>
     </div>
   );
 }
