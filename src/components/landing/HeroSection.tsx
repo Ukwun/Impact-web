@@ -20,20 +20,20 @@ export default function HeroSection() {
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-gradient-to-r from-primary-500/20 to-secondary-500/20 border border-primary-400/30 backdrop-blur-sm hover:border-primary-400/50 transition-colors w-fit group cursor-pointer">
               <Sparkles className="w-4 h-4 text-primary-400 group-hover:animate-spin" />
-              <span className="text-xs font-bold text-primary-300">Africa's Leading Learning Platform</span>
+              <span className="text-xs font-bold text-primary-300">Powered by NCDF & London School of Social Enterprise</span>
             </div>
 
             {/* Main Headline */}
             <div className="space-y-6">
               <h1 className="heading-h1">
-                ImpactClub:
+                Building Nigeria's Next Generation of
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-secondary-400 to-primary-300 animate-gradient">
-                  Learn, Lead, Impact
+                  Financially Intelligent Leaders
                 </span>
               </h1>
               <p className="text-body-lg text-gray-300 leading-relaxed max-w-2xl">
-                A digital community and growth platform equipping members with knowledge, networks, opportunities, and pathways for leadership, entrepreneurship, and lasting impact across Africa.
+                NCDF Impact Club is a platform transforming financial literacy into entrepreneurship, investment readiness, and long-term wealth creation — from classrooms to capital participation.
               </p>
             </div>
 
@@ -45,13 +45,13 @@ export default function HeroSection() {
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link href="/programmes">
+              <Link href="/#partnerships">
                 <Button
                   variant="outline"
                   size="lg"
                   className="text-white border-white/30 hover:bg-white/5 hover:border-white/60 w-full sm:w-auto"
                 >
-                  Explore Programmes
+                  Partner With Us
                 </Button>
               </Link>
             </div>

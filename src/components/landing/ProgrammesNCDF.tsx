@@ -1,0 +1,138 @@
+"use client";
+
+import { ArrowRight, BookOpen, Lightbulb, Users } from "lucide-react";
+import Link from "next/link";
+
+export default function ProgrammesNCDF() {
+  const programmes = [
+    {
+      id: 1,
+      name: "ImpactSchool",
+      shortDesc: "Financial literacy and enterprise education for primary and secondary students.",
+      features: [
+        "Structured curriculum",
+        "Leadership development",
+        "National certification",
+      ],
+      href: "/impactschools",
+      ctaText: "Learn More",
+      icon: BookOpen,
+      color: "from-blue-500 to-cyan-500",
+      borderColor: "border-blue-500/30",
+    },
+    {
+      id: 2,
+      name: "ImpactUni",
+      shortDesc: "University-based venture and wealth development programme.",
+      features: [
+        "Startup labs",
+        "Financial mastery",
+        "Investor readiness",
+      ],
+      href: "/impactuni",
+      ctaText: "Explore Programme",
+      icon: Lightbulb,
+      color: "from-purple-500 to-pink-500",
+      borderColor: "border-purple-500/30",
+    },
+    {
+      id: 3,
+      name: "ImpactCircle",
+      shortDesc: "A curated community for entrepreneurs and investors.",
+      features: [
+        "Capital intelligence forums",
+        "Investment education",
+        "Deal access ecosystem",
+      ],
+      href: "/impactcircle",
+      ctaText: "Apply for Membership",
+      icon: Users,
+      color: "from-amber-500 to-orange-500",
+      borderColor: "border-amber-500/30",
+    },
+  ];
+
+  return (
+    <section className="relative py-24 lg:py-32 bg-dark-800 overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-secondary-500/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="relative z-10 container mx-auto px-6">
+        {/* Header */}
+        <div className="text-center mb-20 space-y-4 max-w-3xl mx-auto">
+          <h2 className="text-5xl lg:text-6xl font-black text-white">
+            OUR PROGRAMMES
+          </h2>
+          <p className="text-xl text-gray-300">
+            Three Pathways. One Ecosystem.
+          </p>
+        </div>
+
+        {/* Programmes Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {programmes.map((programme) => {
+            const Icon = programme.icon;
+            return (
+              <div
+                key={programme.id}
+                className={`group relative rounded-2xl bg-gradient-to-br from-dark-700 to-dark-800 border-2 ${programme.borderColor} p-8 transition-all duration-300 hover:shadow-2xl hover:shadow-primary-500/20 hover:border-primary-500/80 overflow-hidden h-full flex flex-col`}
+              >
+                {/* Gradient overlay on hover */}
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${programme.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none`}
+                ></div>
+
+                {/* Icon */}
+                <div className="relative z-10 mb-6">
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br ${programme.color} text-white shadow-lg group-hover:shadow-xl group-hover:shadow-${programme.color.split('-')[1]}-500/50 transition-all`}>
+                    <Icon className="w-8 h-8" />
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h3 className="relative z-10 text-2xl font-black text-white mb-3">
+                  {programme.name}
+                </h3>
+
+                {/* Description */}
+                <p className="relative z-10 text-gray-300 mb-6 leading-relaxed text-sm flex-1">
+                  {programme.shortDesc}
+                </p>
+
+                {/* Features */}
+                <ul className="relative z-10 space-y-2 mb-8">
+                  {programme.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-primary-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-2 h-2 rounded-full bg-primary-400"></div>
+                      </div>
+                      <span className="text-gray-300 text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA Button */}
+                <Link href={programme.href} className="relative z-10 w-full">
+                  <button
+                    className={`w-full px-6 py-3 rounded-xl bg-gradient-to-r ${programme.color} text-white font-bold hover:shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 group/btn`}
+                  >
+                    {programme.ctaText}
+                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                  </button>
+                </Link>
+
+                {/* Bottom accent line */}
+                <div
+                  className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${programme.color} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`}
+                ></div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}

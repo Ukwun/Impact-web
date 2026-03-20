@@ -28,7 +28,10 @@ model User {
   institution           String?
   verified              Boolean     @default(false)
   
-  // Membership Tier (NEW)
+  // NCDF Programme Assignment
+  programme             Programme?  @default(IMPACT_SCHOOL)
+  
+  // Membership Tier (LEGACY - kept for backwards compatibility)
   membershipTierId      String?
   membershipTier        MembershipTier? @relation(fields: [membershipTierId], references: [id], onDelete: SetNull)
   membershipStatus      MembershipStatus @default(ACTIVE)
@@ -74,6 +77,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([state])
+  @@index([programme])
   @@index([membershipTierId])
   @@index([membershipStatus])
 }
@@ -87,6 +91,12 @@ enum UserRole {
   CIRCLE_MEMBER
   MENTOR
   ADMIN
+}
+
+enum Programme {
+  IMPACT_SCHOOL
+  IMPACT_UNI
+  IMPACT_CIRCLE
 }
 
 // ============================================================================

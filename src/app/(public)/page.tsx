@@ -3,12 +3,12 @@
 import { useState } from "react";
 import SplashScreen from "@/components/landing/SplashScreen";
 import HeroSection from "@/components/landing/HeroSection";
-import ImpactNumbersModern from "@/components/landing/ImpactNumbersModern";
-import ProgrammesOverviewModern from "@/components/landing/ProgrammesOverviewModern";
-import HowItWorksModern from "@/components/landing/HowItWorksModern";
-import MembershipBenefitsTeaser from "@/components/landing/MembershipBenefitsTeaser";
-import FeaturedCourses from "@/components/landing/FeaturedCourses";
-import UpcomingEvents from "@/components/landing/UpcomingEvents";
+import ChallengeSection from "@/components/landing/ChallengeSection";
+import EcosystemModel from "@/components/landing/EcosystemModel";
+import ProgrammesNCDF from "@/components/landing/ProgrammesNCDF";
+import HowItWorksNCDF from "@/components/landing/HowItWorksNCDF";
+import ComparisonSection from "@/components/landing/ComparisonSection";
+import ImpactSDG from "@/components/landing/ImpactSDG";
 import Testimonials from "@/components/landing/Testimonials";
 import Partners from "@/components/landing/Partners";
 import FinalCTA from "@/components/landing/FinalCTA";
@@ -26,23 +26,23 @@ export default function LandingPage() {
       {/* Hero Section */}
       <HeroSection />
 
-      {/* Impact Numbers */}
-      <ImpactNumbersModern />
+      {/* The Challenge Section */}
+      <ChallengeSection />
 
-      {/* Programmes Overview */}
-      <ProgrammesOverviewModern />
+      {/* Ecosystem Model */}
+      <EcosystemModel />
 
-      {/* Core Pillars - How It Works */}
-      <HowItWorksModern />
+      {/* Our Programmes */}
+      <ProgrammesNCDF />
 
-      {/* Membership Benefits */}
-      <MembershipBenefitsTeaser />
+      {/* How It Works */}
+      <HowItWorksNCDF />
 
-      {/* Featured Courses */}
-      <FeaturedCourses />
+      {/* Why Different */}
+      <ComparisonSection />
 
-      {/* Upcoming Events */}
-      <UpcomingEvents />
+      {/* Impact & SDGs */}
+      <ImpactSDG />
 
       {/* Testimonials */}
       <Testimonials />
