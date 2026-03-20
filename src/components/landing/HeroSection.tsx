@@ -45,7 +45,7 @@ export default function HeroSection() {
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Link href="/#partnerships">
+              <Link href="/partnerships">
                 <Button
                   variant="outline"
                   size="lg"

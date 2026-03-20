@@ -48,9 +48,9 @@ export default function Footer() {
             <h4 className="font-black text-white mb-4">Company</h4>
             <ul className="space-y-2 text-sm">
               <li><Link href="/about" className="hover:text-primary-400 transition-colors">About Us</Link></li>
-              <li><Link href="/#" className="hover:text-primary-400 transition-colors">Careers</Link></li>
-              <li><Link href="/#" className="hover:text-primary-400 transition-colors">Blog</Link></li>
-              <li><Link href="/#" className="hover:text-primary-400 transition-colors">Press</Link></li>
+              <li><a href="mailto:careers@impactclub.com" className="hover:text-primary-400 transition-colors">Careers</a></li>
+              <li><Link href="/learning" className="hover:text-primary-400 transition-colors">Blog</Link></li>
+              <li><a href="mailto:hello@impactclub.com" className="hover:text-primary-400 transition-colors">Press</a></li>
             </ul>
           </div>
 
@@ -58,8 +58,8 @@ export default function Footer() {
           <div>
             <h4 className="font-black text-white mb-4">Resources</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/#" className="hover:text-primary-400 transition-colors">Help Center</Link></li>
-              <li><Link href="/#" className="hover:text-primary-400 transition-colors">Documentation</Link></li>
+              <li><a href="mailto:hello@impactclub.com" className="hover:text-primary-400 transition-colors">Help Center</a></li>
+              <li><Link href="/programmes" className="hover:text-primary-400 transition-colors">Documentation</Link></li>
               <li><Link href="/community" className="hover:text-primary-400 transition-colors">Community</Link></li>
               <li><a href="mailto:hello@impactclub.com" className="hover:text-primary-400 transition-colors">Contact</a></li>
             </ul>

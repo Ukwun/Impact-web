@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, Star } from "lucide-react";
+import Link from "next/link";
 
 export default function EcosystemModel() {
   const stages = [
@@ -11,6 +12,7 @@ export default function EcosystemModel() {
       color: "from-blue-500 to-cyan-500",
       borderColor: "border-blue-500/50",
       icon: "🎓",
+      href: "/impactschools",
     },
     {
       name: "ImpactUni",
@@ -19,6 +21,7 @@ export default function EcosystemModel() {
       color: "from-purple-500 to-pink-500",
       borderColor: "border-purple-500/50",
       icon: "🚀",
+      href: "/impactuni",
     },
     {
       name: "ImpactCircle",
@@ -27,6 +30,7 @@ export default function EcosystemModel() {
       color: "from-amber-500 to-orange-500",
       borderColor: "border-amber-500/50",
       icon: "💼",
+      href: "/impactcircle",
     },
   ];
 
@@ -89,10 +93,12 @@ export default function EcosystemModel() {
                   </p>
 
                   {/* learn more link*/}
-                  <div className="pt-4 flex items-center gap-2 text-primary-400 hover:text-primary-300 transition-colors cursor-pointer group/link">
-                    <span className="font-semibold text-sm">Learn More</span>
-                    <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
-                  </div>
+                  <Link href={stage.href}>
+                    <div className="pt-4 flex items-center gap-2 text-primary-400 hover:text-primary-300 transition-colors cursor-pointer group/link">
+                      <span className="font-semibold text-sm">Learn More</span>
+                      <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
+                    </div>
+                  </Link>
                 </div>
               </div>
 
