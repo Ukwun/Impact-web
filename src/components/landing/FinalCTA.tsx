@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default function FinalCTA() {
@@ -18,36 +18,24 @@ export default function FinalCTA() {
           {/* Left: Content */}
           <div className="space-y-8">
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white bg-opacity-20 border border-white border-opacity-30 w-fit">
-                <Sparkles className="w-4 h-4 text-white" />
-                <span className="text-sm font-bold text-white">
-                  Start Your Impact Journey
-                </span>
-              </div>
-
               <h2 className="text-5xl lg:text-6xl font-black text-white leading-tight">
-                Your Future Starts Here
+                Start Your Journey
               </h2>
 
-              <p className="text-xl text-white text-opacity-90 leading-relaxed max-w-lg">
-                Join 50,000+ students, entrepreneurs, and leaders transforming Africa one success story at a time. Your journey to impact begins today.
+              <p className="text-2xl lg:text-3xl font-bold text-white text-opacity-95">
+                From Learning to Ownership Begins Here
+              </p>
+
+              <p className="text-lg text-white text-opacity-90 leading-relaxed max-w-lg">
+                Join thousands building the knowledge, discipline, and confidence to participate meaningfully in Africa's future economy.
               </p>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white border-opacity-30">
-              <div>
-                <p className="text-3xl font-black text-white">100%</p>
-                <p className="text-sm text-white text-opacity-80">Access</p>
-              </div>
-              <div>
-                <p className="text-3xl font-black text-white">No Risk</p>
-                <p className="text-sm text-white text-opacity-80">Money-back</p>
-              </div>
-              <div>
-                <p className="text-3xl font-black text-white">100%</p>
-                <p className="text-sm text-white text-opacity-80">For Free</p>
-              </div>
+            {/* Free & Risk-Free Badge */}
+            <div className="space-y-3 pt-4 border-t border-white border-opacity-30">
+              <p className="text-lg font-bold text-white">
+                100% Free to Start. No Risk. Full Access.
+              </p>
             </div>
           </div>
 
@@ -55,7 +43,7 @@ export default function FinalCTA() {
           <div className="space-y-4">
             <Link href="/auth/register" className="block">
               <button className="w-full p-6 rounded-2xl bg-white text-primary-600 font-black text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 group cursor-pointer">
-                Create Account Now
+                Create Account
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
               </button>
             </Link>
@@ -73,19 +61,19 @@ export default function FinalCTA() {
                 <div className="w-5 h-5 rounded-full bg-white bg-opacity-30 flex items-center justify-center">
                   <span className="text-xs font-black">✓</span>
                 </div>
-                <span>Secure & Trusted Platform</span>
+                <span>Trusted platform</span>
               </div>
               <div className="flex items-center gap-3 text-white text-sm">
                 <div className="w-5 h-5 rounded-full bg-white bg-opacity-30 flex items-center justify-center">
                   <span className="text-xs font-black">✓</span>
                 </div>
-                <span>Industry-Recognized Certificates</span>
+                <span>Recognized pathways</span>
               </div>
               <div className="flex items-center gap-3 text-white text-sm">
                 <div className="w-5 h-5 rounded-full bg-white bg-opacity-30 flex items-center justify-center">
                   <span className="text-xs font-black">✓</span>
                 </div>
-                <span>24/7 Dedicated Support</span>
+                <span>Ongoing support</span>
               </div>
             </div>
           </div>

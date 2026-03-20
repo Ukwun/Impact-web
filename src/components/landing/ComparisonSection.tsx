@@ -1,28 +1,32 @@
 "use client";
 
-import { CheckCircle2, XCircle } from "lucide-react";
+import { ArrowRight, BookOpen, Route, Zap, Network } from "lucide-react";
 
 export default function ComparisonSection() {
-  const comparisons = [
+  const differentiators = [
     {
-      criteria: "Approach",
-      traditional: "Short workshops",
-      impactclub: "Integrated structure",
+      title: "Early Formation, Not Late Correction",
+      description:
+        "We start from the foundation years, helping young people build financial habits, leadership confidence, and value-creation mindsets before poor economic behaviours take root.",
+      icon: BookOpen,
     },
     {
-      criteria: "Focus",
-      traditional: "Theory-focused",
-      impactclub: "Practical ecosystem",
+      title: "One Connected Pathway",
+      description:
+        "Most platforms stop at one stage. Impact Club creates a clear journey from learning to building to investing, allowing members to grow within one continuous ecosystem.",
+      icon: Route,
     },
     {
-      criteria: "Capital Pathway",
-      traditional: "No capital pathway",
-      impactclub: "Investment readiness",
+      title: "Real Participation, Not Theory Alone",
+      description:
+        "We go beyond knowledge. Impact Club helps members develop practical enterprise capability, financial discipline, and investment readiness so they can participate meaningfully in the economy.",
+      icon: Zap,
     },
     {
-      criteria: "Learning Model",
-      traditional: "Fragmented learning",
-      impactclub: "Integrated structure",
+      title: "Community, Structure, and Opportunity",
+      description:
+        "We combine curriculum, mentorship, networks, and access pathways in one platform—giving members not just information, but a real environment for growth and progression.",
+      icon: Network,
     },
   ];
 
@@ -36,94 +40,65 @@ export default function ComparisonSection() {
 
       <div className="relative z-10 container mx-auto px-6">
         {/* Header */}
-        <div className="text-center mb-20 space-y-4 max-w-3xl mx-auto">
+        <div className="text-center mb-20 space-y-6 max-w-3xl mx-auto">
+          <span className="inline-block px-4 py-2 rounded-full bg-primary-500/20 border border-primary-500/40 text-primary-300 font-semibold text-sm">
+            Why ImpactClub Is Different
+          </span>
           <h2 className="text-5xl lg:text-6xl font-black text-white">
-            WHY IMPACT CLUB IS DIFFERENT
+            More Than a Club. A Complete Economic Growth Ecosystem.
           </h2>
-          <p className="text-xl text-gray-300">
-            More Than Education — A Capital Formation Ecosystem
+          <p className="text-xl text-gray-300 leading-relaxed">
+            ImpactClub combines financial literacy, entrepreneurship, and investment participation 
+            into one connected journey. Through ImpactSchool, ImpactUni, and ImpactCircle, we help 
+            individuals move from early awareness to enterprise capability and long-term wealth creation.
           </p>
         </div>
 
-        {/* Comparison Table */}
-        <div className="overflow-x-auto mb-12">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b-2 border-primary-500/30">
-                <th className="px-6 py-4 text-left text-white font-black">
-                  Criteria
-                </th>
-                <th className="px-6 py-4 text-center text-gray-300 font-bold">
-                  Traditional Programmes
-                </th>
-                <th className="px-6 py-4 text-center text-primary-400 font-bold">
-                  Impact Club
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {comparisons.map((item, i) => (
-                <tr
-                  key={i}
-                  className="border-b border-dark-600 hover:bg-dark-700/50 transition-colors"
-                >
-                  <td className="px-6 py-4 text-white font-bold">{item.criteria}</td>
-                  <td className="px-6 py-4 text-center text-gray-300">
-                    <div className="inline-flex items-center gap-2">
-                      <XCircle className="w-5 h-5 text-red-400" />
-                      <span>{item.traditional}</span>
+        {/* Key Differentiators - 4 Icon Blocks */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+          {differentiators.map((item, i) => {
+            const IconComponent = item.icon;
+            return (
+              <div
+                key={i}
+                className="rounded-2xl bg-gradient-to-br from-dark-700 to-dark-800 border-2 border-primary-500/20 p-8 hover:border-primary-500/50 transition-colors hover:shadow-lg hover:shadow-primary-500/10"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary-500/20 border border-primary-500/40">
+                      <IconComponent className="w-6 h-6 text-primary-400" />
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-center text-primary-300">
-                    <div className="inline-flex items-center gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-400" />
-                      <span className="font-semibold">{item.impactclub}</span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-black text-white mb-3">{item.title}</h3>
+                    <p className="text-gray-300 text-sm leading-relaxed">{item.description}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Key differentiators */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-          {[
-            {
-              title: "Lifetime Value",
-              description: "Not just a course, but a lifetime economic partnership from school to investment.",
-              icon: "🎯",
-            },
-            {
-              title: "Capital Access",
-              description: "Structured pathways to investment opportunities and capital formation.",
-              icon: "💰",
-            },
-            {
-              title: "Community",
-              description: "Built-in networks, mentorship, and ecosystem of peers at every stage.",
-              icon: "🤝",
-            },
-          ].map((item, i) => (
-            <div
-              key={i}
-              className="rounded-2xl bg-gradient-to-br from-dark-700 to-dark-800 border-2 border-primary-500/20 p-8 hover:border-primary-500/50 transition-colors"
-            >
-              <div className="text-4xl mb-4">{item.icon}</div>
-              <h3 className="text-lg font-black text-white mb-3">{item.title}</h3>
-              <p className="text-gray-300 text-sm leading-relaxed">{item.description}</p>
+        {/* CTA Block */}
+        <div className="mt-20 p-12 rounded-3xl bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border-2 border-primary-500/30 hover:border-primary-500/50 transition-colors">
+          <div className="max-w-3xl mx-auto text-center space-y-6">
+            <h3 className="text-3xl lg:text-4xl font-black text-white">
+              Start the Journey from Learning to Ownership
+            </h3>
+            <p className="text-lg text-gray-300 leading-relaxed">
+              Discover how ImpactSchool, ImpactUni, and ImpactCircle work together to build 
+              financially intelligent leaders, entrepreneurs, and future investors.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <button className="px-8 py-3 rounded-lg bg-primary-500 hover:bg-primary-600 text-white font-bold flex items-center justify-center gap-2 transition-colors">
+                Explore Our Ecosystem
+                <ArrowRight className="w-5 h-5" />
+              </button>
+              <button className="px-8 py-3 rounded-lg border-2 border-primary-500/50 hover:border-primary-500 text-primary-400 hover:text-primary-300 font-bold transition-colors">
+                Join the Movement
+              </button>
             </div>
-          ))}
-        </div>
-
-        {/* Bottom CTA */}
-        <div className="mt-16 text-center p-8 rounded-2xl bg-gradient-to-r from-primary-500/20 to-secondary-500/20 border-2 border-primary-500/30">
-          <p className="text-lg text-white font-bold mb-4">
-            Three Pathways. One Ecosystem.
-          </p>
-          <p className="text-gray-300 max-w-2xl mx-auto">
-            Impact Club is designed to create lasting economic impact through structured, integrated pathways for education, entrepreneurship, and responsible investment.
-          </p>
+          </div>
         </div>
       </div>
     </section>
