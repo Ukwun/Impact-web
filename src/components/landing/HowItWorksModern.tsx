@@ -1,54 +1,46 @@
 "use client";
 
-import { BookOpen, Users, Calendar, TrendingUp, Zap, Award } from "lucide-react";
+import { BookOpen, Hammer, Users, TrendingUp } from "lucide-react";
+import Link from "next/link";
 
 export default function HowItWorksModern() {
-  const pillars = [
+  const steps = [
     {
       number: 1,
-      title: "LEARN",
-      description: "Access structured learning pathways and develop in-demand skills",
+      title: "Learn",
+      tagline: "Master the language of value",
+      description: "Financial literacy • Money habits • Business fundamentals",
       icon: BookOpen,
       color: "from-blue-500",
-      details: "Curated courses, mentorship, and certifications"
     },
     {
       number: 2,
-      title: "CONNECT",
-      description: "Build meaningful networks with peers and industry leaders",
-      icon: Users,
-      color: "from-primary-500",
-      details: "Community chapters, circles, and professional networks"
+      title: "Build",
+      tagline: "Turn ideas into capability",
+      description: "Startup labs • Leadership • Project execution",
+      icon: Hammer,
+      color: "from-green-500",
     },
     {
       number: 3,
-      title: "PARTICIPATE",
-      description: "Engage in events, programmes, and collaborative opportunities",
-      icon: Calendar,
-      color: "from-secondary-500",
-      details: "Webinars, workshops, conferences, and local events"
+      title: "Connect",
+      tagline: "Enter the right rooms",
+      description: "Mentorship • Networks • Community access",
+      icon: Users,
+      color: "from-primary-500",
     },
     {
       number: 4,
-      title: "GROW",
-      description: "Accelerate your personal and professional development",
+      title: "Grow",
+      tagline: "Move toward ownership",
+      description: "Investment pathways • Capital access • Wealth growth",
       icon: TrendingUp,
-      color: "from-green-500",
-      details: "Mentorship, resources, and career guidance"
-    },
-    {
-      number: 5,
-      title: "LEAD",
-      description: "Create impact through leadership and entrepreneurship",
-      icon: Zap,
-      color: "from-orange-500",
-      details: "Projects, opportunities, and recognition"
+      color: "from-amber-500",
     },
   ];
 
-
   return (
-    <section className="relative py-24 bg-gradient-to-b from-dark-800 to-dark-900 overflow-hidden">
+    <section className="relative py-24 lg:py-32 bg-gradient-to-b from-dark-800 to-dark-900 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/3 right-0 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl"></div>
@@ -57,53 +49,56 @@ export default function HowItWorksModern() {
 
       <div className="relative z-10 container mx-auto px-6">
         {/* Section header */}
-        <div className="text-center mb-20 space-y-4">
+        <div className="text-center mb-20 space-y-6 max-w-3xl mx-auto">
           <h2 className="text-5xl sm:text-6xl font-black text-white">
-            Our Five Core Pillars
+            How It Works
           </h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto font-light">
-            A comprehensive ecosystem built on learning, connection, participation, growth, and leadership
+          <p className="text-2xl lg:text-3xl font-bold text-gray-200">
+            Learn. Build. Connect. Grow.
+          </p>
+          <p className="text-xl text-gray-300 leading-relaxed">
+            One ecosystem designed to move you from potential to participation.
           </p>
         </div>
 
-        {/* Pillars */}
-        <div className="relative">
-          {/* Connection line */}
-          <div className="hidden lg:block absolute top-20 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary-500/20 to-transparent pointer-events-none"></div>
+        {/* Steps Grid */}
+        <div className="relative mb-20">
+          {/* Connection line - visible on lg and above */}
+          <div className="hidden lg:block absolute top-20 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary-500/30 to-transparent pointer-events-none"></div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            {pillars.map((pillar, index) => {
-              const Icon = pillar.icon;
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
 
               return (
                 <div 
-                  key={pillar.number} 
-                  className="relative group animate-fade-in"
+                  key={step.number} 
+                  className="relative group"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  {/* Pillar number circle */}
+                  {/* Step number circle */}
                   <div className="absolute -top-6 -left-6 z-20">
-                    <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${pillar.color} to-transparent flex items-center justify-center text-white font-black text-lg shadow-lg group-hover:scale-125 transition-transform duration-300`}>
-                      {pillar.number}
+                    <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${step.color} to-transparent flex items-center justify-center text-white font-black text-2xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      {step.number}
                     </div>
                   </div>
 
                   {/* Card */}
-                  <div className="bg-gradient-to-br from-dark-700/50 to-dark-800/30 backdrop-blur-sm rounded-2xl border border-dark-600/30 group-hover:border-dark-500/60 p-6 pt-12 h-full transition-all duration-500 transform group-hover:translate-y-[-8px] group-hover:shadow-xl group-hover:shadow-primary-500/10">
+                  <div className="bg-gradient-to-br from-dark-700/50 to-dark-800/30 backdrop-blur-sm rounded-2xl border-2 border-dark-600/50 group-hover:border-dark-500 p-8 pt-16 h-full transition-all duration-500 transform group-hover:translate-y-[-8px] group-hover:shadow-xl group-hover:shadow-primary-500/10">
                     {/* Icon */}
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${pillar.color} to-transparent flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon className="w-6 h-6 text-white" />
+                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${step.color} to-transparent flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon className="w-7 h-7 text-white" />
                     </div>
 
                     {/* Content */}
-                    <h3 className="text-2xl font-black text-white mb-3 group-hover:text-primary-400 transition-colors">
-                      {pillar.title}
+                    <h3 className="text-3xl font-black text-white mb-2 group-hover:text-primary-400 transition-colors">
+                      {step.title}
                     </h3>
-                    <p className="text-gray-400 leading-relaxed font-light text-sm mb-3">
-                      {pillar.description}
+                    <p className="text-lg font-bold text-gray-200 mb-4">
+                      {step.tagline}
                     </p>
-                    <p className="text-gray-500 text-xs font-medium">
-                      {pillar.details}
+                    <p className="text-gray-400 text-sm leading-relaxed">
+                      {step.description}
                     </p>
                   </div>
                 </div>
@@ -112,12 +107,29 @@ export default function HowItWorksModern() {
           </div>
         </div>
 
+        {/* Journey Flow */}
+        <div className="text-center py-12 border-y border-dark-700 mb-12">
+          <p className="text-lg font-bold text-white mb-3">
+            Learn → Build → Connect → Grow
+          </p>
+          <p className="text-gray-300">
+            From awareness to ownership.
+          </p>
+        </div>
+
         {/* Bottom CTA */}
-        <div className="mt-20 text-center">
-          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary-500/10 border border-primary-400/30">
-            <div className="w-2 h-2 rounded-full bg-primary-400 animate-pulse"></div>
-            <span className="text-sm font-semibold text-primary-300">Join our growing community making impact</span>
+        <div className="text-center space-y-6">
+          <div className="space-y-2">
+            <p className="text-gray-200">
+              Start where you are. Grow through the ecosystem.
+            </p>
           </div>
+          <Link href="/programmes" className="inline-block">
+            <button className="px-8 py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-lg transition-colors flex items-center gap-2 group">
+              Explore the Ecosystem
+              <span className="group-hover:translate-x-1 transition-transform">→</span>
+            </button>
+          </Link>
         </div>
       </div>
     </section>
