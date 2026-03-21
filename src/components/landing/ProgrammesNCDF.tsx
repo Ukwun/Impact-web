@@ -64,7 +64,7 @@ export default function ProgrammesNCDF() {
         {/* Header */}
         <div className="text-center mb-20 space-y-4 max-w-3xl mx-auto">
           <h2 className="text-5xl lg:text-6xl font-black text-white">
-            OUR PROGRAMMES
+            OUR ECOSYSTEM
           </h2>
           <p className="text-xl text-gray-300">
             Three Pathways. One Ecosystem.

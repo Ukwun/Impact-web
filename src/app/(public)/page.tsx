@@ -22,31 +22,31 @@ export default function LandingPage() {
 
   return (
     <main className="overflow-hidden">
-      {/* Hero Section */}
+      {/* 1. Hero Section */}
       <HeroSection />
 
-      {/* The Challenge Section */}
-      <ChallengeSection />
-
-      {/* Our Programmes */}
+      {/* 2. Our Ecosystem */}
       <ProgrammesNCDF />
 
-      {/* How It Works */}
+      {/* 3. How It Works */}
       <HowItWorksNCDF />
 
-      {/* Why Different */}
+      {/* 4. Why ImpactClub Is Different */}
       <ComparisonSection />
 
-      {/* Impact & SDGs */}
+      {/* 5. The Challenge Section */}
+      <ChallengeSection />
+
+      {/* 6. Impact & SDGs */}
       <ImpactSDG />
 
-      {/* Testimonials */}
+      {/* 7. Real Stories, Real Impact */}
       <Testimonials />
 
-      {/* Partners */}
+      {/* 8. Trusted By Leaders */}
       <Partners />
 
-      {/* Final CTA */}
+      {/* 9. Start Your Journey */}
       <FinalCTA />
     </main>
   );
