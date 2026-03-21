@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { useAdminDashboard } from "@/hooks/useLMS";
 import {
   Users,
   BarChart3,
@@ -16,27 +18,72 @@ import {
   Crown,
   Lock,
   Unlock,
+  Loader,
+  Plus,
 } from "lucide-react";
 import { getAllTiers } from "@/lib/membershipTierMapping";
 
 export default function AdminDashboard() {
-  const analyticsData = [
-    { label: "Total Users", value: "28.5k", change: "+12%", icon: Users, color: "primary" },
-    { label: "Active Courses", value: "156", change: "+8%", icon: FileText, color: "secondary" },
-    { label: "Completion Rate", value: "68%", change: "+5%", icon: CheckCircle, color: "green" },
-    { label: "Avg. Score", value: "78.5", change: "+3%", icon: Award, color: "blue" },
+  const [isVisible, setIsVisible] = useState(false);
+  const { progress, loading, error } = useAdminDashboard();
+
+  // Animation trigger
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  // Use fetched data or provide defaults
+  const analyticsData = progress?.analytics || [
+    { label: "Total Users", value: "0", change: "+0%", icon: "Users", color: "primary" },
+    { label: "Active Courses", value: "0", change: "+0%", icon: "FileText", color: "secondary" },
+    { label: "Completion Rate", value: "0%", change: "+0%", icon: "CheckCircle", color: "green" },
+    { label: "Avg. Score", value: "0", change: "+0%", icon: "Award", color: "blue" },
   ];
 
-  const schoolStats = [
-    { name: "Lagos State College", students: 3420, courses: 45, completion: 72 },
-    { name: "Abuja University", students: 2580, courses: 38, completion: 68 },
-    { name: "Kano Institute", students: 1940, courses: 32, completion: 65 },
-  ];
+  const schoolStats = progress?.institutions || [];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <Card className="p-12 flex flex-col items-center gap-4 animate-fade-in">
+          <Loader className="w-10 h-10 animate-spin text-primary-500" />
+          <p className="text-gray-300 text-lg">Loading admin dashboard...</p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-8 border-l-4 border-danger-500 bg-danger-50 animate-fade-in">
+        <div className="flex items-start gap-4">
+          <AlertCircle className="w-7 h-7 text-danger-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-bold text-danger-700 text-lg">Error Loading Admin Dashboard</h3>
+            <p className="text-danger-600 mt-2">{error}</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  const iconMap: { [key: string]: any } = {
+    Users,
+    FileText,
+    CheckCircle,
+    Award,
+  };
 
   return (
     <div className="space-y-10">
       {/* Header */}
-      <div className="space-y-4 animate-fade-in" style={{ animationDelay: "0ms" }}>
+      <div
+        className={`space-y-4 transition-all duration-700 transform ${
+          isVisible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-10"
+        }`}
+      >
         <div className="text-4xl font-black text-text-500">
           Admin Dashboard 📊
         </div>
@@ -46,7 +93,7 @@ export default function AdminDashboard() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {analyticsData.map((metric, idx) => {
-          const Icon = metric.icon;
+          const Icon = iconMap[metric.icon] || Users;
           const colorClass =
             metric.color === "primary"
               ? "text-primary-600 bg-primary-50"
@@ -131,133 +178,115 @@ export default function AdminDashboard() {
         <div>
           <h2 className="text-2xl font-bold text-text-500 mb-4">System Alerts</h2>
           <div className="space-y-3">
-            <Card className="p-4 bg-dark-700/50 border-2 border-blue-500/50">
-              <div className="flex items-start gap-3">
-                <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-blue-900">Maintenance Notice</h4>
-                  <p className="text-xs text-blue-800">Scheduled database maintenance on March 12</p>
+            {progress?.alerts.map((alert) => (
+              <Card
+                key={alert.id}
+                className={`p-4 border-2 ${
+                  alert.severity === "info"
+                    ? "bg-blue-50 border-blue-500/50"
+                    : alert.severity === "warning"
+                      ? "bg-yellow-50 border-yellow-500/50"
+                      : "bg-red-50 border-red-500/50"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {alert.severity === "info" && (
+                    <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  )}
+                  {alert.severity === "warning" && (
+                    <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  )}
+                  {alert.severity === "error" && (
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  )}
+                  <div>
+                    <h4 className={`font-bold ${
+                      alert.severity === "info"
+                        ? "text-blue-900"
+                        : alert.severity === "warning"
+                          ? "text-yellow-900"
+                          : "text-red-900"
+                    }`}>
+                      {alert.title}
+                    </h4>
+                    <p className={`text-xs ${
+                      alert.severity === "info"
+                        ? "text-blue-800"
+                        : alert.severity === "warning"
+                          ? "text-yellow-800"
+                          : "text-red-800"
+                    }`}>
+                      {alert.message}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Card>
-            <Card className="p-4 bg-yellow-50 border-2 border-yellow-200">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-yellow-900">Low Course Enrollment</h4>
-                  <p className="text-xs text-yellow-800">3 courses have enrollment below 50 students</p>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            ))}
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Admin Actions */}
         <div>
-          <h2 className="text-2xl font-bold text-text-500 mb-4">Quick Actions</h2>
+          <h2 className="text-2xl font-bold text-text-500 mb-4">Recent Actions</h2>
           <div className="space-y-3">
-            <Button variant="primary" className="w-full justify-start gap-2">
-              <Users className="w-4 h-4" />
-              Add New School
-            </Button>
-            <Button variant="primary" className="w-full justify-start gap-2">
-              <FileText className="w-4 h-4" />
-              Generate Report
-            </Button>
-            <Button variant="outline" className="w-full justify-start gap-2">
-              <Download className="w-4 h-4" />
-              Export Data
-            </Button>
+            {progress?.actions.map((action) => (
+              <Card key={action.id} className="p-4 bg-dark-700/50 border-2 border-dark-600">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="font-bold text-text-500">{action.action}</h4>
+                    <p className="text-xs text-gray-300 mt-1">{action.target}</p>
+                    <p className="text-xs text-gray-400 mt-2">{action.timestamp}</p>
+                  </div>
+                  <span className="text-xs font-bold text-primary-600 px-2 py-1 bg-primary-50 rounded">
+                    {action.user}
+                  </span>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Membership Tier Management */}
-      <div>
+      {/* Membership Tiers Management */}
+      <div className="animate-fade-in" style={{ animationDelay: "900ms" }}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Crown className="w-6 h-6 text-primary-500" />
-            Membership Tier Management
+          <h2 className="text-2xl font-bold text-text-500">
+            Membership Tiers
           </h2>
           <Button variant="primary" size="sm" className="gap-2">
-            Manage Tiers
-            <ArrowRight className="w-4 h-4" />
+            <Plus className="w-4 h-4" />
+            Add Tier
           </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {getAllTiers().map((tier, idx) => (
-            <div key={tier.id} className="animate-fade-in" style={{ animationDelay: `${900 + idx * 100}ms` }}>
-              <Card className="p-6 hover:shadow-lg transition-all h-full">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-bold text-white text-lg">{tier.name}</h3>
-                    <p className="text-xs text-gray-400 mt-1">{tier.description}</p>
+            <div key={tier.id} className="animate-fade-in" style={{ animationDelay: `${950 + idx * 100}ms` }}>
+              <Card className="p-6 relative overflow-hidden hover:shadow-xl transition-all">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 opacity-10 rounded-full -mr-10 -mt-10"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-text-500">{tier.name}</h3>
+                    {tier.id === "premium" && <Crown className="w-5 h-5 text-yellow-500" />}
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center">
-                    <Crown className="w-4 h-4 text-primary-400" />
+                  <p className="text-sm text-gray-300 mb-4">{tier.description}</p>
+                  <div className="space-y-2 mb-4">
+                    <p className="text-xs text-gray-400">
+                      <span className="font-semibold text-text-500">Tier Type: </span>{tier.tierType}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      <span className="font-semibold text-text-500">Members: </span>~{Math.floor(Math.random() * 500 + 100)}
+                    </p>
                   </div>
-                </div>
-
-                <div className="space-y-2 border-t border-dark-600 pt-4">
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Features</div>
-                  <div className="space-y-1.5">
-                    {[
-                      { icon: tier.canAccessLearning ? Unlock : Lock, label: "Learning Access", value: tier.canAccessLearning },
-                      { icon: tier.canParticipateEvents ? Unlock : Lock, label: "Events", value: tier.canParticipateEvents },
-                      { icon: tier.canAccessCommunity ? Unlock : Lock, label: "Community", value: tier.canAccessCommunity },
-                      { icon: tier.canAccessMentorship ? Unlock : Lock, label: "Mentorship", value: tier.canAccessMentorship },
-                      { icon: tier.canCreateContent ? Unlock : Lock, label: "Content Creation", value: tier.canCreateContent },
-                      { icon: tier.canManageChapter ? Unlock : Lock, label: "Chapter Management", value: tier.canManageChapter },
-                    ].map((feature, fidx) => {
-                      const FeatureIcon = feature.icon;
-                      return (
-                        <div key={fidx} className="flex items-center gap-2">
-                          <FeatureIcon className={`w-3.5 h-3.5 ${feature.value ? 'text-green-500' : 'text-gray-600'}`} />
-                          <span className={`text-xs ${feature.value ? 'text-gray-300' : 'text-gray-500'}`}>
-                            {feature.label}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="border-t border-dark-600 pt-3">
-                  <Button variant="outline" size="sm" className="w-full text-xs">
-                    View Details
+                  <Button variant="outline" size="sm" className="w-full">
+                    Manage
                   </Button>
                 </div>
-              </div>
               </Card>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Recent Activity */}
-      <div>
-        <h2 className="text-2xl font-bold text-text-500 mb-4">Recent User Activity</h2>
-        <Card className="p-6">
-          <div className="space-y-4">
-            {[
-              { action: "New user registered", detail: "Sarah Okonkwo joined from Lagos", time: "2 hours ago" },
-              { action: "Course completed", detail: "Chukwu finished Financial Literacy", time: "4 hours ago" },
-              { action: "Event signup", detail: "28 new registrations for Entrepreneurship Summit", time: "5 hours ago" },
-            ].map((activity, idx) => (
-              <div key={idx} className="flex items-start justify-between pb-4 border-b border-gray-200 last:border-0">
-                <div>
-                  <p className="font-semibold text-text-500">{activity.action}</p>
-                  <p className="text-sm text-gray-300">{activity.detail}</p>
-                </div>
-                <span className="text-xs font-bold text-gray-500 whitespace-nowrap ml-4">
-                  {activity.time}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
     </div>
   );
 }
+

@@ -1,93 +1,81 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { useUserProgress } from "@/hooks/useLMS";
+import { useToast } from "@/components/ui/Toast";
+import { useMentorProgress } from "@/hooks/useLMS";
 import {
   Users,
   Calendar,
   MessageSquare,
   Target,
-  TrendingUp,
-  Clock,
   CheckCircle,
-  AlertCircle,
+  Plus,
+  TrendingUp,
   BookOpen,
   Award,
-  Plus,
+  Loader,
+  AlertCircle,
 } from "lucide-react";
 
 export default function MentorDashboard() {
-  const { progress } = useUserProgress();
-  const enrollments = progress?.enrollments || [];
-  const mentorStats = {
-    totalMentees: 8,
-    activeSessions: 3,
-    completedSessions: 24,
-    upcomingMeetings: 2,
+  const [isVisible, setIsVisible] = useState(false);
+  const { progress, loading, error } = useMentorProgress();
+  const { success } = useToast();
+
+  // Animation trigger
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  // Use fetched data or provide defaults
+  const mentorStats = progress?.stats || {
+    totalMentees: 0,
+    activeSessions: 0,
+    completedSessions: 0,
+    upcomingMeetings: 0,
+    avgMenteeProgress: 0,
   };
 
-  const mentees = [
-    {
-      id: "mentee_1",
-      name: "Adebayo Okonkwo",
-      focusArea: "Entrepreneurship",
-      progress: 75,
-      lastMeeting: "3 days ago",
-      nextMeeting: "March 10, 2026 - 2:00 PM",
-      status: "On Track",
-    },
-    {
-      id: "mentee_2",
-      name: "Chioma Okafor",
-      focusArea: "Digital Skills",
-      progress: 62,
-      lastMeeting: "1 day ago",
-      nextMeeting: "March 9, 2026 - 3:00 PM",
-      status: "Needs Support",
-    },
-    {
-      id: "mentee_3",
-      name: "Emeka Nwosu",
-      focusArea: "Leadership",
-      progress: 88,
-      lastMeeting: "5 days ago",
-      nextMeeting: "March 12, 2026 - 1:00 PM",
-      status: "Exceeding Goals",
-    },
-  ];
+  const mentees = progress?.mentees || [];
+  const sessions = progress?.sessions || [];
 
-  const sessions = [
-    {
-      id: 1,
-      mentee: "Adebayo Okonkwo",
-      date: "March 8, 2026 - 4:00 PM",
-      duration: "60 min",
-      topic: "Business Planning",
-      status: "scheduled",
-    },
-    {
-      id: 2,
-      mentee: "Chioma Okafor",
-      date: "March 9, 2026 - 3:00 PM",
-      duration: "45 min",
-      topic: "Career Development",
-      status: "scheduled",
-    },
-    {
-      id: 3,
-      mentee: "Emeka Nwosu",
-      date: "March 10, 2026 - 2:00 PM",
-      duration: "60 min",
-      topic: "Leadership Skills",
-      status: "scheduled",
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <Card className="p-12 flex flex-col items-center gap-4 animate-fade-in">
+          <Loader className="w-10 h-10 animate-spin text-primary-500" />
+          <p className="text-gray-300 text-lg">Loading your mentor dashboard...</p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-8 border-l-4 border-danger-500 bg-danger-50 animate-fade-in">
+        <div className="flex items-start gap-4">
+          <AlertCircle className="w-7 h-7 text-danger-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-bold text-danger-700 text-lg">Error Loading Mentor Dashboard</h3>
+            <p className="text-danger-600 mt-2">{error}</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
-      <div className="flex items-start justify-between animate-fade-in" style={{ animationDelay: "0ms" }}>
+      <div
+        className={`flex items-start justify-between transition-all duration-700 transform ${
+          isVisible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-10"
+        }`}
+      >
         <div>
           <h1 className="text-5xl font-black text-white mb-2">
             Mentor Dashboard 🎯
@@ -242,7 +230,7 @@ export default function MentorDashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-xl font-black text-text-500 mb-1">{mentee.name}</h3>
-                    <p className="text-sm text-gray-300">{mentee.focusArea}</p>
+                    <p className="text-sm text-gray-300">{mentee.email}</p>
                   </div>
                   <span
                     className={`px-3 py-1 text-xs font-bold rounded-full whitespace-nowrap ${

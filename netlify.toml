@@ -1,4 +1,6 @@
 # Netlify Configuration for ImpactClub Next.js App
+# This configuration enables automatic Netlify deployments from GitHub
+# with aggressive cache busting to prevent stale content across devices
 
 # Enable the official Netlify Next.js plugin for best compatibility with App Router + API routes
 [[plugins]]
@@ -9,17 +11,88 @@
   command = "npm run build"
   # Node version to use
   node_version = "18.17.0"
+  # Cache the npm modules between builds for faster builds
+  cache_include = "node_modules"
 
 [build.environment]
   # Next.js specific settings
   NODE_ENV = "production"
   # Ensure devDependencies (like eslint) are installed during build
   NPM_CONFIG_PRODUCTION = "false"
+  # Force revalidation on every deploy
+  NETLIFY_CACHE_VERSION = "${NETLIFY_BUILD_ID}"
 
 # Redirect all non-matching routes to Next.js
-# Removed - using _redirects file instead for SPA routing
+# Main entry point - CRITICAL: Must always revalidate to prevent stale app shells
+[[headers]]
+  for = "/index.html"
+    [headers.values]
+      Cache-Control = "public, no-cache, must-revalidate, max-age=0"
+      X-Content-Type-Options = "nosniff"
+      X-Frame-Options = "DENY"
+      X-XSS-Protection = "1; mode=block"
+      Referrer-Policy = "strict-origin-when-cross-origin"
+      Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+      # Force browsers and proxies to revalidate
+      Pragma = "no-cache"
+      ETag = "W/\"${date}\""
 
-# Cache configuration for assets
+# Service Worker - must always be fresh to enable cache updates
+[[headers]]
+  for = "/sw.js"
+    [headers.values]
+      Cache-Control = "public, no-cache, must-revalidate, max-age=0"
+      Service-Worker-Allowed = "/"
+      Pragma = "no-cache"
+
+# Service Worker manifest
+[[headers]]
+  for = "/manifest.json"
+    [headers.values]
+      Cache-Control = "public, no-cache, must-revalidate, max-age=0"
+      Pragma = "no-cache"
+
+# Version file for cache invalidation (CRITICAL - always fresh)
+[[headers]]
+  for = "/version.json"
+    [headers.values]
+      Cache-Control = "public, no-cache, must-revalidate, max-age=0"
+      Pragma = "no-cache"
+      Content-Type = "application/json"
+
+# Offline page - must always be available
+[[headers]]
+  for = "/offline.html"
+    [headers.values]
+      Cache-Control = "public, no-cache, must-revalidate, max-age=0"
+
+# Root path - always revalidate
+[[headers]]
+  for = "/"
+    [headers.values]
+      Cache-Control = "public, no-cache, must-revalidate, max-age=0"
+      X-Content-Type-Options = "nosniff"
+      X-Frame-Options = "DENY"
+      X-XSS-Protection = "1; mode=block"
+      Referrer-Policy = "strict-origin-when-cross-origin"
+      Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+      Pragma = "no-cache"
+
+# Next.js Data API calls - must always be fresh
+[[headers]]
+  for = "/_next/data/*"
+    [headers.values]
+      Cache-Control = "public, no-cache, must-revalidate, max-age=0"
+      Pragma = "no-cache"
+
+# Next.js static generation fallback
+[[headers]]
+  for = "/_next/static/*"
+    [headers.values]
+      # These have content hashes in filenames, safe to cache long-term
+      Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache configuration for versioned assets (long-term caching safe - they have content hash)
 [[headers]]
   for = "/static/*"
     [headers.values]
@@ -34,42 +107,45 @@
   for = "/*.css"
     [headers.values]
       Cache-Control = "public, max-age=31536000, immutable"
-[[headers]]
-  for = "/"
-    [headers.values]
-      Cache-Control = "public, no-cache, must-revalidate, max-age=0"
-      X-Content-Type-Options = "nosniff"
-      X-Frame-Options = "DENY"
-      X-XSS-Protection = "1; mode=block"
-      Referrer-Policy = "strict-origin-when-cross-origin"
-      Permissions-Policy = "geolocation=(), microphone=(), camera=()"
 
+# Images - moderate caching with revalidation
+[[headers]]
+  for = "/images/*"
+    [headers.values]
+      Cache-Control = "public, max-age=2592000, must-revalidate"
+
+# HTML pages (except root and index) - always revalidate
 [[headers]]
   for = "/*.html"
     [headers.values]
-      # HTML pages: no-cache forces browser/CDN to revalidate with server
       Cache-Control = "public, no-cache, must-revalidate, max-age=0"
       X-Content-Type-Options = "nosniff"
       X-Frame-Options = "DENY"
       X-XSS-Protection = "1; mode=block"
       Referrer-Policy = "strict-origin-when-cross-origin"
       Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+      Pragma = "no-cache"
 
+# Dynamic routes - always revalidate content
 [[headers]]
   for = "/programmes*"
     [headers.values]
       Cache-Control = "public, no-cache, must-revalidate, max-age=0"
+      Pragma = "no-cache"
 
 [[headers]]
   for = "/join-impact-*"
     [headers.values]
       Cache-Control = "public, no-cache, must-revalidate, max-age=0"
+      Pragma = "no-cache"
 
 [[headers]]
   for = "/impact*"
     [headers.values]
       Cache-Control = "public, no-cache, must-revalidate, max-age=0"
+      Pragma = "no-cache"
 
+# Catch-all security headers for all routes
 [[headers]]
   for = "/*"
     [headers.values]
@@ -86,6 +162,9 @@
       Access-Control-Allow-Origin = "*"
       Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
       Access-Control-Allow-Headers = "Content-Type, Authorization"
+      # API responses should never be cached
+      Cache-Control = "no-cache, no-store, must-revalidate, private"
+      Pragma = "no-cache"
 
 # Environment variable configuration
 # These should be set in Netlify UI, but listed here for reference
@@ -95,3 +174,16 @@
 [functions]
   # Directory containing serverless functions
   directory = ".netlify/functions"
+
+# Disable automatic builds for preview deploys (optional)
+[context.deploy-preview]
+  command = "npm run build"
+
+# GitHub webhook integration automatically handles deployments
+# When you push to your GitHub repository, Netlify will automatically detect changes
+# and trigger a build using this configuration. No additional setup needed if repo
+# is already connected in Netlify dashboard. To reconnect:
+# 1. Go to https://app.netlify.com/account/sites
+# 2. Select your site
+# 3. Go to Site Settings > Build & Deploy > Repository
+# 4. Disconnect and reconnect your GitHub repository

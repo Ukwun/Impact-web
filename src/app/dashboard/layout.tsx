@@ -4,8 +4,10 @@ import { useAuthStore } from '@/context/AuthStore';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import DashboardSidebar from '@/components/layout/DashboardSidebar';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import NetworkStatus from '@/components/NetworkStatus';
 import { SkipLink } from '@/components/ui/Accessibility';
+import { getMenuConfigForRole, UserRole } from '@/lib/menuConfig';
 
 export default function DashboardLayout({
   children,
@@ -53,18 +55,24 @@ export default function DashboardLayout({
       <NetworkStatus />
       <DashboardSidebar />
       <main id="main-content" className="lg:ml-64 transition-all duration-300">
+        {/* Dynamic gradient background per role */}
         <div 
-          className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto"
+          className={`fixed inset-0 pointer-events-none opacity-10 z-0 bg-gradient-to-br ${getMenuConfigForRole((user?.role as UserRole) || 'student').backgroundGradient}`}
+          aria-hidden="true"
+        />
+        <div 
+          className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto"
           style={{
             paddingTop: `max(1.5rem, calc(1.5rem + env(safe-area-inset-top)))`,
             paddingRight: `max(1rem, env(safe-area-inset-right))`,
             paddingLeft: `max(1rem, env(safe-area-inset-left))`,
-            paddingBottom: `max(1.5rem, env(safe-area-inset-bottom))`,
+            paddingBottom: `max(5rem, calc(1.5rem + env(safe-area-inset-bottom)))`,
           }}
         >
           {children}
         </div>
       </main>
+      <MobileBottomNav />
     </div>
   );
 }

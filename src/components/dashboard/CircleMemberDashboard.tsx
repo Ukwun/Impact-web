@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { useUserProgress } from "@/hooks/useLMS";
+import { useCircleMemberProgress } from "@/hooks/useLMS";
 import {
   Users,
   Network,
@@ -17,91 +18,67 @@ import {
   Plus,
   Heart,
   MessageCircle,
+  Loader,
+  AlertCircle,
 } from "lucide-react";
 
 export default function CircleMemberDashboard() {
-  const profileStats = {
-    connections: 127,
-    followers: 342,
-    posts: 24,
-    engagementRate: 8.5,
-    profileViews: 1203,
+  const [isVisible, setIsVisible] = useState(false);
+  const { progress, loading, error } = useCircleMemberProgress();
+
+  // Animation trigger
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
+  // Use fetched data or provide defaults
+  const profileStats = progress?.profileStats || {
+    connections: 0,
+    followers: 0,
+    posts: 0,
+    engagementRate: 0,
+    profileViews: 0,
   };
 
-  const connections = [
-    {
-      id: "conn_1",
-      name: "Adekunle Okonkwo",
-      title: "Fintech Founder",
-      company: "PayStack Nigeria",
-      location: "Lagos, Nigeria",
-      mutualConnections: 12,
-      connected: true,
-    },
-    {
-      id: "conn_2",
-      name: "Ngozi Adeyemi",
-      title: "Tech Lead",
-      company: "Google Africa",
-      location: "Abuja, Nigeria",
-      mutualConnections: 8,
-      connected: true,
-    },
-    {
-      id: "conn_3",
-      name: "Chidi Obi",
-      title: "Product Manager",
-      company: "Flutterwave",
-      location: "Lagos, Nigeria",
-      mutualConnections: 15,
-      connected: false,
-    },
-  ];
+  const connections = progress?.connections || [];
+  const posts = progress?.posts || [];
+  const opportunities = progress?.opportunities || [];
 
-  const posts = [
-    {
-      id: 1,
-      author: "You",
-      content: "Just completed the Financial Literacy course! So grateful for the insights on business financing. Ready to scale! 🚀",
-      likes: 24,
-      comments: 5,
-      shares: 3,
-      timestamp: "2 hours ago",
-    },
-    {
-      id: 2,
-      author: "Adekunle Okonkwo",
-      content: "The future of African tech is now. Let's build solutions that matter.",
-      likes: 342,
-      comments: 28,
-      shares: 45,
-      timestamp: "5 hours ago",
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <Card className="p-12 flex flex-col items-center gap-4 animate-fade-in">
+          <Loader className="w-10 h-10 animate-spin text-primary-500" />
+          <p className="text-gray-300 text-lg">Loading your network...</p>
+        </Card>
+      </div>
+    );
+  }
 
-  const opportunities = [
-    {
-      id: "opp_1",
-      title: "Co-Founder Needed - EdTech Startup",
-      company: "TechStart Nigeria",
-      type: "Co-founder",
-      location: "Remote",
-      posted: "2 days ago",
-    },
-    {
-      id: "opp_2",
-      title: "Senior Developer - Fin-tech",
-      company: "FinanceX Africa",
-      type: "Job",
-      location: "Lagos, Nigeria",
-      posted: "3 days ago",
-    },
-  ];
+  if (error) {
+    return (
+      <Card className="p-8 border-l-4 border-danger-500 bg-danger-50 animate-fade-in">
+        <div className="flex items-start gap-4">
+          <AlertCircle className="w-7 h-7 text-danger-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-bold text-danger-700 text-lg">Error Loading Network</h3>
+            <p className="text-danger-600 mt-2">{error}</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
-      <div className="flex items-start justify-between animate-fade-in" style={{ animationDelay: "0ms" }}>
+      <div
+        className={`flex items-start justify-between transition-all duration-700 transform ${
+          isVisible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-10"
+        }`}
+      >
         <div>
           <h1 className="text-5xl font-black text-white mb-2">
             ImpactCircle Professional Network 📋

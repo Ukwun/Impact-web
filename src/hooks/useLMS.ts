@@ -126,6 +126,135 @@ export interface LessonProgress {
   completedAt: string | null;
 }
 
+// ============ Mentor Types ============
+
+export interface MentorStats {
+  totalMentees: number;
+  upcomingMeetings: number;
+  completedSessions: number;
+  activeSessions: number;
+  avgMenteeProgress: number;
+}
+
+export interface Mentee {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string | null;
+  progress: number;
+  lastMeeting: string;
+  nextMeeting: string;
+  status: "Exceeding Goals" | "On Track" | "Needs Support";
+}
+
+export interface MentorSession {
+  id: string;
+  mentee: string;
+  date: string;
+  duration: string;
+  topic: string;
+  status: "scheduled" | "ongoing" | "completed";
+}
+
+export interface MentorProgress {
+  stats: MentorStats;
+  mentees: Mentee[];
+  sessions: MentorSession[];
+  totalSessions: number;
+}
+
+// ============ Circle Member Types ============
+
+export interface CircleProfileStats {
+  connections: number;
+  followers: number;
+  posts: number;
+  engagementRate: number;
+  profileViews: number;
+}
+
+export interface Connection {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  location: string;
+  mutualConnections: number;
+  connected: boolean;
+}
+
+export interface Post {
+  id: number;
+  author: string;
+  content: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  timestamp: string;
+}
+
+export interface Opportunity {
+  id: string;
+  title: string;
+  company: string;
+  type: string;
+  location: string;
+  posted: string;
+}
+
+export interface CircleMemberProgress {
+  profileStats: CircleProfileStats;
+  connections: Connection[];
+  posts: Post[];
+  opportunities: Opportunity[];
+}
+
+// ============ Admin Types ============
+
+export interface AnalyticsMetric {
+  label: string;
+  value: string;
+  change: string;
+  icon: string;
+  color: string;
+}
+
+export interface InstitutionStats {
+  name: string;
+  students: number;
+  courses: number;
+  completion: number;
+}
+
+export interface SystemAlert {
+  id: number;
+  type: string;
+  title: string;
+  message: string;
+  severity: "info" | "warning" | "error";
+}
+
+export interface AdminAction {
+  id: number;
+  action: string;
+  target: string;
+  timestamp: string;
+  user: string;
+}
+
+export interface AdminDashboardData {
+  analytics: AnalyticsMetric[];
+  institutions: InstitutionStats[];
+  alerts: SystemAlert[];
+  actions: AdminAction[];
+  summary: {
+    totalUsers: number;
+    activeCourses: number;
+    completionRate: number;
+    avgScore: number;
+  };
+}
+
 // ============ Hooks ============
 
 /**
@@ -363,4 +492,124 @@ export function useClassStudents(classId: string) {
   }, [classId]);
 
   return { students, loading, error };
+}
+
+/**
+ * Fetch mentor's mentees, sessions, and dashboard statistics
+ */
+export function useMentorProgress() {
+  const [progress, setProgress] = useState<MentorProgress | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchMentorProgress = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        const headers: any = {};
+        
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        
+        const response = await fetch("/api/mentor", { headers });
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || `Failed to fetch mentor data (${response.status})`);
+        }
+        const data = await response.json();
+        setProgress(data.data); // Extract the actual data from the response
+      } catch (err) {
+        console.error("❌ Error fetching mentor progress:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMentorProgress();
+  }, []);
+
+  return { progress, loading, error };
+}
+
+/**
+ * Fetch circle member's profile, connections, posts, and opportunities
+ */
+export function useCircleMemberProgress() {
+  const [progress, setProgress] = useState<CircleMemberProgress | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCircleMemberProgress = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        const headers: any = {};
+        
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        
+        const response = await fetch("/api/circle-member", { headers });
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || `Failed to fetch circle member data (${response.status})`);
+        }
+        const data = await response.json();
+        setProgress(data.data);
+      } catch (err) {
+        console.error("❌ Error fetching circle member progress:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCircleMemberProgress();
+  }, []);
+
+  return { progress, loading, error };
+}
+
+/**
+ * Fetch admin dashboard data including analytics and system status
+ */
+export function useAdminDashboard() {
+  const [progress, setProgress] = useState<AdminDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAdminDashboard = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        const headers: any = {};
+        
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+        
+        const response = await fetch("/api/admin/dashboard", { headers });
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || `Failed to fetch admin data (${response.status})`);
+        }
+        const data = await response.json();
+        setProgress(data.data);
+      } catch (err) {
+        console.error("❌ Error fetching admin dashboard:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAdminDashboard();
+  }, []);
+
+  return { progress, loading, error };
 }

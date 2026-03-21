@@ -1,1 +1,7 @@
+# SPA fallback redirect - sends all unmatched routes to index.html
+# This enables client-side routing in Next.js
+# The 200 status ensures SEO-friendly redirects without showing browser redirect
 /*    /index.html   200
+
+# Netlify automatically handles cache busting for index.html via netlify.toml
+# entries, ensuring the App Shell always reflects the latest deployment version

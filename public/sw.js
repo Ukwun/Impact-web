@@ -1,4 +1,8 @@
-const CACHE_NAME = 'impactapp-v1';
+// Service Worker version - increment this on each deployment to bust cache
+// This ensures all devices get the latest version after a deploy
+// Update format: YYYYMMDD-HHmm (e.g., 20240319-1430)
+const CACHE_VERSION = '20240319-1430'; // UPDATE THIS ON EACH DEPLOY
+const CACHE_NAME = `impactapp-${CACHE_VERSION}`;
 const STATIC_ASSETS = [
   '/',
   '/offline.html',
@@ -158,6 +162,27 @@ self.addEventListener('fetch', (event) => {
 
 // Handle messages from clients
 self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  // Support for cache version checking
+  if (event.data && event.data.type === 'CHECK_VERSION') {
+    event.ports[0].postMessage({
+      type: 'VERSION_RESPONSE',
+      version: CACHE_VERSION,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Clear specific cache on request
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    caches.delete(CACHE_NAME).then(() => {
+      console.log('Service Worker: Cache cleared on client request');
+      event.ports[0].postMessage({ type: 'CACHE_CLEARED' });
+    });
+  }
+});
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }

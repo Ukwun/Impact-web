@@ -1,0 +1,5 @@
+{
+  "version": "20240319-1430",
+  "buildTime": "2024-03-19T14:30:00Z",
+  "notes": "Update version on every deployment to force client cache refresh"
+}
