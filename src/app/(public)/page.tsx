@@ -4,7 +4,6 @@ import { useState } from "react";
 import SplashScreen from "@/components/landing/SplashScreen";
 import HeroSection from "@/components/landing/HeroSection";
 import ChallengeSection from "@/components/landing/ChallengeSection";
-import EcosystemModel from "@/components/landing/EcosystemModel";
 import ProgrammesNCDF from "@/components/landing/ProgrammesNCDF";
 import HowItWorksNCDF from "@/components/landing/HowItWorksNCDF";
 import ComparisonSection from "@/components/landing/ComparisonSection";
@@ -28,9 +27,6 @@ export default function LandingPage() {
 
       {/* The Challenge Section */}
       <ChallengeSection />
-
-      {/* Ecosystem Model */}
-      <EcosystemModel />
 
       {/* Our Programmes */}
       <ProgrammesNCDF />

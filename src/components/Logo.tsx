@@ -14,10 +14,10 @@ export default function Logo({
   animated = false,
 }: LogoProps) {
   const sizeMap = {
-    sm: { w: 52, h: 52, px: "52px", class: "w-13 h-13" },
-    md: { w: 64, h: 64, px: "64px", class: "w-16 h-16" },
-    lg: { w: 120, h: 120, px: "120px", class: "w-30 h-30" },
-    xl: { w: 160, h: 160, px: "160px", class: "w-40 h-40" },
+    sm: { w: 60, h: 60, px: "60px", class: "w-14 h-14" },
+    md: { w: 72, h: 72, px: "72px", class: "w-18 h-18" },
+    lg: { w: 140, h: 140, px: "140px", class: "w-36 h-36" },
+    xl: { w: 180, h: 180, px: "180px", class: "w-44 h-44" },
   };
 
   const dimensions = sizeMap[size];
