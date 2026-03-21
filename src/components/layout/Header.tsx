@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, LogOut, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useAuthStore } from "@/context/AuthStore";
+import Logo from "@/components/Logo";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -30,17 +31,15 @@ export default function Header() {
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group flex-shrink-0">
-            <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-black text-base group-hover:scale-110 transition-transform duration-300 shadow-lg">
-              IE
-            </div>
+          <div className="flex items-center gap-3 group flex-shrink-0">
+            <Logo size="md" href="/" animated />
             <div className="hidden sm:flex flex-col">
               <span className="text-base font-black text-white leading-tight">ImpactClub</span>
               <span className="text-xs text-gray-400 font-semibold leading-tight">
                 Empowering Africa's Next Generation
               </span>
             </div>
-          </Link>
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1">

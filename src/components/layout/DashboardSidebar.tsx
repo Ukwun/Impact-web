@@ -16,6 +16,7 @@ import {
   Clock,
   Star,
 } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 export default function DashboardSidebar() {
   const router = useRouter();
@@ -147,17 +148,15 @@ export default function DashboardSidebar() {
       >
         {/* Logo & Collapse Button */}
         <div className={`${isCollapsed ? 'flex flex-col items-center gap-2' : 'mb-8'} pt-4`}>
-          <Link href="/" className="flex items-center gap-3">
-            <div className={`${isCollapsed ? 'w-10 h-10' : 'w-12 h-12'} bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center font-black text-white text-sm`}>
-              IE
-            </div>
+          <div className="flex items-center gap-3">
+            <Logo size={isCollapsed ? "sm" : "md"} href="/" />
             {!isCollapsed && (
               <div>
                 <p className="font-black text-lg">ImpactEdu</p>
                 <p className="text-xs text-gray-400">Learning Platform</p>
               </div>
             )}
-          </Link>
+          </div>
           
           {/* Collapse button - hidden on mobile */}
           <button

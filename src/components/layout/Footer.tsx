@@ -2,6 +2,7 @@
 
 import { Mail, MapPin, Phone, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
 import Link from "next/link";
+import Logo from "@/components/Logo";
 
 export default function Footer() {
   return (
@@ -10,8 +11,8 @@ export default function Footer() {
         {/* Brand & Tagline */}
         <div className="mb-12 pb-12 border-b border-dark-700">
           <div className="max-w-2xl">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-black text-xl mb-4">
-              IE
+            <div className="mb-4">
+              <Logo size="lg" />
             </div>
             <p className="text-lg text-gray-200 leading-relaxed max-w-lg mb-6">
               Building Africa's future through financial intelligence, enterprise development, and investment participation.

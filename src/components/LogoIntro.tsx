@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Logo from "@/components/Logo";
 
 export default function LogoIntro() {
   const [isVisible, setIsVisible] = useState(true);
@@ -79,22 +80,10 @@ export default function LogoIntro() {
         </div>
 
         {/* Logo */}
-        <div className={`w-24 h-24 mx-auto mb-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-1000 transform ${
+        <div className={`mx-auto mb-8 transition-all duration-1000 transform ${
           animationStage >= 1 ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-75 rotate-180"
         }`}>
-          <svg
-            className="w-12 h-12 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2.5}
-              d="M13 10V3L4 14h7v7l9-11h-7z"
-            />
-          </svg>
+          <Logo size="lg" />
         </div>
 
         {/* Title */}

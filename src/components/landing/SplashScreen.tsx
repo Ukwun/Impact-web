@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Logo from "@/components/Logo";
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -46,9 +47,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       <div className="relative z-10 flex flex-col items-center gap-8 text-center">
         {/* Logo with animation */}
         <div className="animate-pulse">
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center shadow-2xl transform hover:scale-110 transition-transform duration-300">
-            <span className="text-4xl font-black text-white">IE</span>
-          </div>
+          <Logo size="lg" animated />
         </div>
 
         {/* Tagline */}
