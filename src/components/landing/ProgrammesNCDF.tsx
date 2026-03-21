@@ -63,10 +63,10 @@ export default function ProgrammesNCDF() {
       <div className="relative z-10 container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-20 space-y-4 max-w-3xl mx-auto">
-          <h2 className="text-5xl lg:text-6xl font-black text-white">
+          <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
             OUR ECOSYSTEM
           </h2>
-          <p className="text-xl text-gray-300">
+          <p className="text-lg text-gray-400">
             Three Pathways. One Ecosystem.
           </p>
         </div>
@@ -93,12 +93,12 @@ export default function ProgrammesNCDF() {
                 </div>
 
                 {/* Title */}
-                <h3 className="relative z-10 text-2xl font-black text-white mb-3">
+                <h3 className="relative z-10 font-sora text-2xl font-bold text-white mb-3">
                   {programme.name}
                 </h3>
 
                 {/* Description */}
-                <p className="relative z-10 text-gray-300 mb-6 leading-relaxed text-sm flex-1">
+                <p className="relative z-10 text-gray-300 mb-6 leading-relaxed text-base flex-1">
                   {programme.shortDesc}
                 </p>
 

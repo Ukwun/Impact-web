@@ -1,0 +1,149 @@
+/* ImpactClub Typography Style Guide Implementation */
+
+/* Font Imports - Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Clash+Display:wght@600;700&display=swap');
+
+/* CSS Variables for Typography */
+:root {
+  /* Font Families */
+  --font-sora: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-clash: 'Clash Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Colors */
+  --text-primary: #FFFFFF;
+  --text-main: #0F172A;
+  --text-muted: #94A3B8;
+  --gold-1: #F5B041;
+  --gold-2: #FCD34D;
+  --gold-3: #F59E0B;
+
+  /* Spacing */
+  --section-spacing-desktop: 96px;
+  --section-spacing-mobile: 64px;
+  --paragraph-spacing: 14px;
+}
+
+/* Base Typography */
+html {
+  font-family: var(--font-inter);
+}
+
+body {
+  font-family: var(--font-inter);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+/* Headlines - Sora Bold */
+h1, .h1 {
+  font-family: var(--font-sora);
+  font-size: 64px;
+  line-height: 72px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h2, .h2 {
+  font-family: var(--font-sora);
+  font-size: 48px;
+  line-height: 56px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+h3, .h3 {
+  font-family: var(--font-sora);
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+}
+
+h4, .h4 {
+  font-family: var(--font-sora);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+}
+
+h5, .h5 {
+  font-family: var(--font-sora);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+
+h6, .h6 {
+  font-family: var(--font-sora);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+}
+
+/* Body Text */
+p, .body-lg {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  margin-bottom: var(--paragraph-spacing);
+}
+
+small, .caption {
+  font-family: var(--font-inter);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* Button Typography */
+button, .button {
+  font-family: var(--font-inter);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Gold Gradient for Highlights */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #F5B041 0%, #FCD34D 50%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  h1, .h1 {
+    font-size: 48px;
+    line-height: 56px;
+  }
+
+  h2, .h2 {
+    font-size: 36px;
+    line-height: 44px;
+  }
+
+  h3, .h3 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  h4, .h4 {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  p, .body-lg {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  small, .caption {
+    font-size: 11px;
+    line-height: 14px;
+  }
+}

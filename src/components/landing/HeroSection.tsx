@@ -25,18 +25,18 @@ export default function HeroSection() {
 
             {/* Main Headline */}
             <div className="space-y-6">
-              <h1 className="heading-h1">
+              <h1 className="font-sora text-6xl lg:text-7xl font-bold leading-tight text-white">
                 From Learning to Ownership.
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-secondary-400 to-primary-300 animate-gradient">
+                <span className="bg-gradient-gold bg-clip-text text-transparent">
                   Build the Future You Were Never Taught.
                 </span>
               </h1>
-              <div className="space-y-4 text-body-lg text-gray-300 leading-relaxed max-w-2xl">
+              <div className="space-y-4 text-lg text-gray-400 leading-relaxed max-w-2xl">
                 <p>
                   Impact Club transforms financial literacy into real-world capability — helping you grow from understanding money to building enterprises and participating in long-term wealth creation.
                 </p>
-                <p className="text-gray-400">
+                <p className="text-gray-500">
                   A structured pathway from classrooms to capital participation.
                 </p>
               </div>

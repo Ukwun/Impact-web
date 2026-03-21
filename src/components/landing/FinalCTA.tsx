@@ -18,15 +18,15 @@ export default function FinalCTA() {
           {/* Left: Content */}
           <div className="space-y-8">
             <div className="space-y-4">
-              <h2 className="text-5xl lg:text-6xl font-black text-white leading-tight">
+              <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
                 Start Your Journey
               </h2>
 
-              <p className="text-2xl lg:text-3xl font-bold text-white text-opacity-95">
+              <p className="text-xl lg:text-2xl font-semibold text-white text-opacity-95">
                 From Learning to Ownership Begins Here
               </p>
 
-              <p className="text-lg text-white text-opacity-90 leading-relaxed max-w-lg">
+              <p className="text-lg text-white text-opacity-85 leading-relaxed max-w-lg">
                 Join thousands building the knowledge, discipline, and confidence to participate meaningfully in Africa's future economy.
               </p>
             </div>

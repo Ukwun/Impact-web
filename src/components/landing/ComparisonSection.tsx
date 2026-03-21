@@ -44,10 +44,10 @@ export default function ComparisonSection() {
           <span className="inline-block px-4 py-2 rounded-full bg-primary-500/20 border border-primary-500/40 text-primary-300 font-semibold text-sm">
             Why ImpactClub Is Different
           </span>
-          <h2 className="text-5xl lg:text-6xl font-black text-white">
+          <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
             More Than a Club. A Complete Economic Growth Ecosystem.
           </h2>
-          <p className="text-xl text-gray-300 leading-relaxed">
+          <p className="text-lg text-gray-400 leading-relaxed">
             ImpactClub combines financial literacy, entrepreneurship, and investment participation 
             into one connected journey. Through ImpactSchool, ImpactUni, and ImpactCircle, we help 
             individuals move from early awareness to enterprise capability and long-term wealth creation.
@@ -70,8 +70,8 @@ export default function ComparisonSection() {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-black text-white mb-3">{item.title}</h3>
-                    <p className="text-gray-300 text-sm leading-relaxed">{item.description}</p>
+                    <h3 className="font-sora text-lg font-bold text-white mb-3">{item.title}</h3>
+                    <p className="text-gray-400 text-base leading-relaxed">{item.description}</p>
                   </div>
                 </div>
               </div>
@@ -82,10 +82,10 @@ export default function ComparisonSection() {
         {/* CTA Block */}
         <div className="mt-20 p-12 rounded-3xl bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border-2 border-primary-500/30 hover:border-primary-500/50 transition-colors">
           <div className="max-w-3xl mx-auto text-center space-y-6">
-            <h3 className="text-3xl lg:text-4xl font-black text-white">
+            <h3 className="font-sora text-3xl lg:text-4xl font-bold text-white">
               Start the Journey from Learning to Ownership
             </h3>
-            <p className="text-lg text-gray-300 leading-relaxed">
+            <p className="text-lg text-gray-400 leading-relaxed">
               Discover how ImpactSchool, ImpactUni, and ImpactCircle work together to build 
               financially intelligent leaders, entrepreneurs, and future investors.
             </p>

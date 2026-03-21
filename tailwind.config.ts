@@ -92,6 +92,8 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-inter)"],
+        sora: ["var(--font-sora)"],
+        clash: ["var(--font-clash)"],
       },
       borderRadius: {
         lg: "0.75rem",
@@ -108,6 +110,7 @@ const config: Config = {
         "gradient-primary": "linear-gradient(135deg, #1FA774 0%, #48c5b0 100%)",
         "gradient-dark": "linear-gradient(135deg, #0B3C5D 0%, #1A5F7F 100%)",
         "gradient-warm": "linear-gradient(135deg, #F5B400 0%, #FFC93E 100%)",
+        "gradient-gold": "linear-gradient(135deg, #F5B041 0%, #FCD34D 50%, #F59E0B 100%)",
       },
     },
   },

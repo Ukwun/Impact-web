@@ -1,4 +1,4 @@
-@import './typography.css';
+@import './typography-setup.css';
 
 @tailwind base;
 @tailwind components;

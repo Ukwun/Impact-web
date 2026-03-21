@@ -91,13 +91,13 @@ export default function ChallengeSection() {
       <div className="relative z-10 container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-20 space-y-6 max-w-4xl mx-auto">
-          <h2 className="text-5xl lg:text-6xl font-black text-white">
+          <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
             Four Missing Links in Africa's Economic Journey
           </h2>
-          <p className="text-2xl lg:text-3xl font-bold text-gray-200">
+          <p className="text-xl lg:text-2xl font-semibold text-gray-300">
             From financial awareness to enterprise to ownership — the pathway is still broken.
           </p>
-          <div className="space-y-4 text-lg text-gray-300 leading-relaxed">
+          <div className="space-y-4 text-base text-gray-400 leading-relaxed">
             <p className="font-semibold">
               Africa has talent, ambition, and energy.
             </p>
@@ -105,7 +105,7 @@ export default function ChallengeSection() {
               What is missing is a structured system that helps people grow from learning to building to 
               ownership.
             </p>
-            <p className="text-gray-400">
+            <p className="text-gray-500">
               These are the four gaps holding back true economic participation.
             </p>
           </div>
@@ -134,12 +134,12 @@ export default function ChallengeSection() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-black text-white mb-3">
+                <h3 className="font-sora text-xl font-bold text-white mb-3">
                   {challenge.title}
                 </h3>
 
                 {/* Main Description */}
-                <p className="text-gray-200 font-semibold mb-4">
+                <p className="text-gray-300 font-medium mb-4">
                   {challenge.description}
                 </p>
 

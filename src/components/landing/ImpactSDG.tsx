@@ -45,13 +45,13 @@ export default function ImpactSDG() {
       <div className="relative z-10 container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-20 space-y-4 max-w-3xl mx-auto">
-          <h2 className="text-5xl lg:text-6xl font-black text-white">
+          <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
             IMPACT & SDGs
           </h2>
-          <p className="text-xl text-gray-300">
+          <p className="text-lg text-gray-400">
             Driving Sustainable Development
           </p>
-          <p className="text-body-md text-gray-400">
+          <p className="text-base text-gray-500">
             NCDF Impact Club contributes to the UN Sustainable Development Goals by building financially empowered communities across Nigeria.
           </p>
         </div>
@@ -77,15 +77,15 @@ export default function ImpactSDG() {
               <div className="relative z-10 text-5xl mb-4">{sdg.icon}</div>
 
               {/* Title */}
-              <h3 className="relative z-10 text-xl font-black text-white mb-2">
+              <h3 className="relative z-10 font-sora text-xl font-bold text-white mb-2">
                 SDG {sdg.number}
               </h3>
-              <p className="relative z-10 text-primary-400 font-bold text-sm mb-3">
+              <p className="relative z-10 text-primary-400 font-semibold text-base mb-3">
                 {sdg.title}
               </p>
 
               {/* Description */}
-              <p className="relative z-10 text-gray-300 text-sm leading-relaxed">
+              <p className="relative z-10 text-gray-400 text-sm leading-relaxed">
                 {sdg.description}
               </p>
 

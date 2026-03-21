@@ -51,10 +51,10 @@ export default function Testimonials() {
       <div className="relative z-10 container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-20 space-y-4">
-          <h2 className="text-5xl lg:text-6xl font-black text-text-500">
+          <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-text-500">
             Real Stories, Real Impact
           </h2>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
             Hear from students, mentors, and partners transforming their lives
           </p>
         </div>
@@ -136,7 +136,7 @@ export default function Testimonials() {
                 </div>
 
                 {/* Content */}
-                <p className={`text-gray-300 leading-relaxed mb-6 italic line-clamp-5 ${
+                <p className={`text-gray-700 leading-relaxed mb-6 italic line-clamp-5 text-base ${
                   testimonial.isLoading ? "bg-dark-600 rounded h-20" : ""
                 }`}>
                   {!testimonial.isLoading && fullTestimonial.quote}

@@ -65,13 +65,13 @@ export default function HowItWorksNCDF() {
       <div className="relative z-10 container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-20 space-y-4 max-w-3xl mx-auto">
-          <h2 className="text-5xl lg:text-6xl font-black text-white">
+          <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
             HOW IT WORKS
           </h2>
-          <p className="text-xl text-gray-300">
+          <p className="text-lg text-gray-400">
             How Impact Club Works
           </p>
-          <p className="text-body-md text-gray-400">
+          <p className="text-base text-gray-500">
             Impact Club guides individuals through every stage of economic growth — from early financial literacy to entrepreneurship and ultimately responsible investment participation.
           </p>
         </div>
@@ -119,12 +119,12 @@ export default function HowItWorksNCDF() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="relative z-10 text-2xl font-black text-white mb-2">
+                    <h3 className="relative z-10 font-sora text-2xl font-bold text-white mb-2">
                       {step.title}
                     </h3>
 
                     {/* Description */}
-                    <p className="relative z-10 text-gray-300 font-semibold text-sm mb-6">
+                    <p className="relative z-10 text-gray-300 text-base font-medium mb-6">
                       {step.description}
                     </p>
 

@@ -40,10 +40,10 @@ export default function Partners() {
       <div className="relative z-10 container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-20 space-y-4">
-          <h2 className="text-5xl lg:text-6xl font-black text-white">
+          <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
             Trusted By Leaders
           </h2>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
             Partnering with government and NGOs to empower Africa's next generation
           </p>
         </div>
@@ -58,7 +58,7 @@ export default function Partners() {
 
           return (
             <div key={category} className="mb-16">
-              <h3 className="text-2xl font-black text-white mb-8 text-center">
+              <h3 className="font-sora text-2xl font-bold text-white mb-8 text-center">
                 {category}
               </h3>
 
@@ -87,10 +87,10 @@ export default function Partners() {
 
         {/* Become a Partner CTA */}
         <div className="mt-20 text-center p-8 rounded-2xl bg-gradient-to-r from-primary-500/20 to-secondary-500/20 border-2 border-primary-500 border-opacity-50">
-          <h3 className="text-2xl font-black text-white mb-3">
+          <h3 className="font-sora text-2xl font-bold text-white mb-3">
             Become a Partner
           </h3>
-          <p className="text-gray-300 mb-6 max-w-xl mx-auto">
+          <p className="text-gray-400 mb-6 max-w-xl mx-auto">
             Join our network of organizations committed to empowering Africa's next generation
           </p>
           <a href="mailto:partnerships@impactclub.com?subject=Partnership%20Inquiry%20-%20ImpactClub" className="inline-block px-8 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold hover:shadow-xl hover:shadow-primary-500/50 transition-all duration-300 transform hover:scale-105 cursor-pointer">
