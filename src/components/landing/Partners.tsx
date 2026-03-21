@@ -25,19 +25,9 @@ export default function Partners() {
     { id: "4", name: "BudgIT Foundation", category: "NGO", logo: "BI" },
     { id: "5", name: "Ashoka Africa", category: "NGO", logo: "AA" },
     { id: "6", name: "Ford Foundation", category: "NGO", logo: "FF" },
-
-    // DFIs (Development Finance Institutions)
-    { id: "7", name: "African Development Bank", category: "DFI", logo: "ADB" },
-    { id: "8", name: "World Bank", category: "DFI", logo: "WB" },
-    { id: "9", name: "Global Partnership Fund", category: "DFI", logo: "GPF" },
-
-    // Corporate Partners
-    { id: "10", name: "Flutterwave", category: "Corporate", logo: "FW" },
-    { id: "11", name: "PayStack", category: "Corporate", logo: "PS" },
-    { id: "12", name: "Google Africa", category: "Corporate", logo: "GA" },
   ];
 
-  const categories = ["Government", "NGO", "DFI", "Corporate"];
+  const categories = ["Government", "NGO"];
 
   return (
     <section className="relative py-24 lg:py-32 bg-gradient-to-br from-dark-500 to-dark-600 overflow-hidden">
@@ -54,7 +44,7 @@ export default function Partners() {
             Trusted By Leaders
           </h2>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Partnering with government, NGOs, development finance institutions, and global corporations
+            Partnering with government and NGOs to empower Africa's next generation
           </p>
         </div>
 
@@ -64,8 +54,6 @@ export default function Partners() {
           const categoryColors: Record<string, string> = {
             Government: "text-blue-400 border-blue-400/30",
             NGO: "text-green-400 border-green-400/30",
-            DFI: "text-purple-400 border-purple-400/30",
-            Corporate: "text-yellow-400 border-yellow-400/30",
           };
 
           return (
