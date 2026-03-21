@@ -30,7 +30,7 @@ export default function Logo({
       }`}
     >
       <Image
-        src="/ImpactClub Logo.png"
+        src="/ImpactClubLogo.png"
         alt="ImpactClub Logo"
         fill
         className="object-contain"
