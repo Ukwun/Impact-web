@@ -43,7 +43,7 @@ class EmailService {
 
   async send(options: EmailOptions): Promise<EmailResponse> {
     // Set default from email
-    const fromEmail = options.from || process.env.SMTP_FROM_EMAIL || "noreply@impactclub.com";
+    const fromEmail = options.from || process.env.SMTP_FROM_EMAIL || "noreply@impactknowledge.com";
 
     if (this.provider === "resend" && this.resendClient) {
       return this.sendViaResend(options, fromEmail);

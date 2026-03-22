@@ -1,7 +1,7 @@
 {
   "name": "impactapp-web",
   "version": "1.0.0",
-  "description": "ImpactApp - NCDF Impact Club Digital Platform",
+  "description": "ImpactApp - NCDF ImpactKnowledge Digital Platform",
   "private": true,
   "scripts": {
     "dev": "next dev",

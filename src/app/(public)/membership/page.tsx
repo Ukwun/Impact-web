@@ -127,7 +127,7 @@ export default function MembershipPage() {
             Choose Your Membership Path
           </h1>
           <p className="text-xl text-gray-300">
-            Join ImpactClub and unlock access to learning, networks, opportunities, and pathways for growth and leadership
+            Join ImpactKnowledge and unlock access to learning, networks, opportunities, and pathways for growth and leadership
           </p>
         </div>
       </section>

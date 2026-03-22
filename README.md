@@ -1,6 +1,6 @@
 # ImpactApp Web Platform
 
-A full-stack digital platform for the NCDF Impact Club ecosystem - enabling financial literacy, entrepreneurship education, and professional networking across Nigeria.
+A full-stack digital platform for the NCDF ImpactKnowledge ecosystem - enabling financial literacy, entrepreneurship education, and professional networking across Nigeria.
 
 ## 🎯 Project Status: MVP Phase (70% Complete)
 
@@ -276,7 +276,7 @@ For issues or questions:
 
 ## 📄 License
 
-Proprietary - NCDF Impact Club
+Proprietary - NCDF ImpactKnowledge
 
 ---
 

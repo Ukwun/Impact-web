@@ -225,11 +225,11 @@ export default function ProgrammesPage() {
         </div>
       </section>
 
-      {/* Why Impact Club */}
+      {/* Why ImpactKnowledge */}
       <section className="py-24 bg-dark-800">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-4xl font-black text-white mb-12">Why Impact Club?</h2>
+            <h2 className="text-4xl font-black text-white mb-12">Why ImpactKnowledge?</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {[
@@ -238,7 +238,7 @@ export default function ProgrammesPage() {
                 { title: "Expert Mentorship", desc: "Learn from CEOs, investors, and sector leaders." },
                 { title: "Community First", desc: "Join a network of like-minded impact practitioners." },
                 { title: "Flexible Learning", desc: "Choose pace and intensity that matches your schedule." },
-                { title: "Lifetime Access", desc: "Remain part of Impact Club alumni community forever." },
+                { title: "Lifetime Access", desc: "Remain part of ImpactKnowledge alumni community forever." }
               ].map((item, i) => (
                 <div key={i} className="rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border-2 border-blue-500/20 p-8">
                   <h3 className="text-xl font-black text-white mb-3">{item.title}</h3>

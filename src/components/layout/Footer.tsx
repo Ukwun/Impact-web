@@ -64,7 +64,7 @@ export default function Footer() {
           <div>
             <h4 className="font-black text-white mb-4 text-sm uppercase tracking-wide">Opportunities</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/join-impact-club" className="hover:text-primary-400 transition-colors">Join Impact Club</Link></li>
+              <li><Link href="/join-impact-club" className="hover:text-primary-400 transition-colors">Join ImpactKnowledge</Link></li>
               <li><Link href="/partnerships" className="hover:text-primary-400 transition-colors">Partnerships</Link></li>
               <li><a href="mailto:hello@impactclub.com" className="hover:text-primary-400 transition-colors">Become a Facilitator</a></li>
               <li><a href="mailto:hello@impactclub.com" className="hover:text-primary-400 transition-colors">Startup Support</a></li>
@@ -133,7 +133,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="text-center text-sm text-gray-400">
-          <p>© 2026 ImpactClub. All rights reserved. Building Africa's economic future.</p>
+          <p>© 2026 ImpactKnowledge. All rights reserved. Building Africa's economic future.</p>
         </div>
       </div>
     </footer>

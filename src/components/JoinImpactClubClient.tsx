@@ -51,7 +51,7 @@ export default function JoinImpactClubClient() {
   };
 
   const selectedProgramme = programmes[programme as keyof typeof programmes] || {
-    name: "Impact Club",
+    name: "ImpactKnowledge",
     description: "Select a Programme",
     color: "blue",
     duration: "Varies",
@@ -168,7 +168,7 @@ export default function JoinImpactClubClient() {
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-bold text-white mb-2">
-                          What brings you to Impact Club? *
+                          What brings you to ImpactKnowledge? *
                         </label>
                         <textarea
                           placeholder="Tell us about your goals and what you hope to achieve..."
@@ -308,8 +308,8 @@ export default function JoinImpactClubClient() {
           <div className="max-w-2xl mx-auto text-center">
             <p className="text-gray-300 mb-4">Have questions? Our team is here to help</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:hello@impactclub.com" className="text-blue-400 font-bold hover:text-blue-300">
-                Email: hello@impactclub.com
+              <a href="mailto:hello@impactknowledge.com" className="text-blue-400 font-bold hover:text-blue-300">
+                Email: hello@impactknowledge.com
               </a>
               <span className="text-gray-600">•</span>
               <a href="tel:+234800000000" className="text-blue-400 font-bold hover:text-blue-300">

@@ -31,7 +31,7 @@ export default function LandingPage() {
       {/* 3. How It Works */}
       <HowItWorksNCDF />
 
-      {/* 4. Why ImpactClub Is Different */}
+      {/* 4. Why ImpactKnowledge Is Different */}
       <ComparisonSection />
 
       {/* 5. The Challenge Section */}

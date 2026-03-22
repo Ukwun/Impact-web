@@ -18,7 +18,7 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
 export const metadata: Metadata = {
   title: "ImpactClub - Learn, Lead, Impact",
   description:
-    "A digital community and growth platform for learning, networks, opportunities, and pathways for leadership, entrepreneurship, and impact. Part of the NCDF Impact Club ecosystem.",
+    "A digital community and growth platform for learning, networks, opportunities, and pathways for leadership, entrepreneurship, and impact. Part of the NCDF ImpactKnowledge ecosystem.",
   keywords: [
     "community",
     "learning",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   applicationName: "ImpactClub",
-  creator: "NCDF Impact Club",
+  creator: "NCDF ImpactKnowledge",
 };
 
 export const viewport = {

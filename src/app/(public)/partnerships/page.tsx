@@ -22,7 +22,7 @@ export default function PartnershipsPage() {
             </div>
             
             <h1 className="text-6xl font-black text-white leading-tight">
-              Partner With Impact Club
+              Partner With ImpactKnowledge
             </h1>
             
             <p className="text-xl text-gray-300 leading-relaxed">
@@ -51,9 +51,9 @@ export default function PartnershipsPage() {
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto space-y-12">
             <div className="space-y-4">
-              <h2 className="text-4xl font-black text-white">Why Partner With Impact Club?</h2>
+              <h2 className="text-4xl font-black text-white">Why Partner With ImpactKnowledge?</h2>
               <p className="text-xl text-gray-300 leading-relaxed">
-                Impact Club is Africa's leading platform for financial literacy and entrepreneurship development. Our ecosystem reaches hundreds of thousands of learners, entrepreneurs, and investors. By partnering with us, your organization gains access to a highly engaged community and amplifies your impact.
+                ImpactKnowledge is Africa's leading platform for financial literacy and entrepreneurship development. Our ecosystem reaches hundreds of thousands of learners, entrepreneurs, and investors. By partnering with us, your organization gains access to a highly engaged community and amplifies your impact.
               </p>
             </div>
 
@@ -92,7 +92,7 @@ export default function PartnershipsPage() {
                 },
                 {
                   type: "Integration & Technology Partners",
-                  desc: "Integrate your platform or services into Impact Club ecosystem",
+                  desc: "Integrate your platform or services into ImpactKnowledge ecosystem",
                   benefits: ["API integration", "White-label options", "Co-branded tools", "Data insights sharing"]
                 },
                 {

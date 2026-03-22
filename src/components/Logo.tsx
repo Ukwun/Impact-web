@@ -24,8 +24,8 @@ export default function Logo({
 
   const logo = (
     <img
-      src="/ImpactClubLogo.png"
-      alt="ImpactClub Logo"
+      src="/ImpactKnowledgeLogo.png"
+      alt="ImpactKnowledge Logo"
       width={dimensions.w}
       height={dimensions.h}
       className={`${dimensions.class} ${className} object-contain ${

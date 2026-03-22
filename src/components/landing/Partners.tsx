@@ -99,7 +99,7 @@ export default function Partners() {
           <p className="text-gray-400 mb-6 max-w-xl mx-auto">
             We partner with organisations that value practical learning, leadership development, and long-term impact.
           </p>
-          <a href="mailto:partnerships@impactclub.com?subject=Partnership%20Inquiry%20-%20ImpactClub" className="inline-block px-8 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold hover:shadow-xl hover:shadow-primary-500/50 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+          <a href="mailto:partnerships@impactclub.com?subject=Partnership%20Inquiry%20-%20ImpactKnowledge" className="inline-block px-8 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold hover:shadow-xl hover:shadow-primary-500/50 transition-all duration-300 transform hover:scale-105 cursor-pointer">
             Partner With Us
           </a>
         </div>

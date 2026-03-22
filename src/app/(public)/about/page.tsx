@@ -6,7 +6,7 @@ export default function AboutPage() {
     <div className="container mx-auto px-6 py-24 space-y-16">
       <div className="text-center space-y-4 max-w-3xl mx-auto">
         <h1 className="text-5xl lg:text-6xl font-black text-white">
-          About ImpactClub
+          About ImpactKnowledge
         </h1>
         <p className="text-xl text-gray-300">
           A digital community and growth platform for learning, leadership, and opportunity across Africa
@@ -17,13 +17,13 @@ export default function AboutPage() {
       <div className="rounded-2xl bg-gradient-to-br from-primary-500/20 to-secondary-500/10 border-2 border-primary-400/30 p-12">
         <h2 className="text-3xl font-black text-white mb-4">Our Story</h2>
         <p className="text-lg text-gray-200 leading-relaxed mb-4">
-          ImpactClub is the digital platform of the <span className="font-bold text-primary-400">NCDF Impact Club ecosystem</span>, 
+          ImpactKnowledge is the digital platform of the <span className="font-bold text-primary-400">NCDF Impact Club ecosystem</span>, 
           reimagined for the modern age. What started as a vision to democratize opportunity has grown into a thriving movement 
           connecting thousands of learners, leaders, mentors, and changemakers across Africa.
         </p>
         <p className="text-lg text-gray-200 leading-relaxed">
           We believe that everyone deserves access to quality learning, meaningful networks, and real opportunities to create impact. 
-          ImpactClub exists to bridge that gap—providing structured pathways for growth, professional communities for connection, 
+          ImpactKnowledge exists to bridge that gap—providing structured pathways for growth, professional communities for connection, 
           and platforms for leadership at every stage of the journey.
         </p>
       </div>
@@ -141,7 +141,7 @@ export default function AboutPage() {
       <div className="rounded-2xl bg-gradient-to-br from-dark-700/50 to-dark-800/30 border-2 border-secondary-400/30 p-12">
         <h2 className="text-3xl font-black text-white mb-6">Proudly Part of NCDF</h2>
         <p className="text-gray-300 leading-relaxed mb-4">
-          ImpactClub is powered by the <span className="font-bold text-secondary-400">National Center for Development and Entrepreneurship (NCDF)</span>, 
+          ImpactKnowledge is powered by the <span className="font-bold text-secondary-400">National Center for Development and Entrepreneurship (NCDF)</span>, 
           a leading institution driving economic and social development across Africa.
         </p>
         <p className="text-gray-300 leading-relaxed">

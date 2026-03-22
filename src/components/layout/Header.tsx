@@ -34,7 +34,7 @@ export default function Header() {
           <div className="flex items-center gap-3 group flex-shrink-0">
             <Logo size="md" href="/" animated />
             <div className="hidden sm:flex flex-col">
-              <span className="text-base font-black text-white leading-tight">ImpactClub</span>
+              <span className="text-base font-black text-white leading-tight">ImpactKnowledge</span>
               <span className="text-xs text-gray-400 font-semibold leading-tight">
                 Empowering Africa's Next Generation
               </span>
