@@ -2,21 +2,32 @@
 
 import { Star, Quote } from "lucide-react";
 import Link from "next/link";
-import { useTestimonials } from "@/hooks/useTestimonials";
 
 export default function Testimonials() {
-  const { testimonials, loading, error } = useTestimonials(6);
-
-  const displayTestimonials = loading
-    ? [
-        { id: "skeleton-1", isLoading: true },
-        { id: "skeleton-2", isLoading: true },
-        { id: "skeleton-3", isLoading: true },
-        { id: "skeleton-4", isLoading: true },
-        { id: "skeleton-5", isLoading: true },
-        { id: "skeleton-6", isLoading: true },
-      ]
-    : (testimonials || []).map(t => ({ ...t, isLoading: false }));
+  // Static testimonials - only 3 quotes as per brand specification
+  const displayTestimonials = [
+    {
+      id: "1",
+      quote: "I gained clarity on how to think about money and my future.",
+      authorName: "Sarah M",
+      category: "student",
+      isLoading: false,
+    },
+    {
+      id: "2",
+      quote: "It helped me move from ideas to structured action.",
+      authorName: "James K",
+      category: "student",
+      isLoading: false,
+    },
+    {
+      id: "3",
+      quote: "I found a community that supports real growth.",
+      authorName: "Amara O",
+      category: "partner",
+      isLoading: false,
+    },
+  ];
 
   const categoryColors: Record<string, string> = {
     student: "from-primary-500 to-primary-600",
@@ -29,18 +40,6 @@ export default function Testimonials() {
     mentor: "Mentor Impact",
     partner: "Partner Story",
   };
-
-  if (error) {
-    return (
-      <section className="relative py-24 lg:py-32 bg-dark-800 overflow-hidden">
-        <div className="container mx-auto px-6">
-          <div className="text-center">
-            <p className="text-gray-300">Failed to load testimonials. Please try again later.</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="relative py-24 lg:py-32 bg-white overflow-hidden">
@@ -59,39 +58,10 @@ export default function Testimonials() {
           </p>
         </div>
 
-        {/* Testimonials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Testimonials Grid - 3 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {displayTestimonials.map((testimonial) => {
-            // Handle loading state
-            if (testimonial.isLoading) {
-              return (
-                <div
-                  key={testimonial.id}
-                  className="group relative rounded-2xl bg-white border-2 border-gray-100 p-8 animate-pulse"
-                >
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                      <div className="space-y-2">
-                        <div className="w-24 h-4 bg-gray-200 rounded"></div>
-                        <div className="w-16 h-3 bg-gray-200 rounded"></div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="w-full h-4 bg-gray-200 rounded"></div>
-                      <div className="w-3/4 h-4 bg-gray-200 rounded"></div>
-                    </div>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <div key={star} className="w-4 h-4 bg-gray-200 rounded"></div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-
-            // Type assertion - we know this is not loading at this point
+            // Type assertion
             const fullTestimonial = testimonial as any;
             const category = (fullTestimonial.category || "student").toLowerCase();
             const categoryColor = categoryColors[category] || categoryColors.student;
@@ -112,13 +82,11 @@ export default function Testimonials() {
                 {/* Category badge */}
                 <div className="flex items-center justify-between mb-4">
                   <span
-                    className={`px-3 py-1 text-xs font-bold text-white rounded-full bg-gradient-to-r ${
-                      categoryColor
-                    } ${testimonial.isLoading ? "bg-gray-300 text-gray-300 w-1/3 h-6" : ""}`}
+                    className={`px-3 py-1 text-xs font-bold text-white rounded-full bg-gradient-to-r ${categoryColor}`}
                   >
-                    {!testimonial.isLoading && categoryLabel}
+                    {categoryLabel}
                   </span>
-                  <Quote className={`w-5 h-5 text-primary-300 ${testimonial.isLoading ? "opacity-0" : ""}`} />
+                  <Quote className="w-5 h-5 text-primary-300" />
                 </div>
 
                 {/* Rating */}
@@ -126,39 +94,24 @@ export default function Testimonials() {
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-4 h-4 ${
-                        testimonial.isLoading
-                          ? "bg-gray-300 text-gray-300"
-                          : "fill-yellow-400 text-yellow-400"
-                      }`}
+                      className="w-4 h-4 fill-yellow-400 text-yellow-400"
                     />
                   ))}
                 </div>
 
                 {/* Content */}
-                <p className={`text-gray-700 leading-relaxed mb-6 italic line-clamp-5 text-base ${
-                  testimonial.isLoading ? "bg-dark-600 rounded h-20" : ""
-                }`}>
-                  {!testimonial.isLoading && fullTestimonial.quote}
+                <p className="text-gray-700 leading-relaxed mb-6 italic line-clamp-5 text-base">
+                  {fullTestimonial.quote}
                 </p>
 
                 {/* Author */}
                 <div className="pt-6 border-t border-gray-100 flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-sm ${
-                    testimonial.isLoading ? "bg-gray-300" : ""
-                  }`}>
-                    {!testimonial.isLoading && fullTestimonial.authorName?.split(" ").map((n: string) => n[0]).join("")}
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-sm">
+                    {fullTestimonial.authorName?.split(" ").map((n: string) => n[0]).join("")}
                   </div>
                   <div className="flex-1">
-                    <p className={`font-black text-text-500 ${
-                      testimonial.isLoading ? "bg-dark-600 rounded w-1/2 h-5" : ""
-                    }`}>
-                      {!testimonial.isLoading && fullTestimonial.authorName}
-                    </p>
-                    <p className={`text-xs text-gray-300 ${
-                      testimonial.isLoading ? "bg-dark-600 rounded w-2/3 h-4 mt-1" : ""
-                    }`}>
-                      {!testimonial.isLoading && fullTestimonial.authorRole}
+                    <p className="font-bold text-text-500">
+                      {fullTestimonial.authorName}
                     </p>
                   </div>
                 </div>
