@@ -1,32 +1,32 @@
 "use client";
 
-import { ArrowRight, BookOpen, Route, Zap, Network } from "lucide-react";
+import { ArrowRight, LayersIcon as Layers, Zap, Users, Target } from "lucide-react";
 
 export default function ComparisonSection() {
   const differentiators = [
     {
-      title: "Early Formation, Not Late Correction",
+      title: "Structured around stages of growth",
       description:
-        "We start from the foundation years, helping young people build financial habits, leadership confidence, and value-creation mindsets before poor economic behaviours take root.",
-      icon: BookOpen,
+        "We recognize that people are at different points — learning, building, or scaling — and provide relevant pathways for each.",
+      icon: Layers,
     },
     {
-      title: "One Connected Pathway",
+      title: "Connects learning with application",
       description:
-        "Most platforms stop at one stage. Impact Club creates a clear journey from learning to building to investing, allowing members to grow within one continuous ecosystem.",
-      icon: Route,
-    },
-    {
-      title: "Real Participation, Not Theory Alone",
-      description:
-        "We go beyond knowledge. Impact Club helps members develop practical enterprise capability, financial discipline, and investment readiness so they can participate meaningfully in the economy.",
+        "Knowledge is built to be practical. Each pathway includes opportunities to apply what you learn in real contexts.",
       icon: Zap,
     },
     {
-      title: "Community, Structure, and Opportunity",
+      title: "Combines knowledge with community",
       description:
-        "We combine curriculum, mentorship, networks, and access pathways in one platform—giving members not just information, but a real environment for growth and progression.",
-      icon: Network,
+        "You grow faster with others. We build focused communities where learning is shared and progress is collective.",
+      icon: Users,
+    },
+    {
+      title: "Built for long-term relevance",
+      description:
+        "Content and pathways evolve with your needs. ImpactKnowledge stays relevant as you progress and opportunities change.",
+      icon: Target,
     },
   ];
 
@@ -42,15 +42,13 @@ export default function ComparisonSection() {
         {/* Header */}
         <div className="text-center mb-20 space-y-6 max-w-3xl mx-auto">
           <span className="inline-block px-4 py-2 rounded-full bg-primary-500/20 border border-primary-500/40 text-primary-300 font-semibold text-sm">
-            Why ImpactClub Is Different
+            Why ImpactKnowledge
           </span>
           <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
-            More Than a Club. A Complete Economic Growth Ecosystem.
+            Designed for real progress, not just information
           </h2>
           <p className="text-lg text-gray-400 leading-relaxed">
-            ImpactClub combines financial literacy, entrepreneurship, and investment participation 
-            into one connected journey. Through ImpactSchool, ImpactUni, and ImpactCircle, we help 
-            individuals move from early awareness to enterprise capability and long-term wealth creation.
+            We focus on practical learning, community support, and pathways that lead somewhere meaningful.
           </p>
         </div>
 
@@ -83,19 +81,18 @@ export default function ComparisonSection() {
         <div className="mt-20 p-12 rounded-3xl bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border-2 border-primary-500/30 hover:border-primary-500/50 transition-colors">
           <div className="max-w-3xl mx-auto text-center space-y-6">
             <h3 className="font-sora text-3xl lg:text-4xl font-bold text-white">
-              Start the Journey from Learning to Ownership
+              Choose Your Starting Point
             </h3>
             <p className="text-lg text-gray-400 leading-relaxed">
-              Discover how ImpactSchool, ImpactUni, and ImpactCircle work together to build 
-              financially intelligent leaders, entrepreneurs, and future investors.
+              Your learning journey begins where you are. We have a pathway for every stage of growth.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <button className="px-8 py-3 rounded-lg bg-primary-500 hover:bg-primary-600 text-white font-bold flex items-center justify-center gap-2 transition-colors">
-                Explore Our Ecosystem
+                Start Your Journey
                 <ArrowRight className="w-5 h-5" />
               </button>
               <button className="px-8 py-3 rounded-lg border-2 border-primary-500/50 hover:border-primary-500 text-primary-400 hover:text-primary-300 font-bold transition-colors">
-                Join the Movement
+                Explore Pathways
               </button>
             </div>
           </div>

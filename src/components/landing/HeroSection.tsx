@@ -26,18 +26,14 @@ export default function HeroSection() {
             {/* Main Headline */}
             <div className="space-y-6">
               <h1 className="font-sora text-6xl lg:text-7xl font-bold leading-tight text-white">
-                From Learning to Ownership.
-                <br />
-                <span className="bg-gradient-gold bg-clip-text text-transparent">
-                  Build the Future You Were Never Taught.
-                </span>
+                From Knowledge to Opportunity
               </h1>
               <div className="space-y-4 text-lg text-gray-400 leading-relaxed max-w-2xl">
                 <p>
-                  Impact Club transforms financial literacy into real-world capability — helping you grow from understanding money to building enterprises and participating in long-term wealth creation.
+                  A structured platform for learning, growth, and real-world progress.
                 </p>
                 <p className="text-gray-500">
-                  A structured pathway from classrooms to capital participation.
+                  For those ready to learn, build, and grow.
                 </p>
               </div>
             </div>
@@ -46,7 +42,7 @@ export default function HeroSection() {
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Link href="/auth/register">
                 <Button variant="primary" size="lg" className="gap-3 group w-full sm:w-auto shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50 transition-all">
-                  Join Impact Club
+                  Start Your Journey
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
@@ -56,7 +52,7 @@ export default function HeroSection() {
                   size="lg"
                   className="text-white border-white/30 hover:bg-white/5 hover:border-white/60 w-full sm:w-auto"
                 >
-                  Partner With Us
+                  Explore the Ecosystem
                 </Button>
               </Link>
             </div>

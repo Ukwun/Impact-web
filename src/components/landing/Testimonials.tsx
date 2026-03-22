@@ -55,7 +55,7 @@ export default function Testimonials() {
             Real Stories, Real Impact
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-            Hear from students, mentors, and partners transforming their lives
+            Growth that translates into real change
           </p>
         </div>
 

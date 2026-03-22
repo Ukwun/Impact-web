@@ -1,56 +1,48 @@
 "use client";
 
-import { BookOpen, Hammer, Users, TrendingUp } from "lucide-react";
+import { BookOpen, Target, Users, Lightbulb, TrendingUp } from "lucide-react";
 
 export default function HowItWorksNCDF() {
   const steps = [
     {
       number: "1",
-      title: "Learn",
-      description: "Structured financial education.",
-      icon: BookOpen,
+      title: "Choose your pathway",
+      description: "Select the stage that matches your current position.",
+      icon: Target,
       color: "from-blue-500 to-cyan-500",
-      details: [
-        "Core financial concepts",
-        "Money management skills",
-        "Business fundamentals",
-      ],
+      details: ["ImpactSchool", "ImpactUni", "ImpactCircle"],
     },
     {
       number: "2",
-      title: "Build",
-      description: "Entrepreneurial and leadership development.",
-      icon: Hammer,
+      title: "Build relevant knowledge",
+      description: "Learn what matters for your next step.",
+      icon: BookOpen,
       color: "from-purple-500 to-pink-500",
-      details: [
-        "Startup labs & incubation",
-        "Leadership training",
-        "Project execution",
-      ],
+      details: ["Structured content", "Quality curriculum", "Practical skills"],
     },
     {
       number: "3",
-      title: "Connect",
-      description: "Access networks and opportunities.",
+      title: "Engage with a focused community",
+      description: "Connect with others on the same journey.",
       icon: Users,
       color: "from-amber-500 to-orange-500",
-      details: [
-        "Professional networks",
-        "Mentor access",
-        "Community events",
-      ],
+      details: ["Community support", "Peer learning", "Mentor access"],
     },
     {
       number: "4",
-      title: "Grow",
-      description: "Participate in structured capital ecosystems.",
-      icon: TrendingUp,
+      title: "Apply through real-world thinking",
+      description: "Put knowledge into meaningful action.",
+      icon: Lightbulb,
       color: "from-green-500 to-emerald-500",
-      details: [
-        "Investment opportunities",
-        "Capital access",
-        "Long-term wealth creation",
-      ],
+      details: ["Real projects", "Practical application", "Problem solving"],
+    },
+    {
+      number: "5",
+      title: "Progress with purpose",
+      description: "Move toward your next opportunity.",
+      icon: TrendingUp,
+      color: "from-indigo-500 to-purple-500",
+      details: ["Clear outcomes", "Growth tracking", "New opportunities"],
     },
   ];
 
@@ -66,13 +58,10 @@ export default function HowItWorksNCDF() {
         {/* Header */}
         <div className="text-center mb-20 space-y-4 max-w-3xl mx-auto">
           <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
-            HOW IT WORKS
+            How It Works
           </h2>
           <p className="text-lg text-gray-400">
-            How Impact Club Works
-          </p>
-          <p className="text-base text-gray-500">
-            Impact Club guides individuals through every stage of economic growth — from early financial literacy to entrepreneurship and ultimately responsible investment participation.
+            Clear. Structured. Practical.
           </p>
         </div>
 

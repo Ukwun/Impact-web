@@ -8,11 +8,11 @@ export default function ProgrammesNCDF() {
     {
       id: 1,
       name: "ImpactSchool",
-      shortDesc: "Financial literacy and enterprise education for primary and secondary students.",
+      shortDesc: "For students aged 9–18. A foundation in financial literacy, leadership, and independent thinking.",
       features: [
-        "Structured curriculum",
+        "Ages 9–18",
+        "Financial literacy foundation",
         "Leadership development",
-        "National certification",
       ],
       href: "/impactschools",
       ctaText: "Learn More",
@@ -23,14 +23,14 @@ export default function ProgrammesNCDF() {
     {
       id: 2,
       name: "ImpactUni",
-      shortDesc: "University-based venture and wealth development programme.",
+      shortDesc: "For emerging builders. Practical knowledge for enterprise, innovation, and future readiness.",
       features: [
-        "Startup labs",
-        "Financial mastery",
-        "Investor readiness",
+        "Emerging builders",
+        "Enterprise skills",
+        "Innovation training",
       ],
       href: "/impactuni",
-      ctaText: "Explore Programme",
+      ctaText: "Explore Pathway",
       icon: Lightbulb,
       color: "from-purple-500 to-pink-500",
       borderColor: "border-purple-500/30",
@@ -38,14 +38,14 @@ export default function ProgrammesNCDF() {
     {
       id: 3,
       name: "ImpactCircle",
-      shortDesc: "A curated community for entrepreneurs and investors.",
+      shortDesc: "For professionals and investors. A curated network for collaboration, insight, and long-term growth.",
       features: [
-        "Capital intelligence forums",
-        "Investment education",
-        "Deal access ecosystem",
+        "Professionals & Investors",
+        "Curated network",
+        "Long-term growth",
       ],
       href: "/impactcircle",
-      ctaText: "Apply for Membership",
+      ctaText: "Join Community",
       icon: Users,
       color: "from-amber-500 to-orange-500",
       borderColor: "border-amber-500/30",
@@ -64,10 +64,13 @@ export default function ProgrammesNCDF() {
         {/* Header */}
         <div className="text-center mb-20 space-y-4 max-w-3xl mx-auto">
           <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
-            OUR ECOSYSTEM
+            Our Ecosystem
           </h2>
           <p className="text-lg text-gray-400">
-            Three Pathways. One Ecosystem.
+            Three pathways. One continuous journey.
+          </p>
+          <p className="text-base text-gray-500">
+            ImpactKnowledge supports different stages of growth — from early learning to enterprise and broader opportunity.
           </p>
         </div>
 

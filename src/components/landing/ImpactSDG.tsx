@@ -46,13 +46,13 @@ export default function ImpactSDG() {
         {/* Header */}
         <div className="text-center mb-20 space-y-4 max-w-3xl mx-auto">
           <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
-            IMPACT & SDGs
+            Impact & Development
           </h2>
           <p className="text-lg text-gray-400">
-            Driving Sustainable Development
+            Knowledge that supports meaningful progress
           </p>
           <p className="text-base text-gray-500">
-            NCDF Impact Club contributes to the UN Sustainable Development Goals by building financially empowered communities across Nigeria.
+            Our approach contributes to stronger learning outcomes, youth development, and broader economic participation. Education. Capability. Opportunity.
           </p>
         </div>
 

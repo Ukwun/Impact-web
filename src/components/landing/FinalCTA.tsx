@@ -19,15 +19,15 @@ export default function FinalCTA() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
-                Start Your Journey
+                Begin where you are
               </h2>
 
               <p className="text-xl lg:text-2xl font-semibold text-white text-opacity-95">
-                From Learning to Ownership Begins Here
+                Your pathway is clear, wherever you're starting.
               </p>
 
               <p className="text-lg text-white text-opacity-85 leading-relaxed max-w-lg">
-                Join thousands building the knowledge, discipline, and confidence to participate meaningfully in Africa's future economy.
+                A clear pathway is available whether you are learning, building, or expanding your reach.
               </p>
             </div>
 
@@ -43,14 +43,14 @@ export default function FinalCTA() {
           <div className="space-y-4">
             <Link href="/auth/register" className="block">
               <button className="w-full p-6 rounded-2xl bg-white text-primary-600 font-black text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 group cursor-pointer">
-                Create Account
+                Join ImpactKnowledge
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
               </button>
             </Link>
 
             <Link href="/auth/login" className="block relative p-6 rounded-2xl bg-white bg-opacity-10 border-2 border-white border-opacity-30 hover:border-opacity-100 transition-all duration-300">
               <button className="w-full text-white font-black text-lg flex items-center justify-center gap-3 group cursor-pointer bg-transparent border-0 p-0">
-                Already have an account? Login
+                Explore Your Pathway
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
               </button>
             </Link>

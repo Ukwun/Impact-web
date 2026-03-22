@@ -92,27 +92,23 @@ export default function ChallengeSection() {
         {/* Header */}
         <div className="text-center mb-20 space-y-6 max-w-4xl mx-auto">
           <h2 className="font-sora text-5xl lg:text-6xl font-bold leading-tight text-white">
-            Four Missing Links in Africa's Economic Journey
+            Knowledge gaps limit opportunity
           </h2>
-          <p className="text-xl lg:text-2xl font-semibold text-gray-300">
-            From financial awareness to enterprise to ownership — the pathway is still broken.
-          </p>
           <div className="space-y-4 text-base text-gray-400 leading-relaxed">
-            <p className="font-semibold">
-              Africa has talent, ambition, and energy.
+            <p>
+              Many people are expected to make important decisions about money, work, and leadership without practical guidance.
             </p>
             <p>
-              What is missing is a structured system that helps people grow from learning to building to 
-              ownership.
+              This gap affects confidence, direction, and long-term outcomes.
             </p>
-            <p className="text-gray-500">
-              These are the four gaps holding back true economic participation.
+            <p className="text-gray-500 font-semibold pt-4">
+              ImpactKnowledge exists to make learning more relevant, structured, and actionable.
             </p>
           </div>
         </div>
 
         {/* Challenge Grid - 4 Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+        <div className="hidden md:grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
           {challenges.map((challenge, i) => {
             const IconComponent = challenge.icon;
             const colors = getColorClasses(challenge.color);
@@ -157,12 +153,11 @@ export default function ChallengeSection() {
 
         {/* Bottom Transition */}
         <div className="mt-20 p-12 rounded-3xl bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border-2 border-primary-500/30 text-center space-y-6">
-          <h3 className="text-3xl lg:text-4xl font-black text-white">
-            Impact Club exists to reconnect these four missing links.
+          <h3 className="font-sora text-3xl lg:text-4xl font-bold text-white">
+            That's why we exist.
           </h3>
-          <p className="text-lg text-gray-300 leading-relaxed max-w-3xl mx-auto">
-            Building a clear pathway from early financial formation to enterprise capability 
-            and ultimately to economic ownership.
+          <p className="text-lg text-gray-400 leading-relaxed max-w-3xl mx-auto">
+            To make learning structured, relevant, and actionable at every stage of growth.
           </p>
         </div>
       </div>

@@ -44,7 +44,10 @@ export default function Partners() {
             Trusted By Leaders
           </h2>
           <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            Partnering with government and NGOs to empower Africa's next generation
+            Built for collaboration and credibility
+          </p>
+          <p className="text-base text-gray-500 max-w-2xl mx-auto">
+            ImpactKnowledge works with educators, institutions, and partners committed to developing people and expanding opportunity.
           </p>
         </div>
 
@@ -90,8 +93,11 @@ export default function Partners() {
           <h3 className="font-sora text-2xl font-bold text-white mb-3">
             Become a Partner
           </h3>
+          <h4 className="text-lg font-semibold text-gray-300 mb-3">
+            Support knowledge. Enable opportunity.
+          </h4>
           <p className="text-gray-400 mb-6 max-w-xl mx-auto">
-            Join our network of organizations committed to empowering Africa's next generation
+            We partner with organisations that value practical learning, leadership development, and long-term impact.
           </p>
           <a href="mailto:partnerships@impactclub.com?subject=Partnership%20Inquiry%20-%20ImpactClub" className="inline-block px-8 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold hover:shadow-xl hover:shadow-primary-500/50 transition-all duration-300 transform hover:scale-105 cursor-pointer">
             Partner With Us
