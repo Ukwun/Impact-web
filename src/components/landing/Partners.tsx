@@ -88,21 +88,7 @@ export default function Partners() {
           );
         })}
 
-        {/* Become a Partner CTA */}
-        <div className="mt-20 text-center p-8 rounded-2xl bg-gradient-to-r from-primary-500/20 to-secondary-500/20 border-2 border-primary-500 border-opacity-50">
-          <h3 className="font-sora text-2xl font-bold text-white mb-3">
-            Become a Partner
-          </h3>
-          <h4 className="text-lg font-semibold text-gray-300 mb-3">
-            Support knowledge. Enable opportunity.
-          </h4>
-          <p className="text-gray-400 mb-6 max-w-xl mx-auto">
-            We partner with organisations that value practical learning, leadership development, and long-term impact.
-          </p>
-          <a href="mailto:partnerships@impactclub.com?subject=Partnership%20Inquiry%20-%20ImpactKnowledge" className="inline-block px-8 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-bold hover:shadow-xl hover:shadow-primary-500/50 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-            Partner With Us
-          </a>
-        </div>
+        {/* Become a Partner CTA - Removed, now has separate component */}
       </div>
     </section>
   );

@@ -11,6 +11,7 @@ import ImpactSDG from "@/components/landing/ImpactSDG";
 import Testimonials from "@/components/landing/Testimonials";
 import Partners from "@/components/landing/Partners";
 import FinalCTA from "@/components/landing/FinalCTA";
+import BecomePartner from "@/components/landing/BecomePartner";
 import Footer from "@/components/layout/Footer";
 
 export default function LandingPage() {
@@ -48,6 +49,9 @@ export default function LandingPage() {
 
       {/* 9. Start Your Journey */}
       <FinalCTA />
+
+      {/* 10. Become a Partner */}
+      <BecomePartner />
     </main>
   );
 }
