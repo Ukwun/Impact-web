@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Target, Users, Lightbulb, TrendingUp } from "lucide-react";
+import { BookOpen, Target, Lightbulb, TrendingUp } from "lucide-react";
 
 export default function HowItWorksNCDF() {
   const steps = [
@@ -22,14 +22,6 @@ export default function HowItWorksNCDF() {
     },
     {
       number: "3",
-      title: "Engage with a focused community",
-      description: "Connect with others on the same journey.",
-      icon: Users,
-      color: "from-amber-500 to-orange-500",
-      details: ["Community support", "Peer learning", "Mentor access"],
-    },
-    {
-      number: "4",
       title: "Apply through real-world thinking",
       description: "Put knowledge into meaningful action.",
       icon: Lightbulb,
@@ -37,7 +29,7 @@ export default function HowItWorksNCDF() {
       details: ["Real projects", "Practical application", "Problem solving"],
     },
     {
-      number: "5",
+      number: "4",
       title: "Progress with purpose",
       description: "Move toward your next opportunity.",
       icon: TrendingUp,
@@ -68,10 +60,10 @@ export default function HowItWorksNCDF() {
         {/* Steps */}
         <div className="relative">
           {/* Connection lines - hidden on mobile */}
-          <div className="hidden lg:grid grid-cols-4 gap-8 absolute top-20 left-0 right-0 pointer-events-none">
-            {[0, 1, 2, 3].map((i) => (
+          <div className="hidden lg:grid grid-cols-3 gap-8 absolute top-20 left-0 right-0 pointer-events-none">
+            {[0, 1, 2].map((i) => (
               <div key={i} className="relative">
-                {i < 3 && (
+                {i < 2 && (
                   <div className="absolute -right-4 top-0 bottom-0 w-8 h-1 bg-gradient-to-r from-primary-500/50 to-transparent transform -translate-y-10"></div>
                 )}
               </div>
