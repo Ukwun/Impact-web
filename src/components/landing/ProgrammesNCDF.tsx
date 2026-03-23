@@ -75,7 +75,7 @@ export default function ProgrammesNCDF() {
         </div>
 
         {/* Programmes Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {programmes.map((programme) => {
             const Icon = programme.icon;
             return (
@@ -134,6 +134,17 @@ export default function ProgrammesNCDF() {
               </div>
             );
           })}
+        </div>
+
+        {/* Progression Line */}
+        <div className="text-center">
+          <p className="text-lg lg:text-xl text-gray-400 font-semibold">
+            <span className="text-blue-400">ImpactSchool</span>
+            <span className="mx-4 text-primary-400">→</span>
+            <span className="text-purple-400">ImpactUni</span>
+            <span className="mx-4 text-primary-400">→</span>
+            <span className="text-amber-400">ImpactCircle</span>
+          </p>
         </div>
       </div>
     </section>
