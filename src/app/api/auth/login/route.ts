@@ -68,13 +68,18 @@ export async function POST(req: NextRequest) {
     let user = null;
     let isDemoUser = false;
 
-    // First try database (production priority)
+    // First try database (production priority) with timeout
     console.log(`\n🗄️ Checking database for user: "${email}"`);
     try {
       const { prisma } = await import("@/lib/prisma");
-      user = await prisma.user.findUnique({
-        where: { email: email },
-      });
+      user = await Promise.race([
+        prisma.user.findUnique({
+          where: { email: email },
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("DB query timeout")), 5000)
+        ),
+      ]);
       console.log(`Database user found: ${user ? '✅ YES' : '❌ NO'}`);
     } catch (dbError) {
       console.log("Database query failed:", (dbError as Error).message);
@@ -151,14 +156,19 @@ export async function POST(req: NextRequest) {
       role: user.role,
     });
 
-    // Update last login (only for database users)
+    // Update last login (only for database users) with timeout
     if (!isDemoUser) {
       try {
         const { prisma } = await import("@/lib/prisma");
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastLoginAt: new Date() },
-        });
+        await Promise.race([
+          prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() },
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("DB update timeout")), 5000)
+          ),
+        ]);
       } catch (err) {
         // Ignore update error
       }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
 import {
   Search,
   BookOpen,
@@ -14,7 +15,37 @@ import {
   ArrowRight,
   Zap,
   TrendingUp,
+  Loader,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
+
+interface EnrolledCourse {
+  enrollmentId: string;
+  course: {
+    id: string;
+    title: string;
+    description: string;
+    thumbnail: string;
+    difficulty: string;
+    duration: number;
+  };
+  progress: number;
+  isCompleted: boolean;
+  totalLessons: number;
+}
+
+interface ApiCourse {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: string;
+  duration: number;
+  instructor: string;
+  rating: number;
+  lessons: number;
+  _count?: { enrollments: number };
+}
 
 interface Course {
   id: string;
@@ -33,85 +64,75 @@ interface Course {
 export default function LearnPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [difficulty, setDifficulty] = useState("all");
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const courses: Course[] = [
-    {
-      id: "1",
-      title: "Introduction to Financial Literacy",
-      description:
-        "Learn the basics of personal finance, budgeting, and smart money management.",
-      instructor: "Adeyemi Johnson",
-      students: 2345,
-      duration: 45,
-      difficulty: "beginner",
-      rating: 4.8,
-      enrolled: true,
-      progress: 75,
-      lessons: 12,
-    },
-    {
-      id: "2",
-      title: "Digital Skills Bootcamp",
-      description: "Master essential digital skills for the modern workplace.",
-      instructor: "Chioma Okafor",
-      students: 1823,
-      duration: 120,
-      difficulty: "intermediate",
-      rating: 4.6,
-      enrolled: true,
-      progress: 40,
-      lessons: 24,
-    },
-    {
-      id: "3",
-      title: "Leadership in Action",
-      description:
-        "Develop leadership skills and make an impact in your community.",
-      instructor: "Dr. Kamara Seyffert",
-      students: 1456,
-      duration: 90,
-      difficulty: "intermediate",
-      rating: 4.9,
-      enrolled: false,
-      lessons: 18,
-    },
-    {
-      id: "4",
-      title: "Advanced Web Development",
-      description: "Build scalable web applications with modern frameworks.",
-      instructor: "Emeka Nwankwo",
-      students: 892,
-      duration: 180,
-      difficulty: "advanced",
-      rating: 4.7,
-      enrolled: false,
-      lessons: 32,
-    },
-    {
-      id: "5",
-      title: "Entrepreneurship Essentials",
-      description: "Start and grow your own business with proven methodologies.",
-      instructor: "Ngozi Obi",
-      students: 1234,
-      duration: 60,
-      difficulty: "beginner",
-      rating: 4.9,
-      enrolled: false,
-      lessons: 15,
-    },
-    {
-      id: "6",
-      title: "Climate Action & Sustainability",
-      description: "Learn how to contribute to environmental sustainability.",
-      instructor: "Dr. Ade Oladimeji",
-      students: 956,
-      duration: 75,
-      difficulty: "intermediate",
-      rating: 4.8,
-      enrolled: false,
-      lessons: 20,
-    },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        const headers: any = {};
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
+
+        // Fetch all courses
+        const coursesRes = await fetch("/api/courses", { headers });
+        if (!coursesRes.ok) throw new Error("Failed to fetch courses");
+        const coursesData = await coursesRes.json();
+        const apiCourses: ApiCourse[] = coursesData.courses || [];
+
+        // Fetch user's enrollments
+        let enrolledCourseIds = new Set<string>();
+        let enrollmentMap = new Map<string, { progress: number; totalLessons: number }>();
+        
+        try {
+          const progressRes = await fetch("/api/progress", { headers });
+          if (progressRes.ok) {
+            const progressData = await progressRes.json();
+            const enrollments: EnrolledCourse[] = progressData.data?.enrollments || [];
+            enrollments.forEach((e) => {
+              enrolledCourseIds.add(e.course.id);
+              enrollmentMap.set(e.course.id, {
+                progress: e.progress,
+                totalLessons: e.totalLessons,
+              });
+            });
+          }
+        } catch (err) {
+          console.warn("Could not fetch user enrollments:", err);
+        }
+
+        // Merge API courses with enrollment data
+        const mergedCourses: Course[] = apiCourses.map((apiCourse) => ({
+          id: apiCourse.id,
+          title: apiCourse.title,
+          description: apiCourse.description,
+          instructor: apiCourse.instructor || "Unknown Instructor",
+          students: apiCourse._count?.enrollments || 0,
+          duration: apiCourse.duration,
+          difficulty: apiCourse.difficulty as "beginner" | "intermediate" | "advanced",
+          rating: apiCourse.rating || 4.5,
+          enrolled: enrolledCourseIds.has(apiCourse.id),
+          progress: enrollmentMap.get(apiCourse.id)?.progress,
+          lessons: apiCourse.lessons || 0,
+        }));
+
+        setCourses(mergedCourses);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Failed to load courses";
+        setError(message);
+        console.error("Error fetching courses:", message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const filteredCourses = courses.filter((course) => {
     const matchesSearch = course.title
@@ -253,108 +274,140 @@ export default function LearnPage() {
         </div>
       </div>
 
-      {/* Stats Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 bg-dark-700/50 border border-primary-500/50">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="w-5 h-5 text-primary-600" />
-            <div>
-              <p className="text-xs text-primary-700 font-semibold">Total Courses</p>
-              <p className="text-2xl font-black text-primary-600">{courses.length}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4 bg-dark-700/50 border border-secondary-500/50">
-          <div className="flex items-center gap-3">
-            <Zap className="w-5 h-5 text-secondary-600" />
-            <div>
-              <p className="text-xs text-secondary-700 font-semibold">You're Enrolled In</p>
-              <p className="text-2xl font-black text-secondary-600">{enrolledCourses.length}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4 bg-dark-700/50 border border-blue-500/50">
-          <div className="flex items-center gap-3">
-            <BookOpen className="w-5 h-5 text-blue-600" />
-            <div>
-              <p className="text-xs text-blue-700 font-semibold">Available Now</p>
-              <p className="text-2xl font-black text-blue-600">{availableCourses.length}</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-end">
-        <div className="flex-1">
-          <label className="block text-sm font-bold text-text-500 mb-2">
-            Search Courses
-          </label>
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Search by title or instructor..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12"
-            />
-          </div>
-        </div>
-        <div className="w-full md:w-56">
-          <label className="block text-sm font-bold text-text-500 mb-2">
-            Difficulty Level
-          </label>
-          <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-            <option value="all">All Levels</option>
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </Select>
-        </div>
-      </div>
-
-      {/* Enrolled Courses Section */}
-      {enrolledCourses.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-2xl font-bold text-text-500">My Learning Path</h2>
-            <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-bold">
-              {enrolledCourses.length}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {enrolledCourses.map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Available Courses Section */}
-      {availableCourses.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-2xl font-bold text-text-500">Browse Courses</h2>
-            <span className="px-3 py-1 bg-secondary-100 text-secondary-700 rounded-full text-sm font-bold">
-              {availableCourses.length}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {availableCourses.map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {filteredCourses.length === 0 && (
+      {/* Loading State */}
+      {loading && (
         <Card className="p-12 text-center">
-          <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-text-500 mb-2">No courses found</h3>
-          <p className="text-gray-300">Try adjusting your search filters</p>
+          <Loader className="w-16 h-16 text-primary-500 mx-auto mb-4 animate-spin" />
+          <h3 className="text-xl font-bold text-text-500 mb-2">Loading courses...</h3>
+          <p className="text-gray-300">Please wait while we fetch the latest courses</p>
         </Card>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <Card className="p-12 text-center border border-danger-500 bg-danger-500/10">
+          <AlertCircle className="w-16 h-16 text-danger-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-danger-500 mb-2">Failed to load courses</h3>
+          <p className="text-gray-300 mb-6">{error}</p>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </Button>
+        </Card>
+      )}
+
+      {/* Main Content */}
+      {!loading && !error && (
+        <>
+          {/* Stats Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="p-4 bg-dark-700/50 border border-primary-500/50">
+              <div className="flex items-center gap-3">
+                <TrendingUp className="w-5 h-5 text-primary-600" />
+                <div>
+                  <p className="text-xs text-primary-700 font-semibold">Total Courses</p>
+                  <p className="text-2xl font-black text-primary-600">{courses.length}</p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4 bg-dark-700/50 border border-secondary-500/50">
+              <div className="flex items-center gap-3">
+                <Zap className="w-5 h-5 text-secondary-600" />
+                <div>
+                  <p className="text-xs text-secondary-700 font-semibold">You're Enrolled In</p>
+                  <p className="text-2xl font-black text-secondary-600">{enrolledCourses.length}</p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4 bg-dark-700/50 border border-blue-500/50">
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-xs text-blue-700 font-semibold">Available Now</p>
+                  <p className="text-2xl font-black text-blue-600">{availableCourses.length}</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-bold text-text-500 mb-2">
+                Search Courses
+              </label>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search by title or instructor..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12"
+                />
+              </div>
+            </div>
+            <div className="w-full md:w-56">
+              <label className="block text-sm font-bold text-text-500 mb-2">
+                Difficulty Level
+              </label>
+              <Select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                <option value="all">All Levels</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </Select>
+            </div>
+          </div>
+
+          {/* Enrolled Courses Section */}
+          {enrolledCourses.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-2xl font-bold text-text-500">My Learning Path</h2>
+                <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-bold">
+                  {enrolledCourses.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {enrolledCourses.map((course) => (
+                  <CourseCard key={course.id} course={course} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Available Courses Section */}
+          {availableCourses.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-2xl font-bold text-text-500">Browse Courses</h2>
+                <span className="px-3 py-1 bg-secondary-100 text-secondary-700 rounded-full text-sm font-bold">
+                  {availableCourses.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {availableCourses.map((course) => (
+                  <CourseCard key={course.id} course={course} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {filteredCourses.length === 0 && courses.length > 0 && (
+            <Card className="p-12 text-center">
+              <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-text-500 mb-2">No courses found</h3>
+              <p className="text-gray-300">Try adjusting your search filters</p>
+            </Card>
+          )}
+        </>
       )}
     </div>
   );

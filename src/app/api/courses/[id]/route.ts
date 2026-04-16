@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromToken } from "@/lib/auth";
+import { getUserFromToken, verifyToken } from "@/lib/auth";
+import { z } from "zod";
+
+// Validation schema for updating course
+const UpdateCourseSchema = z.object({
+  title: z.string().min(3).max(255).optional(),
+  description: z.string().min(10).optional(),
+  category: z.string().optional(),
+  difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).optional(),
+  duration: z.number().min(0).optional(),
+  language: z.string().optional(),
+  thumbnail: z.string().url().optional(),
+  isPublished: z.boolean().optional(),
+});
+
+// Helper to get auth user from token
+function getAuthUser(req: NextRequest) {
+  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) return null;
+  return verifyToken(token);
+}
 
 /**
  * GET /api/courses/[id]
@@ -140,6 +160,159 @@ export async function GET(
     console.error("Get course error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch course details" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PUT /api/courses/[id]
+ * Update course (creator or admin only)
+ */
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const courseId = params.id;
+    const user = getAuthUser(req);
+
+    // Verify authentication
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Get the course
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { createdById: true },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { success: false, error: "Course not found" },
+        { status: 404 }
+      );
+    }
+
+    // Verify authorization (creator or admin)
+    if (
+      course.createdById !== user.sub &&
+      user.role !== "ADMIN"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Not authorized to update this course" },
+        { status: 403 }
+      );
+    }
+
+    // Validate input
+    const body = await req.json();
+    const validatedData = UpdateCourseSchema.parse(body);
+
+    // Update course
+    const updatedCourse = await prisma.course.update({
+      where: { id: courseId },
+      data: validatedData,
+      include: {
+        createdBy: {
+          select: { firstName: true, lastName: true },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: updatedCourse.id,
+        title: updatedCourse.title,
+        description: updatedCourse.description,
+        instructor: `${updatedCourse.createdBy.firstName} ${updatedCourse.createdBy.lastName}`,
+        isPublished: updatedCourse.isPublished,
+        updatedAt: updatedCourse.updatedAt,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Validation failed",
+          details: error.errors,
+        },
+        { status: 400 }
+      );
+    }
+
+    console.error("Update course error:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to update course" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/courses/[id]
+ * Soft delete course (archive it - creator or admin only)
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const courseId = params.id;
+    const user = getAuthUser(req);
+
+    // Verify authentication
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Get the course
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { createdById: true, title: true },
+    });
+
+    if (!course) {
+      return NextResponse.json(
+        { success: false, error: "Course not found" },
+        { status: 404 }
+      );
+    }
+
+    // Verify authorization (creator or admin)
+    if (
+      course.createdById !== user.sub &&
+      user.role !== "ADMIN"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Not authorized to delete this course" },
+        { status: 403 }
+      );
+    }
+
+    // Soft delete (archive) the course
+    await prisma.course.update({
+      where: { id: courseId },
+      data: { isArchived: true },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Course "${course.title}" has been archived`,
+    });
+  } catch (error) {
+    console.error("Delete course error:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to delete course" },
       { status: 500 }
     );
   }

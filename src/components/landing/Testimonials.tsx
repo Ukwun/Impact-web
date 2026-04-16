@@ -1,33 +1,100 @@
 "use client";
 
-import { Star, Quote } from "lucide-react";
+import { Star, Quote, Loader, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+
+interface Testimonial {
+  id: string;
+  authorName: string;
+  authorRole: string;
+  quote: string;
+  rating: number;
+  category: string;
+}
 
 export default function Testimonials() {
-  // Static testimonials - only 3 quotes as per brand specification
-  const displayTestimonials = [
-    {
-      id: "1",
-      quote: "I gained clarity on how to think about money and my future.",
-      authorName: "Sarah M",
-      category: "student",
-      isLoading: false,
-    },
-    {
-      id: "2",
-      quote: "It helped me move from ideas to structured action.",
-      authorName: "James K",
-      category: "student",
-      isLoading: false,
-    },
-    {
-      id: "3",
-      quote: "I found a community that supports real growth.",
-      authorName: "Amara O",
-      category: "partner",
-      isLoading: false,
-    },
-  ];
+  const [displayTestimonials, setDisplayTestimonials] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch("/api/public/testimonials?limit=3");
+        if (!response.ok) throw new Error("Failed to fetch testimonials");
+        const data = await response.json();
+        
+        // Use fetched testimonials or fall back to defaults
+        if (data.data && data.data.length > 0) {
+          setDisplayTestimonials(data.data);
+        } else {
+          // Fallback to default testimonials if none in database
+          setDisplayTestimonials([
+            {
+              id: "1",
+              authorName: "Sarah M",
+              authorRole: "Student Success",
+              quote: "I gained clarity on how to think about money and my future.",
+              rating: 5,
+              category: "student",
+            },
+            {
+              id: "2",
+              authorName: "James K",
+              authorRole: "Student Success",
+              quote: "It helped me move from ideas to structured action.",
+              rating: 5,
+              category: "student",
+            },
+            {
+              id: "3",
+              authorName: "Amara O",
+              authorRole: "Partner Story",
+              quote: "I found a community that supports real growth.",
+              rating: 5,
+              category: "partner",
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Error fetching testimonials:", err);
+        // Use default testimonials on error
+        setDisplayTestimonials([
+          {
+            id: "1",
+            authorName: "Sarah M",
+            authorRole: "Student Success",
+            quote: "I gained clarity on how to think about money and my future.",
+            rating: 5,
+            category: "student",
+          },
+          {
+            id: "2",
+            authorName: "James K",
+            authorRole: "Student Success",
+            quote: "It helped me move from ideas to structured action.",
+            rating: 5,
+            category: "student",
+          },
+          {
+            id: "3",
+            authorName: "Amara O",
+            authorRole: "Partner Story",
+            quote: "I found a community that supports real growth.",
+            rating: 5,
+            category: "partner",
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTestimonials();
+  }, []);
 
   const categoryColors: Record<string, string> = {
     student: "from-primary-500 to-primary-600",
@@ -59,66 +126,80 @@ export default function Testimonials() {
         </div>
 
         {/* Testimonials Grid - 3 columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {displayTestimonials.map((testimonial) => {
-            // Type assertion
-            const fullTestimonial = testimonial as any;
-            const category = (fullTestimonial.category || "student").toLowerCase();
-            const categoryColor = categoryColors[category] || categoryColors.student;
-            const categoryLabel = categoryLabels[category] || categoryLabels.student;
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader className="w-8 h-8 text-primary-500 animate-spin mr-3" />
+            <span className="text-gray-500">Loading testimonials...</span>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-20 gap-2 text-danger-500">
+            <AlertCircle className="w-6 h-6" />
+            <span>{error}</span>
+          </div>
+        ) : displayTestimonials.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-gray-500">No testimonials available at this time.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {displayTestimonials.map((testimonial) => {
+              const category = (testimonial.category || "student").toLowerCase();
+              const categoryColor = categoryColors[category] || categoryColors.student;
 
-            return (
-              <div
-                key={testimonial.id}
-                className={`group relative rounded-2xl bg-white border-2 border-gray-100 hover:border-primary-300 hover:shadow-2xl transition-all duration-300 overflow-hidden p-8 ${
-                  !testimonial.isLoading ? "" : "animate-pulse"
-                }`}
-              >
-                {/* Background accent */}
+              return (
                 <div
-                  className={`absolute -top-8 -right-8 w-24 h-24 bg-gradient-to-br ${categoryColor} opacity-10 rounded-full group-hover:opacity-20 transition-opacity`}
-                ></div>
+                  key={testimonial.id}
+                  className="group relative rounded-2xl bg-white border-2 border-gray-100 hover:border-primary-300 hover:shadow-2xl transition-all duration-300 overflow-hidden p-8"
+                >
+                  {/* Background accent */}
+                  <div
+                    className={`absolute -top-8 -right-8 w-24 h-24 bg-gradient-to-br ${categoryColor} opacity-10 rounded-full group-hover:opacity-20 transition-opacity`}
+                  ></div>
 
-                {/* Category badge */}
-                <div className="flex items-center justify-between mb-4">
-                  <span
-                    className={`px-3 py-1 text-xs font-bold text-white rounded-full bg-gradient-to-r ${categoryColor}`}
-                  >
-                    {categoryLabel}
-                  </span>
-                  <Quote className="w-5 h-5 text-primary-300" />
-                </div>
-
-                {/* Rating */}
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-4 h-4 fill-yellow-400 text-yellow-400"
-                    />
-                  ))}
-                </div>
-
-                {/* Content */}
-                <p className="text-gray-700 leading-relaxed mb-6 italic line-clamp-5 text-base">
-                  {fullTestimonial.quote}
-                </p>
-
-                {/* Author */}
-                <div className="pt-6 border-t border-gray-100 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-sm">
-                    {fullTestimonial.authorName?.split(" ").map((n: string) => n[0]).join("")}
+                  {/* Category badge */}
+                  <div className="flex items-center justify-between mb-4">
+                    <span
+                      className={`px-3 py-1 text-xs font-bold text-white rounded-full bg-gradient-to-r ${categoryColor}`}
+                    >
+                      {testimonial.authorRole}
+                    </span>
+                    <Quote className="w-5 h-5 text-primary-300" />
                   </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-text-500">
-                      {fullTestimonial.authorName}
-                    </p>
+
+                  {/* Rating */}
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(testimonial.rating || 5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                      />
+                    ))}
+                  </div>
+
+                  {/* Content */}
+                  <p className="text-gray-700 leading-relaxed mb-6 italic line-clamp-5 text-base">
+                    {testimonial.quote}
+                  </p>
+
+                  {/* Author */}
+                  <div className="pt-6 border-t border-gray-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-bold text-sm">
+                      {testimonial.authorName
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-text-500">
+                        {testimonial.authorName}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* CTA */}
         <div className="mt-20 text-center">

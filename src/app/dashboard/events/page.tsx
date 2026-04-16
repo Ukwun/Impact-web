@@ -1,161 +1,396 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import {
+  Search,
+  Loader,
+  AlertCircle,
+  Filter,
+  Calendar,
+  MapPin,
+  Users,
+  Clock,
+  ArrowRight,
+} from 'lucide-react';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, Search } from 'lucide-react';
-import { useEvents } from '@/hooks/useEvents';
 
-export default function EventsPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const { events, loading } = useEvents(20);
+interface Event {
+  id: string;
+  title: string;
+  description?: string;
+  eventDate: string;
+  startTime: string;
+  endTime?: string;
+  venue: string;
+  capacity?: number;
+  eventType: string;
+  imageUrl?: string;
+  _count?: { registrations: number };
+}
 
-  const categories = [
-    { id: 'all', label: 'All Events' },
-    { id: 'webinar', label: 'Webinar' },
-    { id: 'workshop', label: 'Workshop' },
-    { id: 'summit', label: 'Summit' },
-    { id: 'networking', label: 'Networking' },
-  ];
+export default function EventsDashboard() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const filteredEvents = events.filter((event) => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || event.eventType === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Fetch events
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  const upcomingEvents = filteredEvents.sort(
-    (a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
-  );
+        const response = await fetch('/api/events?limit=100');
+        if (!response.ok) throw new Error('Failed to fetch events');
 
-  const EventSkeleton = () => (
-    <div className="bg-gradient-to-r from-dark-500 to-dark-600 rounded-xl overflow-hidden border border-dark-400 animate-pulse">
-      <div className="h-40 bg-dark-400"></div>
-      <div className="p-6 space-y-4">
-        <div className="h-4 bg-dark-400 rounded w-3/4"></div>
-        <div className="h-4 bg-dark-400 rounded w-1/2"></div>
-        <div className="h-8 bg-dark-400 rounded w-1/3 mt-6"></div>
-      </div>
-    </div>
-  );
+        const data = await response.json();
+        const allEvents = data.data || [];
+        setEvents(allEvents);
+        setFilteredEvents(allEvents);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to load events';
+        setError(message);
+        console.error('Error fetching events:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  // Filter events
+  useEffect(() => {
+    let filtered = events;
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (e) =>
+          e.title.toLowerCase().includes(query) ||
+          e.description?.toLowerCase().includes(query) ||
+          e.venue.toLowerCase().includes(query)
+      );
+    }
+
+    // Category filter
+    if (selectedCategory) {
+      filtered = filtered.filter((e) => e.eventType === selectedCategory);
+    }
+
+    setFilteredEvents(filtered);
+  }, [searchQuery, selectedCategory, events]);
+
+  // Get unique categories
+  const categories = Array.from(new Set(events.map((e) => e.eventType))).sort();
+
+  // Separate upcoming and past events
+  const upcomingEvents = filteredEvents.filter((e) => new Date(e.eventDate) >= new Date());
+  const pastEvents = filteredEvents.filter((e) => new Date(e.eventDate) < new Date());
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-black text-white mb-2">Events & Webinars</h1>
-        <p className="text-gray-400">Discover and register for upcoming learning events</p>
+      <div className="space-y-4">
+        <h1 className="text-4xl font-black text-white">Events</h1>
+        <p className="text-gray-400">
+          Discover and register for upcoming community events and workshops
+        </p>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
-        <input
-          type="text"
-          placeholder="Search events by name or topic..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-dark-500 border border-dark-400 rounded-lg text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none transition-colors"
-        />
-      </div>
+      {/* Error State */}
+      {error && !loading && (
+        <Card className="p-6 bg-danger-500/10 border border-danger-500/30">
+          <div className="flex gap-3 items-start">
+            <AlertCircle className="w-5 h-5 text-danger-500 mt-0.5" />
+            <div>
+              <p className="font-semibold text-danger-700">{error}</p>
+            </div>
+          </div>
+        </Card>
+      )}
 
-      {/* Category Filter */}
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
-            className={`px-6 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
-              selectedCategory === category.id
-                ? 'bg-primary-600 text-white'
-                : 'bg-dark-500 text-gray-300 border border-dark-400 hover:border-primary-500'
-            }`}
-          >
-            {category.label}
-          </button>
-        ))}
-      </div>
+      {/* Loading State */}
+      {loading && (
+        <Card className="p-12 text-center">
+          <Loader className="w-8 h-8 text-primary-500 mx-auto mb-4 animate-spin" />
+          <p className="text-gray-400">Loading events...</p>
+        </Card>
+      )}
 
-      {/* Events Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <EventSkeleton key={i} />
-          ))}
-        </div>
-      ) : upcomingEvents.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {upcomingEvents.map((event) => (
-            <Link
-              key={event.id}
-              href={`/dashboard/events/${event.id}`}
-              className="group bg-gradient-to-r from-dark-500 to-dark-600 rounded-xl overflow-hidden border border-dark-400 hover:border-primary-500 hover:shadow-xl hover:shadow-primary-600/20 transition-all hover:scale-105"
-            >
-              {/* Event Image Header */}
-              <div className="h-40 bg-gradient-to-r from-primary-600 to-secondary-500 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                <Calendar size={48} className="text-white/80" />
+      {!loading && !error && (
+        <div className="space-y-8">
+          {/* Search and Filters */}
+          <div className="space-y-4">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Input
+                type="text"
+                placeholder="Search events by title, venue, or keywords..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-12"
+              />
+            </div>
+
+            {/* Filter Button and Category Chips */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  size="sm"
+                  variant={showFilters ? 'primary' : 'outline'}
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="gap-2"
+                >
+                  <Filter className="w-4 h-4" />
+                  Filters
+                </Button>
+
+                {/* Selected Filter Badge */}
+                {selectedCategory && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedCategory(null)}
+                    className="gap-2"
+                  >
+                    {selectedCategory} ✕
+                  </Button>
+                )}
               </div>
 
-              {/* Event Content */}
-              <div className="p-6 space-y-3">
-                {/* Category Badge */}
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 bg-primary-600/20 text-primary-400 rounded-full text-xs font-bold uppercase">
-                    {event.eventType}
-                  </span>
-                  {event.capacity && (
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Users size={14} />
-                      {event.registrationCount}/{event.capacity}
-                    </span>
-                  )}
-                </div>
-
-                {/* Event Title */}
-                <h3 className="font-bold text-white text-lg line-clamp-2 group-hover:text-primary-400 transition-colors">
-                  {event.title}
-                </h3>
-
-                {/* Event Description */}
-                <p className="text-gray-300 text-sm line-clamp-2">{event.description}</p>
-
-                {/* Event Details */}
-                <div className="space-y-2 pt-3 border-t border-dark-400">
-                  <div className="flex items-center gap-2 text-gray-300 text-sm">
-                    <Calendar size={16} className="text-primary-400" />
-                    <span>
-                      {new Date(event.eventDate).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                  </div>
-
-                  {event.location && (
-                    <div className="flex items-center gap-2 text-gray-300 text-sm">
-                      <MapPin size={16} className="text-primary-400" />
-                      <span>{event.location}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* CTA Button */}
-                <button className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-primary-600 to-secondary-500 text-white rounded-lg font-bold hover:shadow-lg hover:shadow-primary-600/50 transition-all group-hover:scale-105">
-                  View Details
-                </button>
+              {/* Quick Stats */}
+              <div className="text-sm text-gray-400">
+                {filteredEvents.length === events.length
+                  ? `${events.length} event${events.length !== 1 ? 's' : ''}`
+                  : `${filteredEvents.length} of ${events.length} events`}
               </div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
-          <p className="text-gray-400 text-lg">No events found matching your criteria</p>
+            </div>
+
+            {/* Category Filter Menu */}
+            {showFilters && (
+              <Card className="p-4 space-y-3">
+                <p className="text-sm font-semibold text-white">Event Type</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant={selectedCategory === null ? 'primary' : 'outline'}
+                    onClick={() => setSelectedCategory(null)}
+                  >
+                    All Categories
+                  </Button>
+                  {categories.map((category) => (
+                    <Button
+                      key={category}
+                      size="sm"
+                      variant={selectedCategory === category ? 'primary' : 'outline'}
+                      onClick={() => setSelectedCategory(category)}
+                    >
+                      {category}
+                    </Button>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
+
+          {/* Featured Events Section */}
+          {upcomingEvents.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">Upcoming Events</h2>
+                {upcomingEvents.length > 4 && (
+                  <Link
+                    href="/dashboard/events/calendar"
+                    className="text-primary-400 hover:text-primary-300 text-sm font-semibold flex items-center gap-1"
+                  >
+                    View Calendar <ArrowRight className="w-4 h-4" />
+                  </Link>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {upcomingEvents.slice(0, 6).map((event) => {
+                  const eventDate = new Date(event.eventDate);
+                  const daysUntil = Math.ceil(
+                    (eventDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                  );
+
+                  return (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      daysUntil={daysUntil}
+                    />
+                  );
+                })}
+              </div>
+
+              {upcomingEvents.length > 6 && (
+                <div className="pt-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      // Could implement pagination or show more functionality
+                    }}
+                  >
+                    Load More Events
+                  </Button>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* No Results */}
+          {filteredEvents.length === 0 && !loading && (
+            <Card className="p-12 text-center">
+              <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold text-white mb-2">No Events Found</h3>
+              <p className="text-gray-400 mb-6">
+                {searchQuery
+                  ? 'Try adjusting your search criteria'
+                  : 'No events are currently scheduled'}
+              </p>
+              {searchQuery && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedCategory(null);
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </Card>
+          )}
+
+          {/* Past Events Section */}
+          {pastEvents.length > 0 && (
+            <section className="space-y-4">
+              <h2 className="text-2xl font-bold text-white">Past Events</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pastEvents.slice(0, 3).map((event) => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    isPast={true}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+interface EventCardProps {
+  event: Event;
+  daysUntil?: number;
+  isPast?: boolean;
+}
+
+function EventCard({ event, daysUntil, isPast }: EventCardProps) {
+  const eventDate = new Date(event.eventDate);
+
+  return (
+    <Link href={`/dashboard/events/${event.id}`}>
+      <Card className="h-full hover:border-primary-500 transition-all overflow-hidden group cursor-pointer">
+        {/* Image Container */}
+        {event.imageUrl && (
+          <div className="relative h-40 overflow-hidden bg-dark-700">
+            <img
+              src={event.imageUrl}
+              alt={event.title}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+            />
+            {isPast && (
+              <div className="absolute inset-0 bg-dark-900/50 flex items-center justify-center">
+                <span className="text-white font-bold">Past Event</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="p-6 flex flex-col h-full">
+          {/* Category Badge */}
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-secondary-500/20 text-secondary-300">
+              {event.eventType}
+            </span>
+            {daysUntil !== undefined && !isPast && (
+              <span
+                className={`text-xs font-bold px-3 py-1 rounded-full ${
+                  daysUntil <= 3
+                    ? 'bg-danger-500/20 text-danger-300'
+                    : daysUntil <= 7
+                    ? 'bg-warning-500/20 text-warning-300'
+                    : 'bg-primary-500/20 text-primary-300'
+                }`}
+              >
+                {daysUntil} days away
+              </span>
+            )}
+          </div>
+
+          {/* Title */}
+          <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 group-hover:text-primary-400 transition-colors">
+            {event.title}
+          </h3>
+
+          {/* Description */}
+          {event.description && (
+            <p className="text-sm text-gray-400 mb-4 line-clamp-2">{event.description}</p>
+          )}
+
+          {/* Details */}
+          <div className="space-y-2 text-sm text-gray-400 mt-auto mb-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 flex-shrink-0 text-primary-400" />
+              <span>{eventDate.toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 flex-shrink-0 text-primary-400" />
+              <span>{event.startTime}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 flex-shrink-0 text-primary-400" />
+              <span className="line-clamp-1">{event.venue}</span>
+            </div>
+          </div>
+
+          {/* Attendance and CTA */}
+          <div className="flex items-center justify-between pt-4 border-t border-dark-600">
+            <div className="flex items-center gap-1 text-xs text-gray-400">
+              <Users className="w-4 h-4" />
+              <span>{event._count?.registrations || 0} attending</span>
+            </div>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={(e) => {
+                e.preventDefault();
+                // Navigation handled by Link
+              }}
+            >
+              {isPast ? 'View' : 'Register'} →
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </Link>
   );
 }

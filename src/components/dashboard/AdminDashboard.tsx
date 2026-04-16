@@ -20,17 +20,102 @@ import {
   Unlock,
   Loader,
   Plus,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import { getAllTiers } from "@/lib/membershipTierMapping";
+import { CreateTierModal } from "@/components/modals/CreateTierModal";
+import { EditTierModal } from "@/components/modals/EditTierModal";
+import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { useToast } from "@/components/ui/Toast";
+
+interface Tier {
+  id: string;
+  name: string;
+  description?: string;
+  monthlyFee?: number;
+  yearlyFee?: number;
+  maxCourses?: number;
+  maxStudents?: number;
+  benefits?: string[];
+}
 
 export default function AdminDashboard() {
   const [isVisible, setIsVisible] = useState(false);
+  const [showCreateTierModal, setShowCreateTierModal] = useState(false);
+  const [showEditTierModal, setShowEditTierModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [tiers, setTiers] = useState<Tier[]>([]);
+  const [tiersLoading, setTiersLoading] = useState(true);
+  const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { progress, loading, error } = useAdminDashboard();
+  const { success, error: errorToast } = useToast();
 
   // Animation trigger
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Load tiers from API
+  useEffect(() => {
+    const loadTiers = async () => {
+      setTiersLoading(true);
+      try {
+        const response = await fetch("/api/admin/tiers", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setTiers(data.data || []);
+        } else {
+          console.error("Failed to load tiers:", data.error);
+          // Fallback to hardcoded tiers
+          setTiers(getAllTiers() as any);
+        }
+      } catch (err) {
+        console.error("Error loading tiers:", err);
+        setTiers(getAllTiers() as any);
+      } finally {
+        setTiersLoading(false);
+      }
+    };
+
+    loadTiers();
+  }, []);
+
+  const handleDeleteTier = async () => {
+    if (!selectedTier) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/admin/tiers/${selectedTier.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete tier");
+      }
+
+      success("Tier Deleted", `"${selectedTier.name}" has been deleted`);
+      setTiers((prev) => prev.filter((t) => t.id !== selectedTier.id));
+      setShowDeleteModal(false);
+      setSelectedTier(null);
+    } catch (err) {
+      errorToast("Error", err instanceof Error ? err.message : "Failed to delete tier");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   // Use fetched data or provide defaults
   const analyticsData = progress?.analytics || [
@@ -253,39 +338,156 @@ export default function AdminDashboard() {
           <h2 className="text-2xl font-bold text-text-500">
             Membership Tiers
           </h2>
-          <Button variant="primary" size="sm" className="gap-2">
+          <Button 
+            variant="primary" 
+            size="sm" 
+            className="gap-2"
+            onClick={() => setShowCreateTierModal(true)}
+          >
             <Plus className="w-4 h-4" />
             Add Tier
           </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {getAllTiers().map((tier, idx) => (
-            <div key={tier.id} className="animate-fade-in" style={{ animationDelay: `${950 + idx * 100}ms` }}>
-              <Card className="p-6 relative overflow-hidden hover:shadow-xl transition-all">
-                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 opacity-10 rounded-full -mr-10 -mt-10"></div>
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-text-500">{tier.name}</h3>
-                    {tier.id === "premium" && <Crown className="w-5 h-5 text-yellow-500" />}
-                  </div>
-                  <p className="text-sm text-gray-300 mb-4">{tier.description}</p>
-                  <div className="space-y-2 mb-4">
-                    <p className="text-xs text-gray-400">
-                      <span className="font-semibold text-text-500">Tier Type: </span>{tier.tierType}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      <span className="font-semibold text-text-500">Members: </span>~{Math.floor(Math.random() * 500 + 100)}
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full">
-                    Manage
-                  </Button>
-                </div>
-              </Card>
+
+        {tiersLoading ? (
+          <Card className="p-12 flex flex-col items-center gap-4 justify-center">
+            <Loader className="w-8 h-8 animate-spin text-primary-600" />
+            <p className="text-gray-300">Loading tiers...</p>
+          </Card>
+        ) : tiers.length === 0 ? (
+          <Card className="p-8">
+            <div className="text-center space-y-4">
+              <Crown className="w-12 h-12 text-gray-500 mx-auto opacity-50" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-300">No membership tiers</h3>
+                <p className="text-sm text-gray-400 mt-1">Create your first tier to manage memberships</p>
+              </div>
+              <Button 
+                variant="primary" 
+                size="sm"
+                onClick={() => setShowCreateTierModal(true)}
+                className="gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Create First Tier
+              </Button>
             </div>
-          ))}
-        </div>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {tiers.map((tier, idx) => (
+              <div key={tier.id} className="animate-fade-in" style={{ animationDelay: `${950 + idx * 100}ms` }}>
+                <Card className="p-6 relative overflow-hidden hover:shadow-xl transition-all flex flex-col h-full">
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 opacity-10 rounded-full -mr-10 -mt-10"></div>
+                  <div className="relative z-10 flex-1">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-text-500">{tier.name}</h3>
+                      {tier.name?.toLowerCase().includes("premium") && (
+                        <Crown className="w-5 h-5 text-yellow-500" />
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-300 mb-4">{tier.description || "No description"}</p>
+                    
+                    <div className="space-y-2 mb-6 text-xs text-gray-400">
+                      {tier.monthlyFee !== undefined && (
+                        <p>
+                          <span className="font-semibold text-text-500">Monthly: </span>${tier.monthlyFee?.toFixed(2) || "0.00"}
+                        </p>
+                      )}
+                      {tier.maxStudents !== undefined && (
+                        <p>
+                          <span className="font-semibold text-text-500">Max Students: </span>{tier.maxStudents}
+                        </p>
+                      )}
+                    </div>
+
+                    {tier.benefits && tier.benefits.length > 0 && (
+                      <div className="mb-6">
+                        <p className="text-xs font-semibold text-gray-400 mb-2">Benefits:</p>
+                        <ul className="space-y-1">
+                          {tier.benefits.slice(0, 3).map((benefit, i) => (
+                            <li key={i} className="text-xs text-gray-400">✓ {benefit}</li>
+                          ))}
+                          {tier.benefits.length > 3 && (
+                            <li className="text-xs text-gray-400 italic">+ {tier.benefits.length - 3} more</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tier Actions */}
+                  <div className="border-t border-dark-600 pt-4 flex gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => {
+                        setSelectedTier(tier);
+                        setShowEditTierModal(true);
+                      }}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/50"
+                      onClick={() => {
+                        setSelectedTier(tier);
+                        setShowDeleteModal(true);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Create Tier Modal */}
+      <CreateTierModal
+        isOpen={showCreateTierModal}
+        onClose={() => setShowCreateTierModal(false)}
+        onSuccess={() => {
+          setShowCreateTierModal(false);
+          window.location.reload();
+        }}
+      />
+
+      {/* Edit Tier Modal */}
+      <EditTierModal
+        isOpen={showEditTierModal}
+        onClose={() => {
+          setShowEditTierModal(false);
+          setSelectedTier(null);
+        }}
+        tier={selectedTier}
+        onSuccess={() => {
+          setShowEditTierModal(false);
+          window.location.reload();
+        }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setSelectedTier(null);
+        }}
+        onConfirm={handleDeleteTier}
+        title="Delete Membership Tier"
+        message="This membership tier will be permanently deleted from the system."
+        itemName={selectedTier?.name || ""}
+        isLoading={isDeleting}
+        type="danger"
+      />
     </div>
   );
 }

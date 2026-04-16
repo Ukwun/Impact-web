@@ -46,14 +46,20 @@ export async function POST(req: NextRequest) {
     // INPUT VALIDATION (password strength depends on mode)
     // ========================================================================
 
-    // Check if database is available first
+    // Check if database is available first (with timeout to prevent hanging)
     let databaseAvailable = false;
     try {
       const { prisma } = await import("@/lib/prisma");
-      await prisma.$connect();
+      // Use Promise.race to implement a fast timeout for database connection
+      await Promise.race([
+        prisma.$connect(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("DB connection timeout")), 5000)
+        ),
+      ]);
       databaseAvailable = true;
     } catch (dbError) {
-      console.log("Database unavailable, will use demo mode");
+      console.log("Database unavailable, will use demo mode:", (dbError as Error).message);
     }
 
     // Strict password validation only for database users
@@ -124,21 +130,28 @@ export async function POST(req: NextRequest) {
     // CHECK IF USER ALREADY EXISTS (Database First)
     // ========================================================================
 
-    // Check database first (production priority)
-    try {
-      const { prisma } = await import("@/lib/prisma");
-      const existingUser = await prisma.user.findUnique({
-        where: { email: email },
-      });
+    // Check database first (production priority) with timeout
+    if (databaseAvailable) {
+      try {
+        const { prisma } = await import("@/lib/prisma");
+        const existingUser = await Promise.race([
+          prisma.user.findUnique({
+            where: { email: email },
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("DB query timeout")), 5000)
+          ),
+        ]);
 
-      if (existingUser) {
-        return NextResponse.json(
-          { success: false, error: "Email already registered" },
-          { status: 409 }
-        );
+        if (existingUser) {
+          return NextResponse.json(
+            { success: false, error: "Email already registered" },
+            { status: 409 }
+          );
+        }
+      } catch (dbError) {
+        console.log("Database check failed, will check demo users:", (dbError as Error).message);
       }
-    } catch (dbError) {
-      console.log("Database check failed, will check demo users:", (dbError as Error).message);
     }
 
     // Check demo users as fallback
@@ -153,137 +166,144 @@ export async function POST(req: NextRequest) {
     // CREATE NEW USER (Database First, Demo Fallback)
     // ========================================================================
 
-    // Try database first (production priority)
-    try {
-      const { prisma } = await import("@/lib/prisma");
-      const hashedPassword = await hashPassword(password);
-      
-      // Determine membership tier based on role
-      const userRole = (body.role || "STUDENT").toUpperCase() as any;
-      const tierType = getMembershipTierForRole(userRole);
-      const tierId = getTierIdFromType(tierType);
+    // Try database first (production priority) - only if available
+    if (databaseAvailable) {
+      try {
+        const { prisma } = await import("@/lib/prisma");
+        const hashedPassword = await hashPassword(password);
+        
+        // Determine membership tier based on role
+        const userRole = (body.role || "STUDENT").toUpperCase() as any;
+        const tierType = getMembershipTierForRole(userRole);
+        const tierId = getTierIdFromType(tierType);
 
-      const user = await prisma.user.create({
-        data: {
-          email: email,
-          firstName: firstName,
-          lastName: lastName,
-          phone: body.phone || null,
-          role: userRole,
-          state: body.state || "Unknown",
-          institution: body.institution || null,
-          passwordHash: hashedPassword,
-          emailVerified: false,
-          // Assign membership tier based on role
-          membershipTierId: tierId,
-          membershipStatus: "ACTIVE",
-          membershipJoinedAt: new Date(),
-        },
-      });
+        const user = await Promise.race([
+          prisma.user.create({
+            data: {
+              email: email,
+              firstName: firstName,
+              lastName: lastName,
+              phone: body.phone || null,
+              role: userRole,
+              state: body.state || "Unknown",
+              institution: body.institution || null,
+              passwordHash: hashedPassword,
+              emailVerified: false,
+              // Assign membership tier based on role
+              membershipTierId: tierId,
+              membershipStatus: "ACTIVE",
+              membershipJoinedAt: new Date(),
+            },
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("DB create timeout")), 5000)
+          ),
+        ]);
 
-      const userResponse = {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        membershipTierId: user.membershipTierId,
-        membershipStatus: user.membershipStatus,
-        state: user.state,
-        institution: user.institution,
-        createdAt: user.createdAt,
-      };
+        const userResponse = {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          membershipTierId: user.membershipTierId,
+          membershipStatus: user.membershipStatus,
+          state: user.state,
+          institution: user.institution,
+          createdAt: user.createdAt,
+        };
 
-      // Generate JWT token for immediate auth
-      const token = generateToken({
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-      });
+        // Generate JWT token for immediate auth
+        const token = generateToken({
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+        });
 
-      console.log(`✅ User registered in database: ${email} - Role: ${user.role} - Tier: ${tierType}`);
+        console.log(`✅ User registered in database: ${email} - Role: ${user.role} - Tier: ${tierType}`);
 
-      const response = NextResponse.json(
-        {
-          success: true,
-          message: "Registration successful! Welcome to ImpactApp!",
-          data: { user: userResponse, token, demoMode: false },
-        },
-        { status: 201 }
-      );
+        const response = NextResponse.json(
+          {
+            success: true,
+            message: "Registration successful! Welcome to ImpactApp!",
+            data: { user: userResponse, token, demoMode: false },
+          },
+          { status: 201 }
+        );
 
-      // Set auth token cookie for middleware authentication
-      response.cookies.set('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      });
+        // Set auth token cookie for middleware authentication
+        response.cookies.set('auth_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+        });
 
-      return response;
-    } catch (dbError) {
-      console.log("Database registration failed, falling back to demo mode:", (dbError as Error).message);
-
-      // Database unavailable - use demo mode as last resort
-      const hashedPassword = await hashPassword(password);
-      const userId = "user-" + Math.random().toString(36).substr(2, 9);
-
-      const newUser = {
-        id: userId,
-        email: email,
-        firstName: firstName,
-        lastName: lastName,
-        phone: body.phone || null,
-        role: (body.role || "STUDENT").toUpperCase(),
-        state: body.state || "Unknown",
-        institution: body.institution || null,
-        passwordHash: hashedPassword,
-        emailVerified: false,
-        isActive: true,
-        avatar: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      console.log(`⚠️ User registered in demo mode: ${email}. Total demo users: ${demoUsers.size}`);
-
-      const userResponse = {
-        id: newUser.id,
-        email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        role: newUser.role,
-        state: newUser.state,
-        institution: newUser.institution,
-        createdAt: newUser.createdAt,
-      };
-
-      // Generate JWT token for immediate auth
-      const token = generateToken({
-        sub: newUser.id,
-        email: newUser.email,
-        role: newUser.role,
-      });
-
-      const response = NextResponse.json(
-        {
-          success: true,
-          message: "Registration successful! (Demo mode - database unavailable)",
-          data: { user: userResponse, token, demoMode: true },
-        },
-        { status: 201 }
-      );
-
-      // Set auth token cookie for middleware authentication
-      response.cookies.set('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      });
-
-      return response;
+        return response;
+      } catch (dbError) {
+        console.log("Database registration failed, falling back to demo mode:", (dbError as Error).message);
+      }
     }
+
+    // Database unavailable - use demo mode as last resort
+    const hashedPassword = await hashPassword(password);
+    const userId = "user-" + Math.random().toString(36).substr(2, 9);
+
+    const newUser = {
+      id: userId,
+      email: email,
+      firstName: firstName,
+      lastName: lastName,
+      phone: body.phone || null,
+      role: (body.role || "STUDENT").toUpperCase(),
+      state: body.state || "Unknown",
+      institution: body.institution || null,
+      passwordHash: hashedPassword,
+      emailVerified: false,
+      isActive: true,
+      avatar: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    console.log(`⚠️ User registered in demo mode: ${email}. Total demo users: ${demoUsers.size}`);
+
+    const userResponse = {
+      id: newUser.id,
+      email: newUser.email,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      role: newUser.role,
+      state: newUser.state,
+      institution: newUser.institution,
+      createdAt: newUser.createdAt,
+    };
+
+    // Generate JWT token for immediate auth
+    const token = generateToken({
+      sub: newUser.id,
+      email: newUser.email,
+      role: newUser.role,
+    });
+
+    const response = NextResponse.json(
+      {
+        success: true,
+        message: "Registration successful! (Demo mode - database unavailable)",
+        data: { user: userResponse, token, demoMode: true },
+      },
+      { status: 201 }
+    );
+
+    // Set auth token cookie for middleware authentication
+    response.cookies.set('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    return response;
   } catch (error) {
     console.error("Registration error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";

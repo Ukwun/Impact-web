@@ -1,10 +1,48 @@
 "use client";
 
 import { Button } from "@/components/ui/Button";
-import { ArrowRight, Sparkles, TrendingUp, Users, Award } from "lucide-react";
+import { ArrowRight, Sparkles, TrendingUp, Users, Award, Loader, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+
+interface Metrics {
+  totalLearners: number;
+  totalCourses: number;
+  engagementRate: number;
+  newMembersThisMonth: number;
+}
 
 export default function HeroSection() {
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch("/api/public/metrics");
+        if (!response.ok) throw new Error("Failed to fetch metrics");
+        const data = await response.json();
+        setMetrics(data.data);
+      } catch (err) {
+        console.error("Error fetching metrics:", err);
+        // Fallback to default values if fetch fails
+        setMetrics({
+          totalLearners: 50000,
+          totalCourses: 200,
+          engagementRate: 95,
+          newMembersThisMonth: 2500,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
+
   return (
     <section className="relative pt-32 pb-24 bg-gradient-to-b from-dark-900 via-dark-800 to-dark-900 overflow-hidden">
       {/* Animated background elements */}
@@ -59,27 +97,47 @@ export default function HeroSection() {
 
             {/* Trust Metrics - Modern Grid */}
             <div className="grid grid-cols-3 gap-8 pt-16 border-t border-dark-600">
-              <div className="space-y-2 group">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary-400" />
-                  <p className="text-3xl font-black text-white group-hover:text-primary-400 transition-colors">50K+</p>
+              {loading ? (
+                <div className="col-span-3 flex items-center justify-center py-8">
+                  <Loader className="w-6 h-6 text-primary-500 animate-spin mr-2" />
+                  <span className="text-gray-400">Loading metrics...</span>
                 </div>
-                <p className="text-sm text-gray-400 font-medium">Learners</p>
-              </div>
-              <div className="space-y-2 group">
-                <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-secondary-400" />
-                  <p className="text-3xl font-black text-white group-hover:text-secondary-400 transition-colors">200+</p>
+              ) : error ? (
+                <div className="col-span-3 flex items-center gap-2 text-danger-500">
+                  <AlertCircle className="w-5 h-5" />
+                  <span className="text-sm">{error}</span>
                 </div>
-                <p className="text-sm text-gray-400 font-medium">Courses</p>
-              </div>
-              <div className="space-y-2 group">
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary-300" />
-                  <p className="text-3xl font-black text-white group-hover:text-primary-300 transition-colors">95%</p>
-                </div>
-                <p className="text-sm text-gray-400 font-medium">Engagement</p>
-              </div>
+              ) : metrics ? (
+                <>
+                  <div className="space-y-2 group">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-primary-400" />
+                      <p className="text-3xl font-black text-white group-hover:text-primary-400 transition-colors">
+                        {metrics.totalLearners.toLocaleString()}+
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-400 font-medium">Learners</p>
+                  </div>
+                  <div className="space-y-2 group">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-secondary-400" />
+                      <p className="text-3xl font-black text-white group-hover:text-secondary-400 transition-colors">
+                        {metrics.totalCourses}+
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-400 font-medium">Courses</p>
+                  </div>
+                  <div className="space-y-2 group">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-primary-300" />
+                      <p className="text-3xl font-black text-white group-hover:text-primary-300 transition-colors">
+                        {metrics.engagementRate}%
+                      </p>
+                    </div>
+                    <p className="text-sm text-gray-400 font-medium">Engagement</p>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
 
@@ -128,7 +186,13 @@ export default function HeroSection() {
                     <div className="w-8 h-8 rounded-full bg-primary-500/30 border border-primary-400/50"></div>
                     <div className="w-8 h-8 rounded-full bg-secondary-500/30 border border-secondary-400/50 -ml-2"></div>
                     <div className="w-8 h-8 rounded-full bg-green-500/30 border border-green-400/50 -ml-2"></div>
-                    <span className="text-xs text-gray-400 ml-1 flex items-center">+2,500 new members this month</span>
+                    {metrics ? (
+                      <span className="text-xs text-gray-400 ml-1 flex items-center">
+                        +{metrics.newMembersThisMonth.toLocaleString()} new members this month
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400 ml-1 flex items-center">Loading...</span>
+                    )}
                   </div>
                 </div>
               </div>
