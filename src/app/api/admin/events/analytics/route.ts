@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     const attendedCount = events.reduce(
       (sum, event) =>
         sum +
-        event.registrations.filter((reg) => reg.status === 'ATTENDED' || reg.status === 'CONFIRMED').length,
+        event.registrations.filter((reg) => reg.status === 'REGISTERED').length,
       0
     );
     const attendanceRate =

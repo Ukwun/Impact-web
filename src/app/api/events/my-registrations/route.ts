@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { getUserFromToken } from "@/lib/auth";
 
 /**
  * GET /api/events/my-registrations
@@ -9,7 +9,7 @@ import { getAuthUser } from "@/lib/auth";
  */
 export async function GET(req: NextRequest) {
   try {
-    const user = await getAuthUser();
+    const user = await getUserFromToken(req);
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },

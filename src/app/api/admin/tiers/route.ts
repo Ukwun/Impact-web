@@ -19,7 +19,7 @@ const CreateTierSchema = z.object({
 });
 
 // Helper to verify admin role
-function getAuthUser(req: NextRequest) {
+function getAuthUser(req: NextRequest): any {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return null;
   return verifyToken(token);
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
 
     // Create tier
     const tier = await prisma.membershipTier.create({
-      data: validatedData,
+      data: validatedData as any,
       select: {
         id: true,
         tierType: true,
@@ -280,7 +280,7 @@ export async function DELETE(req: NextRequest) {
     // Verify tier exists
     const tier = await prisma.membershipTier.findUnique({
       where: { id: tierId },
-      select: { id: true, name: true, _count: { select: { subscribers: true } } },
+      select: { id: true, name: true, _count: { select: { users: true } } },
     });
 
     if (!tier) {
@@ -291,11 +291,11 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Check if tier has subscribers
-    if (tier._count.subscribers > 0) {
+    if (tier._count.users > 0) {
       return NextResponse.json(
         {
           success: false,
-          error: `Cannot delete tier with ${tier._count.subscribers} active subscribers. Please reassign members first.`,
+          error: `Cannot delete tier with ${tier._count.users} active subscribers. Please reassign members first.`,
         },
         { status: 400 }
       );

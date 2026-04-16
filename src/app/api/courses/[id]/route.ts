@@ -16,7 +16,7 @@ const UpdateCourseSchema = z.object({
 });
 
 // Helper to get auth user from token
-function getAuthUser(req: NextRequest) {
+function getAuthUser(req: NextRequest): any {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return null;
   return verifyToken(token);

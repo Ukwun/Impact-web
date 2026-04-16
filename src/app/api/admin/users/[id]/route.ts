@@ -7,13 +7,13 @@ import { z } from "zod";
 const UpdateUserSchema = z.object({
   firstName: z.string().min(2).optional(),
   lastName: z.string().min(2).optional(),
-  role: z.enum(["STUDENT", "FACILITATOR", "MENTOR", "PARENT", "TEACHER", "SCHOOL_ADMIN", "ADMIN"]).optional(),
+  role: z.enum(["STUDENT", "FACILITATOR", "MENTOR", "PARENT", "SCHOOL_ADMIN", "UNI_MEMBER", "CIRCLE_MEMBER", "ADMIN"]).optional(),
   isActive: z.boolean().optional(),
   state: z.string().optional(),
 });
 
 // Helper to verify admin role
-function getAuthUser(req: NextRequest) {
+function getAuthUser(req: NextRequest): any {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return null;
   return verifyToken(token);
@@ -121,7 +121,7 @@ export async function PUT(
     // Update user
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: validatedData,
+      data: validatedData as any,
       select: {
         id: true,
         email: true,

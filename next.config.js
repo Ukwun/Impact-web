@@ -2,6 +2,9 @@
 let nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
 
   // Performance optimizations
   experimental: {

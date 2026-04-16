@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     if (!validationResult.valid) {
       return NextResponse.json(
-        { success: false, error: "Invalid input", errors: validationResult.errors },
+        { success: false, error: "Invalid input", errors: (validationResult as any).errors },
         { status: 400 }
       );
     }

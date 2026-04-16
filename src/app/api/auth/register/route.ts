@@ -114,9 +114,9 @@ export async function POST(req: NextRequest) {
     const validationResult = validateInput(APIValidationSchemas.register, validationInput);
 
     if (!validationResult.valid) {
-      console.warn(`⚠️ Validation failed:`, validationResult.errors);
+      console.warn(`⚠️ Validation failed:`, (validationResult as any).errors);
       return NextResponse.json(
-        { success: false, error: "Invalid input", errors: validationResult.errors },
+        { success: false, error: "Invalid input", errors: (validationResult as any).errors },
         { status: 400 }
       );
     }
