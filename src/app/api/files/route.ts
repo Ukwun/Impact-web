@@ -117,6 +117,14 @@ export async function GET(request: NextRequest) {
             title: true,
           },
         },
+        files: {
+          select: {
+            id: true,
+            fileUrl: true,
+            fileName: true,
+            uploadedAt: true,
+          },
+        },
       },
       orderBy: { submittedAt: "desc" },
       take: 50,
@@ -124,13 +132,15 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: submissions.map((sub) => ({
-        id: sub.id,
-        filename: sub.submissionUrl.split("/").pop(),
-        s3Key: sub.submissionUrl,
-        assignmentTitle: sub.assignment?.title || "Unknown",
-        uploadedAt: sub.submittedAt,
-      })),
+      data: submissions.flatMap((sub) =>
+        sub.files.map((file) => ({
+          id: file.id,
+          filename: file.fileName,
+          s3Key: file.fileUrl,
+          assignmentTitle: sub.assignment?.title || "Unknown",
+          uploadedAt: file.uploadedAt,
+        }))
+      ),
     });
   } catch (error) {
     console.error("Error listing files:", error);
