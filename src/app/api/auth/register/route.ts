@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     const phone = body.phone || '';
     const state = body.state || '';
 
-    console.log("Firebase Signup: " + email + " as " + role);
+    console.log(`📝 Register Request - Email: ${email}, Role from form: "${body.role}", Normalized to: "${role}"`);
 
     const passwordCheck = validatePassword(password);
     if (!passwordCheck.isValid) {

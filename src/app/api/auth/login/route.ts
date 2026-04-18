@@ -61,10 +61,13 @@ export async function POST(req: NextRequest) {
         if (userDoc.exists) {
           const userData = userDoc.data();
           userRole = userData?.role || 'STUDENT';
+          console.log(`🔍 Role from Firestore for ${userRecord.uid}:`, userRole);
+          console.log(`📋 Full Firestore doc:`, userData);
+        } else {
+          console.warn(`⚠️ No Firestore document found for user ${userRecord.uid}`);
         }
       } catch (firestoreError) {
         console.error('Error fetching user role from Firestore:', firestoreError);
-        // Default to STUDENT if fetch fails
         userRole = 'STUDENT';
       }
 
@@ -74,6 +77,8 @@ export async function POST(req: NextRequest) {
         email: userRecord.email || '',
         role: userRole,
       });
+
+      console.log(`✅ Login token generated with role: ${userRole}`);
 
       const response = NextResponse.json(
         {

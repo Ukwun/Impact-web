@@ -97,8 +97,11 @@ export default function DashboardPage() {
 
   // Render dashboard based on user role
   const renderDashboard = () => {
+    const normalizedRole = user?.role?.toLowerCase();
+    console.log(`🔍 Normalized role for switch: "${normalizedRole}" (original: "${user?.role}")`);
+    
     try {
-      switch (user?.role?.toLowerCase()) {
+      switch (normalizedRole) {
         case "student":
           console.log("📊 Rendering StudentDashboard");
           return <StudentDashboard />;
@@ -124,7 +127,7 @@ export default function DashboardPage() {
           console.log("📊 Rendering StudentDashboard for uni_member");
           return <StudentDashboard />;
         default:
-          console.warn("⚠️ No dashboard for role:", user?.role);
+          console.warn("⚠️ No dashboard for role:", user?.role, "normalized:", normalizedRole);
           return (
             <Card className="p-12 text-center bg-yellow-50 border-2 border-yellow-200">
               <AlertCircle className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
