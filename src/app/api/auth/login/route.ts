@@ -5,7 +5,7 @@ import {
   getClientIp,
   RATE_LIMIT_CONFIGS,
 } from "@/lib/security";
-import { getFirebaseAuth } from "@/lib/firebase-admin";
+import { getFirebaseAuth, getFirestore } from "@/lib/firebase-admin";
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +52,21 @@ export async function POST(req: NextRequest) {
     try {
       const userRecord = await auth.getUserByEmail(email);
 
+      // Fetch user role from Firestore
+      let userRole = 'STUDENT';
+      try {
+        const db = getFirestore();
+        const userDoc = await db.collection('users').doc(userRecord.uid).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          userRole = userData?.role || 'STUDENT';
+        }
+      } catch (firestoreError) {
+        console.error('Error fetching user role from Firestore:', firestoreError);
+        // Default to STUDENT if fetch fails
+        userRole = 'STUDENT';
+      }
+
       const customToken = await auth.createCustomToken(userRecord.uid);
 
       const response = NextResponse.json(
@@ -62,6 +77,7 @@ export async function POST(req: NextRequest) {
             uid: userRecord.uid,
             email: userRecord.email,
             displayName: userRecord.displayName,
+            role: userRole,
           },
           token: customToken,
           requiresPasswordChange: false,

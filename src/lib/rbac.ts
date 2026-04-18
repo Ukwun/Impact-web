@@ -2,7 +2,7 @@
  * Get the appropriate dashboard route based on user role
  */
 export function getDashboardRoute(role: string | undefined): string {
-  if (!role) return "/dashboard";
+  if (!role || typeof role !== 'string') return "/dashboard";
 
   const roleMap: Record<string, string> = {
     STUDENT: "/dashboard",
@@ -15,7 +15,8 @@ export function getDashboardRoute(role: string | undefined): string {
     MENTOR: "/dashboard",
   };
 
-  return roleMap[role.toUpperCase()] || "/dashboard";
+  const normalizedRole = role.trim().toUpperCase();
+  return roleMap[normalizedRole] || "/dashboard";
 }
 
 /**
