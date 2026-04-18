@@ -57,7 +57,30 @@ export const useAuthStore = create<AuthStore>()(
           }
 
           const data = await response.json();
-          const { token, user } = data.data;
+          
+          // Handle both response formats:
+          // 1. Netlify format: { success, message, data: { user, token } }
+          // 2. Render format: { user, token } or { data: { user, token } }
+          let token: string;
+          let user: any;
+          
+          if (data.data?.token && data.data?.user) {
+            // Format 1: { success, message, data: { user, token } }
+            ({ token, user } = data.data);
+          } else if (data.token && data.user) {
+            // Format 2: { user, token } (direct)
+            token = data.token;
+            user = data.user;
+          } else {
+            // Try to find token and user anywhere in response
+            token = data.token || data.data?.token;
+            user = data.user || data.data?.user;
+            
+            if (!token || !user) {
+              console.error("Unexpected response format:", data);
+              throw new Error("Invalid response format from server");
+            }
+          }
 
           set({
             token,
@@ -117,7 +140,30 @@ export const useAuthStore = create<AuthStore>()(
           }
 
           const data_response = await response.json();
-          const { token, user } = data_response.data;
+          
+          // Handle both response formats:
+          // 1. Netlify format: { success, message, data: { user, token } }
+          // 2. Render format: { user, token } or { data: { user, token } }
+          let token: string;
+          let user: any;
+          
+          if (data_response.data?.token && data_response.data?.user) {
+            // Format 1: { success, message, data: { user, token } }
+            ({ token, user } = data_response.data);
+          } else if (data_response.token && data_response.user) {
+            // Format 2: { user, token } (direct)
+            token = data_response.token;
+            user = data_response.user;
+          } else {
+            // Try to find token and user anywhere in response
+            token = data_response.token || data_response.data?.token;
+            user = data_response.user || data_response.data?.user;
+            
+            if (!token || !user) {
+              console.error("Unexpected response format:", data_response);
+              throw new Error("Invalid response format from server");
+            }
+          }
 
           set({
             token,
