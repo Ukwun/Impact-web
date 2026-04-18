@@ -2,6 +2,7 @@ import { User } from "@/types";
 import { create } from "zustand";
 import { persist as zustandPersist, createJSONStorage } from "zustand/middleware";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY, AUTH_STORE_KEY } from "@/lib/authStorage";
+import { getApiUrl } from "@/lib/apiConfig";
 
 // Some bundlers may interop the middleware as a default export.
 const persist = (zustandPersist as any)?.default ?? zustandPersist;
@@ -44,7 +45,7 @@ export const useAuthStore = create<AuthStore>()(
       const login = async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await fetch("/api/auth/login", {
+          const response = await fetch(getApiUrl("/api/auth/login"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
@@ -88,7 +89,7 @@ export const useAuthStore = create<AuthStore>()(
       const register = async (data: any) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await fetch("/api/auth/register", {
+          const response = await fetch(getApiUrl("/api/auth/register"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),
@@ -134,7 +135,7 @@ export const useAuthStore = create<AuthStore>()(
       const logout = async () => {
         // Clear server-side auth cookie
         try {
-          await fetch("/api/auth/logout", {
+          await fetch(getApiUrl("/api/auth/logout"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
           });

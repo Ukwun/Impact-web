@@ -130,7 +130,7 @@ export default function SettingsPage() {
       setIsChangingPassword(true);
 
       // In a real app, this would call the API
-      const response = await fetch("/api/auth/change-password", {
+      const response = await fetch((await import('@/lib/apiConfig')).getApiUrl("/api/auth/change-password"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
