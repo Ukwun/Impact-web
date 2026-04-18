@@ -1,18 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
-import { hashPassword, validatePasswordSimple, validateEmail, generateToken } from "@/lib/auth";
-import { demoUsers } from "@/lib/demoUsers";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { validatePassword } from "@/lib/auth";
 import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
 import {
   checkRateLimit,
   getClientIp,
-  validateInput,
-  validatePassword,
-  APIValidationSchemas,
   RATE_LIMIT_CONFIGS,
 } from "@/lib/security";
-import { getMembershipTierForRole, getTierIdFromType } from "@/lib/membershipTierMapping";
+import { getFirebaseAuth, getFirestore } from "@/lib/firebase-admin";
 
-// Handle CORS preflight requests
+export const dynamic = 'force-dynamic';
+
 export async function OPTIONS(req: NextRequest) {
   const corsResponse = handleCorsOptions(req);
   return corsResponse || new NextResponse(null, { status: 204 });
@@ -20,15 +17,11 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // ========================================================================
-    // RATE LIMITING - Prevent spam signups
-    // ========================================================================
-
     const clientIp = getClientIp(req.headers as any);
     const rateLimitResult = await checkRateLimit(clientIp, RATE_LIMIT_CONFIGS.AUTH_SIGNUP);
 
     if (!rateLimitResult.allowed) {
-      console.warn(`⚠️ Rate limit exceeded for signup IP: ${clientIp}`);
+      console.warn("Rate limit exceeded for signup IP: " + clientIp);
       const response = NextResponse.json(
         {
           success: false,
@@ -37,295 +30,129 @@ export async function POST(req: NextRequest) {
         },
         { status: 429 }
       );
-      response.headers.set(
-        "Retry-After",
-        Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString()
-      );
       return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
     const body = await req.json();
-    console.log(`\n📝 ===== SIGNUP ATTEMPT =====`);
-    console.log(`Email: ${body.email}`);
-    console.log(`IP: ${clientIp} (Remaining signups: ${rateLimitResult.remaining})`);
-
-    // ========================================================================
-    // INPUT VALIDATION (password strength depends on mode)
-    // ========================================================================
-
-    // Check if database is available first (with timeout to prevent hanging)
-    let databaseAvailable = false;
-    try {
-      const { prisma } = await import("@/lib/prisma");
-      // Use Promise.race to implement a fast timeout for database connection
-      await Promise.race([
-        prisma.$connect(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("DB connection timeout")), 5000)
-        ),
-      ]);
-      databaseAvailable = true;
-    } catch (dbError) {
-      console.log("Database unavailable, will use demo mode:", (dbError as Error).message);
-    }
-
-    // Strict password validation only for database users
-    if (databaseAvailable) {
-      const passwordStrengthCheck = validatePassword(body.password);
-      if (!passwordStrengthCheck.isValid) {
-        console.warn(`⚠️ Password too weak:`, passwordStrengthCheck.feedback);
-        const response = NextResponse.json(
-          {
-            success: false,
-            error: "Password is too weak",
-            passwordFeedback: passwordStrengthCheck.feedback,
-            passwordStrength: passwordStrengthCheck.strength,
-          },
-          { status: 400 }
-        );
-        return addCorsHeaders(response, req.headers.get("origin") || undefined);
-      }
-    } else {
-      // Demo mode: basic password validation only
-      const passwordStrengthCheck = validatePasswordSimple(body.password);
-      if (!passwordStrengthCheck.valid) {
-        console.warn(`⚠️ Password too weak for demo:`, passwordStrengthCheck.errors);
-        const response = NextResponse.json(
-          {
-            success: false,
-            error: "Password is too weak",
-            passwordErrors: passwordStrengthCheck.errors,
-          },
-          { status: 400 }
-        );
-        return addCorsHeaders(response, req.headers.get("origin") || undefined);
-      }
-    }
-
-    // Validate against schema
-    const validationInput = {
-      email: body.email?.trim().toLowerCase(),
-      password: body.password,
-      confirmPassword: body.confirmPassword || body.passwordConfirm,
-      fullName: `${body.firstName || ''} ${body.lastName || ''}`.trim(),
-      role: body.role,
-      agreeToTerms: body.agreeToTerms || body.agreedToTerms || true,
-    };
-
-    // Add custom validation for password match
-    if (body.password !== (body.confirmPassword || body.passwordConfirm)) {
-      const response = NextResponse.json(
-        { success: false, error: "Passwords do not match" },
-        { status: 400 }
-      );
-      return addCorsHeaders(response, req.headers.get("origin") || undefined);
-    }
-
-    const validationResult = validateInput(APIValidationSchemas.register, validationInput);
-
-    if (!validationResult.valid) {
-      console.warn(`⚠️ Validation failed:`, (validationResult as any).errors);
-      const response = NextResponse.json(
-        { success: false, error: "Invalid input", errors: (validationResult as any).errors },
-        { status: 400 }
-      );
-      return addCorsHeaders(response, req.headers.get("origin") || undefined);
-    }
-
-    const email = body.email.trim().toLowerCase();
+    const email = body.email?.trim().toLowerCase();
     const password = body.password;
-    const firstName = body.firstName || body.firstName || 'User';
+    const firstName = body.firstName || 'User';
     const lastName = body.lastName || 'Account';
+    const role = (body.role || 'student').toUpperCase();
+    const phone = body.phone || '';
+    const state = body.state || '';
 
-    // ========================================================================
-    // CHECK IF USER ALREADY EXISTS (Database First)
-    // ========================================================================
+    console.log("Firebase Signup: " + email + " as " + role);
 
-    // Check database first (production priority) with timeout
-    if (databaseAvailable) {
-      try {
-        const { prisma } = await import("@/lib/prisma");
-        const existingUser = await Promise.race([
-          prisma.user.findUnique({
-            where: { email: email },
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("DB query timeout")), 5000)
-          ),
-        ]);
-
-        if (existingUser) {
-          const response = NextResponse.json(
-            { success: false, error: "Email already registered" },
-            { status: 409 }
-          );
-          return addCorsHeaders(response, req.headers.get("origin") || undefined);
-        }
-      } catch (dbError) {
-        console.log("Database check failed, will check demo users:", (dbError as Error).message);
-      }
-    }
-
-    // Check demo users as fallback
-    if (demoUsers.has(email)) {
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.isValid) {
       const response = NextResponse.json(
-        { success: false, error: "Email already registered" },
-        { status: 409 }
+        {
+          success: false,
+          error: "Password is too weak",
+          feedback: passwordCheck.feedback,
+        },
+        { status: 400 }
       );
       return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
-    // ========================================================================
-    // CREATE NEW USER (Database First, Demo Fallback)
-    // ========================================================================
-
-    // Try database first (production priority) - only if available
-    if (databaseAvailable) {
-      try {
-        const { prisma } = await import("@/lib/prisma");
-        const hashedPassword = await hashPassword(password);
-        
-        // Determine membership tier based on role
-        const userRole = (body.role || "STUDENT").toUpperCase() as any;
-        const tierType = getMembershipTierForRole(userRole);
-        const tierId = getTierIdFromType(tierType);
-
-        const user = await Promise.race([
-          prisma.user.create({
-            data: {
-              email: email,
-              firstName: firstName,
-              lastName: lastName,
-              phone: body.phone || null,
-              role: userRole,
-              state: body.state || "Unknown",
-              institution: body.institution || null,
-              passwordHash: hashedPassword,
-              emailVerified: false,
-              // Assign membership tier based on role
-              membershipTierId: tierId,
-              membershipStatus: "ACTIVE",
-              membershipJoinedAt: new Date(),
-            },
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("DB create timeout")), 5000)
-          ),
-        ]);
-
-        const userResponse = {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          membershipTierId: user.membershipTierId,
-          membershipStatus: user.membershipStatus,
-          state: user.state,
-          institution: user.institution,
-          createdAt: user.createdAt,
-        };
-
-        // Generate JWT token for immediate auth
-        const token = generateToken({
-          sub: user.id,
-          email: user.email,
-          role: user.role,
-        });
-
-        console.log(`✅ User registered in database: ${email} - Role: ${user.role} - Tier: ${tierType}`);
-
-        const response = NextResponse.json(
-          {
-            success: true,
-            message: "Registration successful! Welcome to ImpactApp!",
-            data: { user: userResponse, token, demoMode: false },
-          },
-          { status: 201 }
-        );
-
-        // Set auth token cookie for middleware authentication
-        response.cookies.set('auth_token', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7, // 7 days
-        });
-
-        return response;
-      } catch (dbError) {
-        console.log("Database registration failed, falling back to demo mode:", (dbError as Error).message);
-      }
+    const fullName = (firstName + " " + lastName).trim();
+    if (!/^[a-zA-Z\s'-]+$/.test(fullName)) {
+      const response = NextResponse.json(
+        {
+          success: false,
+          error: "Name can only contain letters, spaces, hyphens, and apostrophes",
+        },
+        { status: 400 }
+      );
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
-    // Database unavailable - use demo mode as last resort
-    const hashedPassword = await hashPassword(password);
-    const userId = "user-" + Math.random().toString(36).substr(2, 9);
+    if (!email || !password) {
+      const response = NextResponse.json(
+        { success: false, error: "Email and password are required" },
+        { status: 400 }
+      );
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
+    }
 
-    const newUser = {
-      id: userId,
-      email: email,
-      firstName: firstName,
-      lastName: lastName,
-      phone: body.phone || null,
-      role: (body.role || "STUDENT").toUpperCase(),
-      state: body.state || "Unknown",
-      institution: body.institution || null,
-      passwordHash: hashedPassword,
-      emailVerified: false,
-      isActive: true,
-      avatar: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    const auth = getFirebaseAuth();
+    
+    try {
+      const userRecord = await auth.createUser({
+        email: email,
+        password: password,
+        displayName: fullName,
+      });
 
-    console.log(`⚠️ User registered in demo mode: ${email}. Total demo users: ${demoUsers.size}`);
+      console.log("User created: " + userRecord.uid);
 
-    const userResponse = {
-      id: newUser.id,
-      email: newUser.email,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      role: newUser.role,
-      state: newUser.state,
-      institution: newUser.institution,
-      createdAt: newUser.createdAt,
-    };
+      try {
+        const db = getFirestore();
+        await db.collection('users').doc(userRecord.uid).set({
+          uid: userRecord.uid,
+          email: email,
+          firstName: firstName,
+          lastName: lastName,
+          displayName: fullName,
+          role: role,
+          phone: phone,
+          state: state,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: 'active',
+        });
+        console.log("Profile stored in Firestore");
+      } catch (firestoreError) {
+        console.warn("Firestore write failed (non-critical): " + (firestoreError as Error).message);
+      }
 
-    // Generate JWT token for immediate auth
-    const token = generateToken({
-      sub: newUser.id,
-      email: newUser.email,
-      role: newUser.role,
-    });
+      const customToken = await auth.createCustomToken(userRecord.uid);
 
-    const response = NextResponse.json(
-      {
-        success: true,
-        message: "Registration successful! (Demo mode - database unavailable)",
-        data: { user: userResponse, token, demoMode: true },
-      },
-      { status: 201 }
-    );
+      const response = NextResponse.json(
+        {
+          success: true,
+          message: "Account created successfully",
+          user: {
+            uid: userRecord.uid,
+            email: userRecord.email,
+            displayName: userRecord.displayName,
+          },
+          token: customToken,
+        },
+        { status: 201 }
+      );
 
-    // Set auth token cookie for middleware authentication
-    response.cookies.set('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
 
-    return addCorsHeaders(response, req.headers.get("origin") || undefined);
+    } catch (firebaseError: any) {
+      let errorMessage = "Signup failed";
+      let statusCode = 400;
+
+      if (firebaseError.code === "auth/email-already-exists") {
+        errorMessage = "Email already registered";
+        statusCode = 409;
+      } else if (firebaseError.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address";
+      } else if (firebaseError.code === "auth/weak-password") {
+        errorMessage = "Password is too weak";
+      }
+
+      console.error("Firebase error: " + firebaseError.code);
+
+      const response = NextResponse.json(
+        { success: false, error: errorMessage },
+        { status: statusCode }
+      );
+
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
+    }
+
   } catch (error) {
-    console.error("Registration error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error details:", {
-      message: errorMessage,
-      stack: error instanceof Error ? error.stack : "No stack trace",
-    });
+    console.error("Signup error: " + (error as Error).message);
     const response = NextResponse.json(
-      { success: false, error: errorMessage || "Registration failed. Please try again." },
+      { success: false, error: "An unexpected error occurred" },
       { status: 500 }
     );
     return addCorsHeaders(response, req.headers.get("origin") || undefined);

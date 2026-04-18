@@ -1,16 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { comparePassword, validateEmail, generateToken } from "@/lib/auth";
-import { demoUsers } from "@/lib/demoUsers";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
 import {
   checkRateLimit,
   getClientIp,
-  validateInput,
-  APIValidationSchemas,
   RATE_LIMIT_CONFIGS,
 } from "@/lib/security";
+import { getFirebaseAuth } from "@/lib/firebase-admin";
 
-// Handle CORS preflight requests
+export const dynamic = 'force-dynamic';
+
 export async function OPTIONS(req: NextRequest) {
   const corsResponse = handleCorsOptions(req);
   return corsResponse || new NextResponse(null, { status: 204 });
@@ -18,15 +16,10 @@ export async function OPTIONS(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    // ========================================================================
-    // RATE LIMITING - Check for brute force attacks
-    // ========================================================================
-    
     const clientIp = getClientIp(req.headers as any);
     const rateLimitResult = await checkRateLimit(clientIp, RATE_LIMIT_CONFIGS.AUTH_LOGIN);
 
     if (!rateLimitResult.allowed) {
-      console.warn(`⚠️ Rate limit exceeded for IP: ${clientIp}`);
       const response = NextResponse.json(
         {
           success: false,
@@ -39,194 +32,64 @@ export async function POST(req: NextRequest) {
         "Retry-After",
         Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString()
       );
-      return response;
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
     const body = await req.json();
-    console.log(`\n\n🔐 ===== LOGIN ATTEMPT =====`);
-    console.log(`Email: ${body.email}`);
-    console.log(`IP: ${clientIp} (Remaining attempts: ${rateLimitResult.remaining})`);
-    console.log(`Demo users available: ${demoUsers.size}`);
-    console.log(`Demo user list:`, Array.from(demoUsers.keys()));
+    const email = body.email?.trim().toLowerCase();
+    const password = body.password;
 
-    // ========================================================================
-    // INPUT VALIDATION
-    // ========================================================================
-
-    const validationResult = validateInput(APIValidationSchemas.login, {
-      email: body.email?.trim().toLowerCase(),
-      password: body.password,
-    });
-
-    if (!validationResult.valid) {
-      console.warn(`⚠️ Validation failed:`, (validationResult as any).errors);
-      return NextResponse.json(
-        { success: false, error: "Invalid input", errors: (validationResult as any).errors },
+    if (!email || !password) {
+      const response = NextResponse.json(
+        { success: false, error: "Email and password are required" },
         { status: 400 }
       );
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
-    const { email, password } = validationResult.data;
+    const auth = getFirebaseAuth();
 
-    // ========================================================================
-    // AUTHENTICATION - DATABASE FIRST, DEMO FALLBACK
-    // ========================================================================
-
-    let user = null;
-    let isDemoUser = false;
-
-    // First try database (production priority) with timeout
-    console.log(`\n🗄️ Checking database for user: "${email}"`);
     try {
-      const { prisma } = await import("@/lib/prisma");
-      user = await Promise.race([
-        prisma.user.findUnique({
-          where: { email: email },
-        }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("DB query timeout")), 5000)
-        ),
-      ]);
-      console.log(`Database user found: ${user ? '✅ YES' : '❌ NO'}`);
-    } catch (dbError) {
-      console.log("Database query failed:", (dbError as Error).message);
-    }
+      const userRecord = await auth.getUserByEmail(email);
 
-    // If not in database, check demo users (fallback only)
-    if (!user) {
-      console.log(`\n✓ Checking demo users for email: "${email}"`);
-      user = demoUsers.get(email);
-      console.log(`Demo user found: ${user ? '✅ YES' : '❌ NO'}`);
-      if (user) {
-        console.log(`✅ DEMO USER FOUND: ${email} - Role: ${user.role}`);
-        isDemoUser = true;
+      const customToken = await auth.createCustomToken(userRecord.uid);
+
+      const response = NextResponse.json(
+        {
+          success: true,
+          message: "Login successful",
+          user: {
+            uid: userRecord.uid,
+            email: userRecord.email,
+            displayName: userRecord.displayName,
+          },
+          token: customToken,
+          requiresPasswordChange: false,
+        },
+        { status: 200 }
+      );
+
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
+
+    } catch (firebaseError: any) {
+      if (firebaseError.code === "auth/user-not-found") {
+        const response = NextResponse.json(
+          { success: false, error: "Invalid email or password" },
+          { status: 401 }
+        );
+        return addCorsHeaders(response, req.headers.get("origin") || undefined);
       }
-    }
 
-    if (!user) {
-      console.log(`\n❌ NO USER FOUND - RETURNING 401`);
-      return NextResponse.json(
-        { success: false, error: "Invalid email or password" },
+      const response = NextResponse.json(
+        { success: false, error: "Authentication failed" },
         { status: 401 }
       );
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
-    console.log(`\n✅ USER FOUND! isDemoUser: ${isDemoUser}`);
-
-    // ========================================================================
-    // VERIFY PASSWORD
-    // ========================================================================
-
-    if (!isDemoUser) {
-      // Database users: strict password verification
-      const isPasswordValid = await comparePassword(password, user.passwordHash);
-
-      if (!isPasswordValid) {
-        console.log(`Login failed: Invalid password for ${email}`);
-        return NextResponse.json(
-          { success: false, error: "Invalid email or password" },
-          { status: 401 }
-        );
-      }
-    } else {
-      // Demo/test mode: Validate password properly for demo users
-      const isPasswordValid = await comparePassword(password, user.passwordHash);
-
-      if (!isPasswordValid) {
-        console.log(`Login failed: Invalid password for demo user ${email}`);
-        return NextResponse.json(
-          { success: false, error: "Invalid email or password" },
-          { status: 401 }
-        );
-      }
-      console.log(`✓ Demo login: Password validated for ${email}`);
-    }
-
-    // ========================================================================
-    // CHECK IF ACCOUNT IS ACTIVE
-    // ========================================================================
-
-    if (user.isActive === false) {
-      return NextResponse.json(
-        { success: false, error: "Your account has been deactivated" },
-        { status: 403 }
-      );
-    }
-
-    // ========================================================================
-    // GENERATE JWT TOKEN
-    // ========================================================================
-
-    const token = generateToken({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
-    // Update last login (only for database users) with timeout
-    if (!isDemoUser) {
-      try {
-        const { prisma } = await import("@/lib/prisma");
-        await Promise.race([
-          prisma.user.update({
-            where: { id: user.id },
-            data: { lastLoginAt: new Date() },
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("DB update timeout")), 5000)
-          ),
-        ]);
-      } catch (err) {
-        // Ignore update error
-      }
-    }
-
-    // ========================================================================
-    // RETURN RESPONSE
-    // ========================================================================
-
-    const userResponse = {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      phone: user.phone,
-      role: user.role,
-      state: user.state,
-      institution: user.institution,
-      avatar: user.avatar,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt ? user.updatedAt : user.createdAt,
-    };
-
-    const response = NextResponse.json({
-      success: true,
-      message: isDemoUser ? "Login successful (Demo Mode)" : "Login successful",
-      data: {
-        token,
-        user: userResponse,
-        demoMode: isDemoUser,
-      },
-    });
-
-    // Set auth token cookie for middleware authentication
-    response.cookies.set('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
-
-    return addCorsHeaders(response, req.headers.get("origin") || undefined);
   } catch (error) {
-    console.error("Login error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error details:", {
-      message: errorMessage,
-      stack: error instanceof Error ? error.stack : "No stack trace",
-    });
     const response = NextResponse.json(
-      { success: false, error: errorMessage || "Login failed. Please try again." },
+      { success: false, error: "An unexpected error occurred" },
       { status: 500 }
     );
     return addCorsHeaders(response, req.headers.get("origin") || undefined);
