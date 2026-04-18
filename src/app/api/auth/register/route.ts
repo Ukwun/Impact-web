@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { validatePassword } from "@/lib/auth";
+import { validatePassword } from "@/lib/security/passwordvalidator";
 import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
 import {
   checkRateLimit,
