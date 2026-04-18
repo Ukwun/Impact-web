@@ -45,15 +45,15 @@ export default function LoginPage() {
     const success = await login(formData.email, formData.password);
     if (success) {
       setSuccessMessage("Login successful! Redirecting...");
-
-      // Wait a bit for the store to update, then redirect to role-specific dashboard
-      setTimeout(() => {
-        const currentUser = useAuthStore.getState().user;
-        if (currentUser) {
-          const dashboardRoute = getDashboardRoute(currentUser.role);
+      // Get the updated user from state
+      const state = useAuthStore.getState();
+      if (state.user) {
+        const dashboardRoute = getDashboardRoute(state.user.role);
+        // Use setTimeout to ensure state is updated
+        setTimeout(() => {
           router.push(dashboardRoute);
-        }
-      }, 1000);
+        }, 500);
+      }
     }
   };
 

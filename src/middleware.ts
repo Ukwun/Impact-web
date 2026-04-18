@@ -1,43 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * Middleware to protect routes and handle authentication
- * Runs on every request to the server
+ * Middleware to add security headers
+ * Authentication is handled client-side via Zustand store
  */
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Get token from cookies or localStorage (passed via header from client)
-  const token = request.cookies.get('auth_token')?.value;
-  const authHeader = request.headers.get('authorization');
-
-  // Public routes that don't require auth
-  const publicRoutes = [
-    '/auth/login',
-    '/auth/register',
-    '/forgot-password',
-    '/about',
-    '/community',
-    '/events',
-    '/learning',
-    '/programmes',
-  ];
-
-  // Check if route is public
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-
-  // Protected routes
-  const isProtectedRoute = pathname.startsWith('/dashboard');
-
-  // If trying to access protected route without auth
-  if (isProtectedRoute && !token && !authHeader) {
-    return NextResponse.redirect(new URL('/auth/login', request.url));
-  }
-
-  // Allow authenticated users to access the login/register pages so they can
-  // log out / switch accounts. These pages will display a prompt when already signed in.
-  // NOTE: This prevents the middleware from stealing users back to /dashboard.
-
   // Add security headers to all responses
   const response = NextResponse.next();
 

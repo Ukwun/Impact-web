@@ -1,7 +1,7 @@
 import { User } from "@/types";
 import { create } from "zustand";
 import { persist as zustandPersist, createJSONStorage } from "zustand/middleware";
-import { AUTH_TOKEN_KEY, AUTH_USER_KEY, AUTH_STORE_KEY, setAuthTokenAndCookie, clearAuthToken } from "@/lib/authStorage";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY, AUTH_STORE_KEY } from "@/lib/authStorage";
 import { getApiUrl } from "@/lib/apiConfig";
 
 // Some bundlers may interop the middleware as a default export.
@@ -125,9 +125,9 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
           });
 
-          // Store token in both localStorage AND cookies for middleware
-          setAuthTokenAndCookie(token);
+          // Store in localStorage
           if (typeof window !== "undefined") {
+            localStorage.setItem(AUTH_TOKEN_KEY, token);
             localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
           }
 
@@ -213,9 +213,9 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
           });
 
-          // Store token in both localStorage AND cookies for middleware
-          setAuthTokenAndCookie(token);
+          // Store in localStorage
           if (typeof window !== "undefined") {
+            localStorage.setItem(AUTH_TOKEN_KEY, token);
             localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
           }
 
@@ -253,9 +253,9 @@ export const useAuthStore = create<AuthStore>()(
           error: null,
         });
 
-        // Clear auth token from cookies and localStorage
-        clearAuthToken();
+        // Clear from localStorage
         if (typeof window !== "undefined") {
+          localStorage.removeItem(AUTH_TOKEN_KEY);
           localStorage.removeItem(AUTH_USER_KEY);
           localStorage.removeItem(AUTH_STORE_KEY);  // Also clear the persist store
         }

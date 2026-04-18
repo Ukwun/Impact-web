@@ -147,11 +147,11 @@ export default function RegisterPage() {
       const dashboardRoute = getDashboardRoute(result.user.role);
       const finalRoute = dashboardRoute || "/dashboard";
       
-      // Give more time for state updates and cookie processing
+      // Use setTimeout to ensure state is updated
       setTimeout(() => {
         console.log("🔄 Executing redirect to:", finalRoute);
         router.push(finalRoute);
-      }, 1000); // Increased delay to ensure cookies are processed
+      }, 500); // Short delay to ensure cookies/state are processed
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred. Please try again.";
       console.error("⚠️ Signup error:", errorMsg);
