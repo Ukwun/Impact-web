@@ -13,7 +13,15 @@ export function initializeSocket(userId: string, token: string): Socket {
     return socket;
   }
 
-  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || window.location.origin;
+  // Use the same backend URL as fetch calls
+  // In development: relative URL (same origin)
+  // In production: Use NEXT_PUBLIC_SOCKET_URL or NEXT_PUBLIC_API_URL
+  const socketUrl = 
+    process.env.NEXT_PUBLIC_SOCKET_URL || 
+    process.env.NEXT_PUBLIC_API_URL || 
+    window.location.origin;
+
+  console.log('🔌 Socket URL:', socketUrl);
 
   socket = io(socketUrl, {
     auth: {
