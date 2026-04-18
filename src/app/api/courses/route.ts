@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
+import { createCourse, listCourses, getCourse, updateCourse, deleteCourse } from "@/lib/firestore-utils";
 import { z } from "zod";
 
 // ============================================================================
@@ -20,7 +20,7 @@ const CreateCourseSchema = z.object({
 
 const UpdateCourseSchema = CreateCourseSchema.partial();
 
-// Helper to verify authentication
+// Helper to verify authentication and get user
 function getAuthUser(req: NextRequest): any {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return null;
@@ -29,87 +29,48 @@ function getAuthUser(req: NextRequest): any {
 
 // Helper to check authorization
 function isAuthorized(userRole: string) {
-  return ["ADMIN", "FACILITATOR", "TEACHER"].includes(userRole);
+  return ["ADMIN", "FACILITATOR"].includes(userRole?.toUpperCase());
 }
+
 
 /**
  * GET /api/courses
- * Fetch all published courses with pagination
+ * Fetch all published courses with optional filtering by difficulty
  */
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
     const difficulty = searchParams.get("difficulty");
-    const skip = (page - 1) * limit;
 
-    // Build filter query
-    const where: any = {
-      isPublished: true,
-      isArchived: false,
-    };
-
+    // Fetch courses from Firestore
+    const filters: any = {};
     if (difficulty && difficulty !== "all") {
-      where.difficulty = difficulty.toUpperCase();
+      filters.difficulty = difficulty.toUpperCase();
     }
 
-    // Fetch courses
-    const courses = await prisma.course.findMany({
-      where,
-      include: {
-        _count: {
-          select: {
-            enrollments: true,
-            lessons: true,
-            modules: true,
-          },
-        },
-        createdBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      skip,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-    });
+    const courses = await listCourses(filters);
 
-    // Get total count
-    const total = await prisma.course.count({ where });
-
-    // Transform data
-    const coursesResponse = courses.map((course: any) => ({
-      id: course.id,
-      title: course.title,
-      description: course.description,
-      thumbnail: course.thumbnail,
-      difficulty: course.difficulty,
-      duration: course.duration,
-      language: course.language,
-      instructor: `${course.createdBy.firstName} ${course.createdBy.lastName}`,
-      lessonCount: course._count.lessons,
-      moduleCount: course._count.modules,
-      enrollmentCount: course._count.enrollments,
-      createdAt: course.createdAt,
-    }));
+    console.log(`✅ Fetched ${courses.length} published courses`);
 
     return NextResponse.json({
       success: true,
       data: {
-        courses: coursesResponse,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
+        courses: courses.map(course => ({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          thumbnail: course.thumbnail,
+          difficulty: course.difficulty,
+          duration: course.duration,
+          enrollmentCount: course.enrollmentCount || 0,
+          ratingAverage: course.ratingAverage || 0,
+          createdAt: course.createdAt,
+        })),
+        total: courses.length,
       },
     });
   } catch (error) {
-    console.error("Fetch courses error:", error);
+    console.error("❌ Fetch courses error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch courses" },
       { status: 500 }
@@ -144,21 +105,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validatedData = CreateCourseSchema.parse(body);
 
-    // Create course in database
-    const course = await prisma.course.create({
-      data: {
-        ...validatedData,
-        createdById: user.sub,
-      },
-      include: {
-        createdBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+    // Create course in Firestore
+    const course = await createCourse({
+      ...validatedData,
+      createdBy: user.sub,
     });
+
+    console.log(`✅ Course created: ${course.id}`);
 
     return NextResponse.json(
       {
@@ -168,7 +121,6 @@ export async function POST(req: NextRequest) {
           title: course.title,
           description: course.description,
           difficulty: course.difficulty,
-          instructor: `${course.createdBy.firstName} ${course.createdBy.lastName}`,
           createdAt: course.createdAt,
         },
       },
@@ -186,7 +138,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.error("Create course error:", error);
+    console.error("❌ Create course error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to create course" },
       { status: 500 }

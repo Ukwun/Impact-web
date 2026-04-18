@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
+import { getUserEnrollments, getCourse } from "@/lib/firestore-utils";
 
 /**
  * GET /api/progress
- * Fetch user's course progress and enrollment data
- * NOTE: Courses and enrollments are currently not implemented in Firestore.
- * Returning empty progress for now to unblock dashboard loading.
+ * Fetch user's course progress and enrollment data from Firestore
  */
 export async function GET(req: NextRequest) {
   try {
@@ -28,17 +27,42 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // TODO: Once courses and enrollments are set up in Firestore,
-    // fetch actual enrollment data from Firestore collections.
-    // For now, return empty progress to unblock dashboard loading.
+    const userId = payload.sub;
+    console.log(`📊 Fetching progress for user: ${userId}`);
 
-    console.log(`📊 Fetching progress for user: ${payload.sub}`);
+    // Fetch user's enrollments from Firestore
+    const enrollments = await getUserEnrollments(userId);
+
+    // Map enrollments to include course details
+    const enrollmentData = await Promise.all(
+      enrollments.map(async (enrollment: any) => {
+        const course = await getCourse(enrollment.courseId);
+        return {
+          enrollmentId: enrollment.id,
+          course: course ? {
+            id: course.id,
+            title: course.title,
+            description: course.description,
+            thumbnail: course.thumbnail,
+            difficulty: course.difficulty,
+            duration: course.duration,
+          } : null,
+          progress: enrollment.progress || 0,
+          isCompleted: enrollment.isCompleted || false,
+          completedAt: enrollment.completedAt,
+          lastAccessedAt: enrollment.lastAccessedAt,
+          enrolledAt: enrollment.enrolledAt,
+        };
+      })
+    );
+
+    console.log(`✅ Found ${enrollmentData.length} enrollments for user ${userId}`);
 
     return NextResponse.json({
       success: true,
       data: {
-        enrollments: [],
-        total: 0,
+        enrollments: enrollmentData,
+        total: enrollmentData.length,
       },
     });
   } catch (error) {
