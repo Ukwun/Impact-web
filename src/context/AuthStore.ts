@@ -175,13 +175,6 @@ export const useAuthStore = create<AuthStore>()(
 
           const data_response = await response.json();
           console.log("📥 Response body:", data_response);
-          console.log("📥 Response TOP-LEVEL keys:", Object.keys(data_response));
-          if (data_response.data) {
-            console.log("📥 Response.data keys:", Object.keys(data_response.data));
-          }
-          if (data_response.user) {
-            console.log("📥 Response.user keys:", Object.keys(data_response.user));
-          }
 
           if (!response.ok) {
             const errorMessage = data_response.errors
@@ -191,83 +184,37 @@ export const useAuthStore = create<AuthStore>()(
             throw new Error(errorMessage);
           }
 
-          // Handle multiple response formats flexibly
-          let token: string | undefined;
-          let user: any = undefined;
+          // Extract user from response
+          let user: any = data_response.user || data_response.data?.user;
           
-          // Try various response formats
-          if (data_response.data?.token && data_response.data?.user) {
-            token = data_response.data.token;
-            user = data_response.data.user;
-            console.log("✅ Format 1: { data: { user, token } }");
-          } else if (data_response.token && data_response.user) {
-            token = data_response.token;
-            user = data_response.user;
-            console.log("✅ Format 2: { user, token }");
-          } else if (data_response.user && data_response.access_token) {
-            token = data_response.access_token;
-            user = data_response.user;
-            console.log("✅ Format 3: { user, access_token }");
-          } else if (data_response.data?.user && data_response.data?.access_token) {
-            token = data_response.data.access_token;
-            user = data_response.data.user;
-            console.log("✅ Format 4: { data: { user, access_token } }");
-          } else if (data_response.user) {
-            // If we have user but no token, look for token in various places
-            user = data_response.user;
-            const hasToken = !!data_response.token;
-            const hasAccessToken = !!data_response.access_token;
-            const hasDataToken = !!data_response.data?.token;
-            const hasDataAccessToken = !!data_response.data?.access_token;
-            const hasUserToken = !!user.token;
-            const hasUserAccessToken = !!user.accessToken;
-            
-            // Try to find token in multiple locations
-            token = data_response.token || 
-                    data_response.access_token || 
-                    data_response.data?.token ||
-                    data_response.data?.access_token ||
-                    user.token ||
-                    user.accessToken ||
-                    generateFallbackToken(user);
-            
-            console.log("⚠️ Format 5: User found but NO token in standard locations");
-            console.log("   - response.token:", hasToken);
-            console.log("   - response.access_token:", hasAccessToken);
-            console.log("   - response.data.token:", hasDataToken);
-            console.log("   - response.data.access_token:", hasDataAccessToken);
-            console.log("   - user.token:", hasUserToken);
-            console.log("   - user.accessToken:", hasUserAccessToken);
-            console.log("   - User object keys:", Object.keys(user));
-            console.log("   - User ID:", user.id);
-            console.log("   - Using token:", token.substring(0, 50) + "...");
-            console.log("   ⚠️ WARNING: May be using fallback token, could cause auth issues!");
+          if (!user) {
+            console.error("❌ No user object in registration response");
+            throw new Error("Registration succeeded but no user data returned");
           }
 
-          if (!token || !user) {
-            console.error("❌ Missing critical fields in response:");
-            console.error("  - token:", !!token);
-            console.error("  - user:", !!user);
-            console.error("  - response keys:", Object.keys(data_response));
-            throw new Error("Server response is missing required user or token data");
+          console.log("✅ Registration successful, user created:", user);
+          console.log("   - User ID:", user.id);
+          console.log("   - User email:", user.email);
+          console.log("   - User role:", user.role);
+
+          // IMPORTANT: Registration doesn't return a token, so we need to auto-login
+          // This gives us a valid JWT token from the backend
+          console.log("🔑 Auto-logging in with credentials...");
+          
+          const loginResult = await login(data.email, data.password);
+          
+          if (!loginResult) {
+            // Login failed - this is a problem
+            console.error("⚠️ Registration succeeded but auto-login failed");
+            // Still return success with user data, user will see login redirect
+            return { success: true, user, error: "Please log in with your new account" };
           }
 
-          set({
-            token,
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
-
-          // Store token AND user in localStorage
-          if (typeof window !== "undefined") {
-            localStorage.setItem(AUTH_TOKEN_KEY, token);
-            localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-          }
-
-          console.log("✅ Registration successful!");
-          return { success: true, token, user };
+          // At this point, login was successful and state is updated
+          console.log("✅ Auto-login successful after registration!");
+          
+          const state = get();
+          return { success: true, token: state.token, user: state.user };
         } catch (err) {
           const errorMessage =
             err instanceof Error ? err.message : "Registration failed";
