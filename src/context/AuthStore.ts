@@ -89,10 +89,23 @@ export const useAuthStore = create<AuthStore>()(
       const register = async (data: any) => {
         set({ isLoading: true, error: null });
         try {
+          // Transform form data to match backend expectations
+          const transformedData = {
+            email: data.email,
+            password: data.password,
+            full_name: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            phone: data.phone,
+            role: data.role,
+            state: data.state,
+            institution: data.institution,
+            passwordConfirm: data.passwordConfirm || data.passwordConfirm,
+            agreeToTerms: data.agreeToTerms,
+          };
+
           const response = await fetch(getApiUrl("/api/auth/register"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
+            body: JSON.stringify(transformedData),
           });
 
           if (!response.ok) {
