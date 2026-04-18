@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Container } from "@/components/ui/Container";
 import { Card } from "@/components/ui/Card";
 import { useAuthStore } from "@/context/AuthStore";
+import { getDashboardRoute } from "@/lib/rbac";
 import { ArrowRight, Lock, Mail, AlertCircle, CheckCircle, Loader } from "lucide-react";
 
 export default function LoginPage() {
@@ -25,12 +26,8 @@ export default function LoginPage() {
 
     if (user) {
       // User is already authenticated, redirect to role-specific dashboard
-      const redirectToDashboard = async () => {
-        const { getDashboardRoute } = await import("@/lib/rbac");
-        const dashboardRoute = getDashboardRoute(user.role);
-        router.push(dashboardRoute);
-      };
-      redirectToDashboard();
+      const dashboardRoute = getDashboardRoute(user.role);
+      router.push(dashboardRoute);
     }
   }, [user, hasHydrated, router]);
 
@@ -50,8 +47,7 @@ export default function LoginPage() {
       setSuccessMessage("Login successful! Redirecting...");
 
       // Wait a bit for the store to update, then redirect to role-specific dashboard
-      setTimeout(async () => {
-        const { getDashboardRoute } = await import("@/lib/rbac");
+      setTimeout(() => {
         const currentUser = useAuthStore.getState().user;
         if (currentUser) {
           const dashboardRoute = getDashboardRoute(currentUser.role);
