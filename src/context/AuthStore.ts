@@ -117,6 +117,11 @@ export const useAuthStore = create<AuthStore>()(
             throw new Error("Invalid response: missing user or token");
           }
 
+          console.log("✅ Extracted user from response:", user);
+          console.log("   - User ID:", user.id || user.uid);
+          console.log("   - User Name:", user.firstName, user.lastName);
+          console.log("   - User Role:", user.role);
+
           set({
             token,
             user,
@@ -129,6 +134,16 @@ export const useAuthStore = create<AuthStore>()(
           if (typeof window !== "undefined") {
             localStorage.setItem(AUTH_TOKEN_KEY, token);
             localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+            console.log("📦 Stored in localStorage:", {
+              token: token.substring(0, 20) + '...',
+              user: {
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.role,
+              }
+            });
           }
 
           console.log("✅ Login successful!");
@@ -198,7 +213,8 @@ export const useAuthStore = create<AuthStore>()(
           }
 
           console.log("✅ Registration successful, user created:", user);
-          console.log("   - User ID:", user.uid);
+          console.log("   - User ID:", user.id || user.uid);
+          console.log("   - User Name:", user.firstName, user.lastName);
           console.log("   - User email:", user.email);
           console.log("   - User role:", user.role);
           console.log("✅ Token received directly from registration");
@@ -217,6 +233,16 @@ export const useAuthStore = create<AuthStore>()(
           if (typeof window !== "undefined") {
             localStorage.setItem(AUTH_TOKEN_KEY, token);
             localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+            console.log("📦 Stored in localStorage:", {
+              token: token.substring(0, 20) + '...',
+              user: {
+                id: user.id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                email: user.email,
+                role: user.role,
+              }
+            });
           }
 
           console.log("✅ Registration complete and user authenticated!");
@@ -292,6 +318,18 @@ export const useAuthStore = create<AuthStore>()(
         return window.localStorage;
       }),
       onRehydrateStorage: () => (state: any) => {
+        // Log what's being loaded from localStorage
+        if (state?.user) {
+          console.log("🔄 Zustand rehydrated from localStorage:");
+          console.log("   - User ID:", state.user.id || state.user.uid);
+          console.log("   - User Name:", state.user.firstName, state.user.lastName);
+          console.log("   - User Email:", state.user.email);
+          console.log("   - User Role:", state.user.role);
+          console.log("   - Full user object:", state.user);
+        } else {
+          console.warn("⚠️ No user in localStorage on rehydrate");
+        }
+        
         // Mark hydration complete so UI can safely rely on persisted data
         if (_setAuthState) {
           _setAuthState({ hasHydrated: true });

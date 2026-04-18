@@ -55,14 +55,15 @@ export async function POST(req: NextRequest) {
 
       // Fetch user role from Firestore
       let userRole = 'STUDENT';
+      let userProfile: any = null;
       try {
         const db = getFirestore();
         const userDoc = await db.collection('users').doc(userRecord.uid).get();
         if (userDoc.exists) {
-          const userData = userDoc.data();
-          userRole = userData?.role || 'STUDENT';
+          userProfile = userDoc.data();
+          userRole = userProfile?.role || 'STUDENT';
           console.log(`🔍 Role from Firestore for ${userRecord.uid}:`, userRole);
-          console.log(`📋 Full Firestore doc:`, userData);
+          console.log(`📋 Full Firestore doc:`, userProfile);
         } else {
           console.warn(`⚠️ No Firestore document found for user ${userRecord.uid}`);
         }
@@ -78,18 +79,29 @@ export async function POST(req: NextRequest) {
         role: userRole,
       });
 
+      // Return complete user object matching User interface
+      const completedUser = {
+        id: userRecord.uid,
+        firstName: userProfile?.firstName || 'User',
+        lastName: userProfile?.lastName || 'Account',
+        email: userRecord.email || '',
+        phone: userProfile?.phone || '',
+        role: userRole,
+        state: userProfile?.state || '',
+        institution: userProfile?.institution || '',
+        verified: userProfile?.verified || false,
+        createdAt: userProfile?.createdAt || new Date().toISOString(),
+        updatedAt: userProfile?.updatedAt || new Date().toISOString(),
+      };
+
       console.log(`✅ Login token generated with role: ${userRole}`);
+      console.log(`✅ Complete user object: `, completedUser);
 
       const response = NextResponse.json(
         {
           success: true,
           message: "Login successful",
-          user: {
-            uid: userRecord.uid,
-            email: userRecord.email,
-            displayName: userRecord.displayName,
-            role: userRole,
-          },
+          user: completedUser,
           token: token,
           requiresPasswordChange: false,
         },

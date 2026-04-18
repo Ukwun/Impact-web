@@ -118,17 +118,29 @@ export async function POST(req: NextRequest) {
         role: role,
       });
 
+      // Return complete user object matching User interface
+      const completedUser = {
+        id: userRecord.uid,
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        phone: phone,
+        role: role,
+        state: state,
+        institution: body.institution || '',
+        verified: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      console.log("✅ Complete user object being returned:", completedUser);
+
       // Return user data with proper role
       const response = NextResponse.json(
         {
           success: true,
           message: "Account created successfully",
-          user: {
-            uid: userRecord.uid,
-            email: userRecord.email,
-            displayName: userRecord.displayName,
-            role: role,
-          },
+          user: completedUser,
           token: jwtToken,
         },
         { status: 201 }
