@@ -21,8 +21,14 @@ const CreateTierSchema = z.object({
 // Helper to verify admin role
 function getAuthUser(req: NextRequest): any {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) return null;
-  return verifyToken(token);
+  console.log("🔑 Admin tiers endpoint - Token received:", !!token);
+  if (!token) {
+    console.error("❌ No token provided");
+    return null;
+  }
+  const decoded = verifyToken(token);
+  console.log("🔍 Decoded token:", decoded);
+  return decoded;
 }
 
 /**
@@ -33,7 +39,11 @@ export async function GET(req: NextRequest) {
   try {
     const user = getAuthUser(req);
 
-    if (!user || user.role !== "ADMIN") {
+    console.log("👤 User from token:", user);
+    console.log("📊 User role:", user?.role);
+
+    if (!user || (user.role !== "ADMIN" && user.role !== "Admin")) {
+      console.error("❌ Unauthorized - user role:", user?.role);
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }

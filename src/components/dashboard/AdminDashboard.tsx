@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useAdminDashboard } from "@/hooks/useLMS";
+import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
 import {
   Users,
   BarChart3,
@@ -62,9 +63,10 @@ export default function AdminDashboard() {
     const loadTiers = async () => {
       setTiersLoading(true);
       try {
+        const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
         const response = await fetch("/api/admin/tiers", {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -93,10 +95,11 @@ export default function AdminDashboard() {
 
     setIsDeleting(true);
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
       const response = await fetch(`/api/admin/tiers/${selectedTier.id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
+import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
 import { Loader } from "lucide-react";
 
 interface CreateCourseModalProps {
@@ -63,7 +64,7 @@ export const CreateCourseModal = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
         },
         body: JSON.stringify({
           title: formData.title,

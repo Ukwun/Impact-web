@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
 import {
   Users,
   BookOpen,
@@ -63,7 +64,7 @@ export default function FacilitatorDashboard() {
       try {
         const response = await fetch("/api/courses", {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
           },
         });
 
@@ -92,7 +93,7 @@ export default function FacilitatorDashboard() {
       const response = await fetch(`/api/courses/${selectedCourse.id}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
         },
       });
 
