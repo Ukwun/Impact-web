@@ -485,7 +485,17 @@ export default function OnboardingPage() {
           <p className="text-center text-gray-400 text-sm mt-6">
             <button 
               onClick={async () => {
+                if (redirectedRef.current) return; // Prevent double clicks
                 redirectedRef.current = true;
+                
+                // Mark user as verified in Zustand store so they can access dashboard
+                const updatedUser = {
+                  ...user,
+                  verified: true,
+                };
+                setUser(updatedUser);
+                
+                // Redirect to dashboard
                 const { getDashboardRoute } = await import("@/lib/rbac");
                 const dashboardRoute = getDashboardRoute(user.role);
                 router.push(dashboardRoute);
