@@ -175,6 +175,13 @@ export const useAuthStore = create<AuthStore>()(
 
           const data_response = await response.json();
           console.log("📥 Response body:", data_response);
+          console.log("📥 Response TOP-LEVEL keys:", Object.keys(data_response));
+          if (data_response.data) {
+            console.log("📥 Response.data keys:", Object.keys(data_response.data));
+          }
+          if (data_response.user) {
+            console.log("📥 Response.user keys:", Object.keys(data_response.user));
+          }
 
           if (!response.ok) {
             const errorMessage = data_response.errors
@@ -206,10 +213,35 @@ export const useAuthStore = create<AuthStore>()(
             user = data_response.data.user;
             console.log("✅ Format 4: { data: { user, access_token } }");
           } else if (data_response.user) {
-            // If we have user but no token, create a minimal token
+            // If we have user but no token, look for token in various places
             user = data_response.user;
-            token = data_response.token || data_response.access_token || generateFallbackToken(user);
-            console.log("✅ Format 5: { user } + fallback token");
+            const hasToken = !!data_response.token;
+            const hasAccessToken = !!data_response.access_token;
+            const hasDataToken = !!data_response.data?.token;
+            const hasDataAccessToken = !!data_response.data?.access_token;
+            const hasUserToken = !!user.token;
+            const hasUserAccessToken = !!user.accessToken;
+            
+            // Try to find token in multiple locations
+            token = data_response.token || 
+                    data_response.access_token || 
+                    data_response.data?.token ||
+                    data_response.data?.access_token ||
+                    user.token ||
+                    user.accessToken ||
+                    generateFallbackToken(user);
+            
+            console.log("⚠️ Format 5: User found but NO token in standard locations");
+            console.log("   - response.token:", hasToken);
+            console.log("   - response.access_token:", hasAccessToken);
+            console.log("   - response.data.token:", hasDataToken);
+            console.log("   - response.data.access_token:", hasDataAccessToken);
+            console.log("   - user.token:", hasUserToken);
+            console.log("   - user.accessToken:", hasUserAccessToken);
+            console.log("   - User object keys:", Object.keys(user));
+            console.log("   - User ID:", user.id);
+            console.log("   - Using token:", token.substring(0, 50) + "...");
+            console.log("   ⚠️ WARNING: May be using fallback token, could cause auth issues!");
           }
 
           if (!token || !user) {
