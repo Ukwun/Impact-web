@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AUTH_TOKEN_KEY } from '@/lib/authStorage';
 import { X, Loader2 } from 'lucide-react';
 
 interface CourseFormModalProps {
@@ -43,7 +44,7 @@ export default function CourseFormModal({
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(AUTH_TOKEN_KEY);
       const method = editingCourse ? 'PUT' : 'POST';
       const url = editingCourse
         ? `/api/courses/${editingCourse.id}`

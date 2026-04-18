@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { AUTH_TOKEN_KEY } from '@/lib/authStorage';
 import { useState, useEffect } from 'react';
 import { BookOpen, Users, BarChart3, TrendingUp } from 'lucide-react';
 import CourseFormModal from '@/components/CourseFormModal';
@@ -22,7 +23,7 @@ export default function FacilitatorDashboard() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
         const response = await fetch('/api/courses?filter=facilitator', {
           headers: {
             Authorization: `Bearer ${token}`,
