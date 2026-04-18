@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { comparePassword, validateEmail, generateToken } from "@/lib/auth";
 import { demoUsers } from "@/lib/demoUsers";
+import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
 import {
   checkRateLimit,
   getClientIp,
@@ -8,6 +9,12 @@ import {
   APIValidationSchemas,
   RATE_LIMIT_CONFIGS,
 } from "@/lib/security";
+
+// Handle CORS preflight requests
+export async function OPTIONS(req: NextRequest) {
+  const corsResponse = handleCorsOptions(req);
+  return corsResponse || new NextResponse(null, { status: 204 });
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -210,7 +217,7 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    return response;
+    return addCorsHeaders(response, req.headers.get("origin") || undefined);
   } catch (error) {
     console.error("Login error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -218,9 +225,10 @@ export async function POST(req: NextRequest) {
       message: errorMessage,
       stack: error instanceof Error ? error.stack : "No stack trace",
     });
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, error: errorMessage || "Login failed. Please try again." },
       { status: 500 }
     );
+    return addCorsHeaders(response, req.headers.get("origin") || undefined);
   }
 }

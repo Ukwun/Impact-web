@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword, validatePasswordSimple, validateEmail, generateToken } from "@/lib/auth";
 import { demoUsers } from "@/lib/demoUsers";
+import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
 import {
   checkRateLimit,
   getClientIp,
@@ -10,6 +11,12 @@ import {
   RATE_LIMIT_CONFIGS,
 } from "@/lib/security";
 import { getMembershipTierForRole, getTierIdFromType } from "@/lib/membershipTierMapping";
+
+// Handle CORS preflight requests
+export async function OPTIONS(req: NextRequest) {
+  const corsResponse = handleCorsOptions(req);
+  return corsResponse || new NextResponse(null, { status: 204 });
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +41,7 @@ export async function POST(req: NextRequest) {
         "Retry-After",
         Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString()
       );
-      return response;
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
     const body = await req.json();
@@ -67,7 +74,7 @@ export async function POST(req: NextRequest) {
       const passwordStrengthCheck = validatePassword(body.password);
       if (!passwordStrengthCheck.isValid) {
         console.warn(`⚠️ Password too weak:`, passwordStrengthCheck.feedback);
-        return NextResponse.json(
+        const response = NextResponse.json(
           {
             success: false,
             error: "Password is too weak",
@@ -76,13 +83,14 @@ export async function POST(req: NextRequest) {
           },
           { status: 400 }
         );
+        return addCorsHeaders(response, req.headers.get("origin") || undefined);
       }
     } else {
       // Demo mode: basic password validation only
       const passwordStrengthCheck = validatePasswordSimple(body.password);
       if (!passwordStrengthCheck.valid) {
         console.warn(`⚠️ Password too weak for demo:`, passwordStrengthCheck.errors);
-        return NextResponse.json(
+        const response = NextResponse.json(
           {
             success: false,
             error: "Password is too weak",
@@ -90,6 +98,7 @@ export async function POST(req: NextRequest) {
           },
           { status: 400 }
         );
+        return addCorsHeaders(response, req.headers.get("origin") || undefined);
       }
     }
 
@@ -105,20 +114,22 @@ export async function POST(req: NextRequest) {
 
     // Add custom validation for password match
     if (body.password !== (body.confirmPassword || body.passwordConfirm)) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, error: "Passwords do not match" },
         { status: 400 }
       );
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
     const validationResult = validateInput(APIValidationSchemas.register, validationInput);
 
     if (!validationResult.valid) {
       console.warn(`⚠️ Validation failed:`, (validationResult as any).errors);
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, error: "Invalid input", errors: (validationResult as any).errors },
         { status: 400 }
       );
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
     const email = body.email.trim().toLowerCase();
@@ -144,10 +155,11 @@ export async function POST(req: NextRequest) {
         ]);
 
         if (existingUser) {
-          return NextResponse.json(
+          const response = NextResponse.json(
             { success: false, error: "Email already registered" },
             { status: 409 }
           );
+          return addCorsHeaders(response, req.headers.get("origin") || undefined);
         }
       } catch (dbError) {
         console.log("Database check failed, will check demo users:", (dbError as Error).message);
@@ -156,10 +168,11 @@ export async function POST(req: NextRequest) {
 
     // Check demo users as fallback
     if (demoUsers.has(email)) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, error: "Email already registered" },
         { status: 409 }
       );
+      return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
     // ========================================================================
@@ -303,7 +316,7 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    return response;
+    return addCorsHeaders(response, req.headers.get("origin") || undefined);
   } catch (error) {
     console.error("Registration error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -311,9 +324,10 @@ export async function POST(req: NextRequest) {
       message: errorMessage,
       stack: error instanceof Error ? error.stack : "No stack trace",
     });
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, error: errorMessage || "Registration failed. Please try again." },
       { status: 500 }
     );
+    return addCorsHeaders(response, req.headers.get("origin") || undefined);
   }
 }
