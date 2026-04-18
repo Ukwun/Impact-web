@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { default as prisma } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/leaderboard
  * Get global leaderboard rankings using the dedicated LeaderboardEntry model

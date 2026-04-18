@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import prisma from "@/lib/db";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/analytics/overview
  * Get comprehensive platform analytics

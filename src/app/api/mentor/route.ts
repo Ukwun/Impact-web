@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/mentor
  * Fetch mentor's dashboard data including mentees, sessions, and statistics
