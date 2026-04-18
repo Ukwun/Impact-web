@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
 
 /**
  * GET /api/progress
  * Fetch user's course progress and enrollment data
+ * NOTE: Courses and enrollments are currently not implemented in Firestore.
+ * Returning empty progress for now to unblock dashboard loading.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -27,60 +28,21 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Fetch user enrollments
-    const enrollments = await prisma.enrollment.findMany({
-      where: { userId: payload.sub },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            thumbnail: true,
-            difficulty: true,
-            duration: true,
-          },
-        },
-        lessonProgress: true,
-        quizAttempts: true,
-        assignmentSubmissions: true,
-      },
-    });
+    // TODO: Once courses and enrollments are set up in Firestore,
+    // fetch actual enrollment data from Firestore collections.
+    // For now, return empty progress to unblock dashboard loading.
 
-    const progressData = enrollments.map((enrollment: any) => ({
-      enrollmentId: enrollment.id,
-      course: {
-        id: enrollment.course.id,
-        title: enrollment.course.title,
-        description: enrollment.course.description,
-        thumbnail: enrollment.course.thumbnail,
-        difficulty: enrollment.course.difficulty,
-        duration: enrollment.course.duration,
-      },
-      progress: enrollment.progress,
-      isCompleted: enrollment.isCompleted,
-      completedAt: enrollment.completedAt,
-      lessonsCompleted: enrollment.lessonProgress.filter((lp: any) => lp.isCompleted)
-        .length,
-      totalLessons: enrollment.lessonProgress.length,
-      quizzesCompleted: enrollment.quizAttempts.filter((qa: any) => qa.isPassed)
-        .length,
-      assignmentsSubmitted: enrollment.assignmentSubmissions.filter(
-        (as: any) => as.isSubmitted
-      ).length,
-      lastAccessedAt: enrollment.lastAccessedAt,
-      enrolledAt: enrollment.enrolledAt,
-    }));
+    console.log(`📊 Fetching progress for user: ${payload.sub}`);
 
     return NextResponse.json({
       success: true,
       data: {
-        enrollments: progressData,
-        total: progressData.length,
+        enrollments: [],
+        total: 0,
       },
     });
   } catch (error) {
-    console.error("Fetch progress error:", error);
+    console.error("❌ Fetch progress error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch progress" },
       { status: 500 }
