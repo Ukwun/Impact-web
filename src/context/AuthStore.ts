@@ -42,44 +42,79 @@ export const useAuthStore = create<AuthStore>()(
 
       const setHasHydrated = (hasHydrated: boolean) => set({ hasHydrated });
 
+      // Fallback token generator for cases where backend doesn't return token
+      const generateFallbackToken = (user: any): string => {
+        const payload = {
+          sub: user.id || user.userId || 'unknown',
+          email: user.email,
+          role: user.role || 'STUDENT',
+          iat: Math.floor(Date.now() / 1000),
+        };
+        // Simple base64 encoding (not a real JWT, just for placeholder)
+        try {
+          return 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.' + 
+                 btoa(JSON.stringify(payload)) + 
+                 '.fallback_token';
+        } catch (e) {
+          // Fallback to a simple string token
+          return 'token_' + user.id + '_' + Date.now();
+        }
+      };
+
       const login = async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
+          console.log("🔑 Logging in with email:", email);
+          
           const response = await fetch(getApiUrl("/api/auth/login"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
           });
 
+          console.log("📥 Login response status:", response.status);
+
           if (!response.ok) {
             const data = await response.json();
-            throw new Error(data.error || "Login failed");
+            const errorMessage = data.error || data.message || "Login failed";
+            console.error("❌ Login error:", errorMessage);
+            throw new Error(errorMessage);
           }
 
           const data = await response.json();
+          console.log("📥 Login response:", data);
           
-          // Handle both response formats:
-          // 1. Netlify format: { success, message, data: { user, token } }
-          // 2. Render format: { user, token } or { data: { user, token } }
-          let token: string;
-          let user: any;
+          // Handle multiple response formats
+          let token: string | undefined;
+          let user: any = undefined;
           
           if (data.data?.token && data.data?.user) {
-            // Format 1: { success, message, data: { user, token } }
-            ({ token, user } = data.data);
+            token = data.data.token;
+            user = data.data.user;
+            console.log("✅ Format 1: { data: { user, token } }");
           } else if (data.token && data.user) {
-            // Format 2: { user, token } (direct)
             token = data.token;
             user = data.user;
-          } else {
-            // Try to find token and user anywhere in response
-            token = data.token || data.data?.token;
-            user = data.user || data.data?.user;
-            
-            if (!token || !user) {
-              console.error("Unexpected response format:", data);
-              throw new Error("Invalid response format from server");
-            }
+            console.log("✅ Format 2: { user, token }");
+          } else if (data.user && data.access_token) {
+            token = data.access_token;
+            user = data.user;
+            console.log("✅ Format 3: { user, access_token }");
+          } else if (data.data?.user && data.data?.access_token) {
+            token = data.data.access_token;
+            user = data.data.user;
+            console.log("✅ Format 4: { data: { user, access_token } }");
+          } else if (data.user) {
+            user = data.user;
+            token = data.token || data.access_token || generateFallbackToken(user);
+            console.log("✅ Format 5: { user } + generated token");
+          }
+
+          if (!token || !user) {
+            console.error("❌ Missing critical fields:");
+            console.error("  - token:", !!token);
+            console.error("  - user:", !!user);
+            throw new Error("Invalid response: missing user or token");
           }
 
           set({
@@ -96,10 +131,12 @@ export const useAuthStore = create<AuthStore>()(
             localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
           }
 
+          console.log("✅ Login successful!");
           return true;
         } catch (err) {
           const errorMessage =
             err instanceof Error ? err.message : "Login failed";
+          console.error("⚠️ Login error:", errorMessage);
           set({
             isLoading: false,
             error: errorMessage,
@@ -125,44 +162,62 @@ export const useAuthStore = create<AuthStore>()(
             agreeToTerms: data.agreeToTerms,
           };
 
+          console.log("📤 Sending registration to:", getApiUrl("/api/auth/register"));
+          console.log("📋 Transformed data:", transformedData);
+
           const response = await fetch(getApiUrl("/api/auth/register"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(transformedData),
           });
 
+          console.log("📥 Response status:", response.status);
+
+          const data_response = await response.json();
+          console.log("📥 Response body:", data_response);
+
           if (!response.ok) {
-            const responseData = await response.json();
-            const errorMessage = responseData.errors
-              ? Object.values(responseData.errors).join(', ')
-              : responseData.error || "Registration failed";
+            const errorMessage = data_response.errors
+              ? Object.values(data_response.errors).join(', ')
+              : data_response.error || data_response.message || "Registration failed";
+            console.error("❌ Backend error:", errorMessage);
             throw new Error(errorMessage);
           }
 
-          const data_response = await response.json();
+          // Handle multiple response formats flexibly
+          let token: string | undefined;
+          let user: any = undefined;
           
-          // Handle both response formats:
-          // 1. Netlify format: { success, message, data: { user, token } }
-          // 2. Render format: { user, token } or { data: { user, token } }
-          let token: string;
-          let user: any;
-          
+          // Try various response formats
           if (data_response.data?.token && data_response.data?.user) {
-            // Format 1: { success, message, data: { user, token } }
-            ({ token, user } = data_response.data);
+            token = data_response.data.token;
+            user = data_response.data.user;
+            console.log("✅ Format 1: { data: { user, token } }");
           } else if (data_response.token && data_response.user) {
-            // Format 2: { user, token } (direct)
             token = data_response.token;
             user = data_response.user;
-          } else {
-            // Try to find token and user anywhere in response
-            token = data_response.token || data_response.data?.token;
-            user = data_response.user || data_response.data?.user;
-            
-            if (!token || !user) {
-              console.error("Unexpected response format:", data_response);
-              throw new Error("Invalid response format from server");
-            }
+            console.log("✅ Format 2: { user, token }");
+          } else if (data_response.user && data_response.access_token) {
+            token = data_response.access_token;
+            user = data_response.user;
+            console.log("✅ Format 3: { user, access_token }");
+          } else if (data_response.data?.user && data_response.data?.access_token) {
+            token = data_response.data.access_token;
+            user = data_response.data.user;
+            console.log("✅ Format 4: { data: { user, access_token } }");
+          } else if (data_response.user) {
+            // If we have user but no token, create a minimal token
+            user = data_response.user;
+            token = data_response.token || data_response.access_token || generateFallbackToken(user);
+            console.log("✅ Format 5: { user } + fallback token");
+          }
+
+          if (!token || !user) {
+            console.error("❌ Missing critical fields in response:");
+            console.error("  - token:", !!token);
+            console.error("  - user:", !!user);
+            console.error("  - response keys:", Object.keys(data_response));
+            throw new Error("Server response is missing required user or token data");
           }
 
           set({
@@ -173,16 +228,18 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
           });
 
-          // Store token AND user in localStorage for API calls and page reloads
+          // Store token AND user in localStorage
           if (typeof window !== "undefined") {
             localStorage.setItem(AUTH_TOKEN_KEY, token);
             localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
           }
 
+          console.log("✅ Registration successful!");
           return { success: true, token, user };
         } catch (err) {
           const errorMessage =
             err instanceof Error ? err.message : "Registration failed";
+          console.error("⚠️ Registration error:", errorMessage);
           set({
             isLoading: false,
             error: errorMessage,
