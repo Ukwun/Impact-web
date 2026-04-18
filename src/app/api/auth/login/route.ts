@@ -6,6 +6,7 @@ import {
   RATE_LIMIT_CONFIGS,
 } from "@/lib/security";
 import { getFirebaseAuth, getFirestore } from "@/lib/firebase-admin";
+import { generateToken } from "@/lib/auth";
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +68,12 @@ export async function POST(req: NextRequest) {
         userRole = 'STUDENT';
       }
 
-      const customToken = await auth.createCustomToken(userRecord.uid);
+      // Generate JWT token for API authentication
+      const token = generateToken({
+        sub: userRecord.uid,
+        email: userRecord.email || '',
+        role: userRole,
+      });
 
       const response = NextResponse.json(
         {
@@ -79,7 +85,7 @@ export async function POST(req: NextRequest) {
             displayName: userRecord.displayName,
             role: userRole,
           },
-          token: customToken,
+          token: token,
           requiresPasswordChange: false,
         },
         { status: 200 }
