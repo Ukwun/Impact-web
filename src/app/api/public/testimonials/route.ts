@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
 
 export const dynamic = 'force-dynamic';
+
+export async function OPTIONS(req: NextRequest) {
+  const corsResponse = handleCorsOptions(req);
+  return corsResponse || new NextResponse(null, { status: 204 });
+}
 
 /**
  * GET /api/public/testimonials
@@ -41,24 +47,27 @@ export async function GET(request: NextRequest) {
     // If not enough testimonials in database, return what we have
     if (testimonials.length === 0) {
       // Return empty array - component will handle gracefully
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         data: [],
       });
+      return addCorsHeaders(response, request.headers.get("origin") || undefined);
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: testimonials,
     });
+    return addCorsHeaders(response, request.headers.get("origin") || undefined);
   } catch (error) {
     console.error("❌ Error fetching testimonials:", error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: false,
         error: "Failed to fetch testimonials",
       },
       { status: 500 }
     );
+    return addCorsHeaders(response, request.headers.get("origin") || undefined);
   }
 }

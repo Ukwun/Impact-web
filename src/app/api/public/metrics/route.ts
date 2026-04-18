@@ -1,12 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
+
+export async function OPTIONS(req: NextRequest) {
+  const corsResponse = handleCorsOptions(req);
+  return corsResponse || new NextResponse(null, { status: 204 });
+}
 
 /**
  * GET /api/public/metrics
  * Fetch public platform metrics for the landing page
  * This endpoint is PUBLIC (no authentication required)
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // Fetch all metrics in parallel for performance
     const [
@@ -49,7 +55,7 @@ export async function GET() {
           )
         : 0;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: {
         // Main metrics displayed on hero
@@ -66,14 +72,16 @@ export async function GET() {
           : 0,
       },
     });
+    return addCorsHeaders(response, req.headers.get("origin") || undefined);
   } catch (error) {
     console.error("❌ Error fetching landing metrics:", error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         success: false,
         error: "Failed to fetch metrics. Please try again later.",
       },
       { status: 500 }
     );
+    return addCorsHeaders(response, req.headers.get("origin") || undefined);
   }
 }

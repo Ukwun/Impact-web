@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
 
 export const dynamic = 'force-dynamic';
+
+export async function OPTIONS(req: NextRequest) {
+  const corsResponse = handleCorsOptions(req);
+  return corsResponse || new NextResponse(null, { status: 204 });
+}
 
 /**
  * GET /api/public/partners
@@ -21,10 +27,11 @@ export async function GET(req: NextRequest) {
       orderBy: { category: "asc" },
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: partners,
     });
+    return addCorsHeaders(response, req.headers.get("origin") || undefined);
   } catch (error) {
     console.error("Error fetching partners:", error);
 
@@ -47,9 +54,10 @@ export async function GET(req: NextRequest) {
       { id: "6", name: "Ford Foundation", category: "NGO", logo: "FF", description: "" },
     ];
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: defaultPartners,
     });
+    return addCorsHeaders(response, req.headers.get("origin") || undefined);
   }
 }
