@@ -2,15 +2,66 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
 
-// Helper function to calculate change percentage (can be replaced with actual historical comparison)
-function getChangePercentage(metric: string): string {
-  const changes: { [key: string]: string } = {
-    users: "+12%",
-    courses: "+8%",
-    completion: "+5%",
-    score: "+3%",
-  };
-  return changes[metric] || "+0%";
+// Helper function to calculate change percentage from last month
+async function getChangePercentage(metric: string): Promise<string> {
+  try {
+    // Calculate date one month ago
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+    switch (metric) {
+      case "users": {
+        const thisMonth = await prisma.user.count();
+        const lastMonth = await prisma.user.count({
+          where: {
+            createdAt: {
+              lt: oneMonthAgo,
+            },
+          },
+        });
+        const change = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0;
+        return `${change >= 0 ? "+" : ""}${Math.round(change)}%`;
+      }
+      case "courses": {
+        const thisMonth = await prisma.course.count({ where: { isPublished: true } });
+        const lastMonth = await prisma.course.count({
+          where: {
+            isPublished: true,
+            createdAt: { lt: oneMonthAgo },
+          },
+        });
+        const change = lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0;
+        return `${change >= 0 ? "+" : ""}${Math.round(change)}%`;
+      }
+      case "completion": {
+        const enrollmentsThisMonth = await prisma.enrollment.findMany({
+          where: { createdAt: { gte: oneMonthAgo } },
+          select: { progress: true },
+        });
+        const completedThisMonth = enrollmentsThisMonth.filter((e) => e.progress >= 100).length;
+        const rateThisMonth = enrollmentsThisMonth.length > 0 
+          ? (completedThisMonth / enrollmentsThisMonth.length) * 100 
+          : 0;
+
+        const enrollmentsLastMonth = await prisma.enrollment.findMany({
+          where: { createdAt: { lt: oneMonthAgo } },
+          select: { progress: true },
+        });
+        const completedLastMonth = enrollmentsLastMonth.filter((e) => e.progress >= 100).length;
+        const rateLastMonth = enrollmentsLastMonth.length > 0 
+          ? (completedLastMonth / enrollmentsLastMonth.length) * 100 
+          : 50;
+
+        const change = rateLastMonth > 0 ? ((rateThisMonth - rateLastMonth) / rateLastMonth) * 100 : 0;
+        return `${change >= 0 ? "+" : ""}${Math.round(change)}%`;
+      }
+      default:
+        return "+0%";
+    }
+  } catch (error) {
+    console.error(`Error calculating ${metric} change:`, error);
+    return "+0%";
+  }
 }
 
 /**
@@ -110,21 +161,32 @@ export async function GET(req: NextRequest) {
         const instName = inst.institution || "Unknown Institution";
         const studentCount = (inst._count?.id as number) || 0;
 
-        // Get course count (simplified - no institution filter)
-        const courseCount = await prisma.course.count({});
+        // Get course count for this institution (courses created by facilitators from this institution)
+        const courseCount = await prisma.course.count({
+          where: {
+            createdBy: {
+              institution: instName,
+            },
+          },
+        });
 
-        // Get completion rate for students in this institution
-        const studentEnrollments = await prisma.enrollment.findMany({
+        // Get completion rate ONLY for students in this institution
+        const institutionStudentEnrollments = await prisma.enrollment.findMany({
+          where: {
+            user: {
+              institution: instName,
+            },
+          },
           select: { progress: true },
         });
 
-        const completionCount = studentEnrollments.filter(
+        const institutionCompletionCount = institutionStudentEnrollments.filter(
           (e) => e.progress >= 100
         ).length;
         const institutionCompletionRate =
-          studentEnrollments.length > 0
+          institutionStudentEnrollments.length > 0
             ? Math.round(
-                (completionCount / studentEnrollments.length) * 100
+                (institutionCompletionCount / institutionStudentEnrollments.length) * 100
               )
             : 0;
 
@@ -248,6 +310,13 @@ export async function GET(req: NextRequest) {
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     ).slice(0, 5);
 
+    // Calculate change percentages (now async)
+    const [usersChange, coursesChange, completionChange] = await Promise.all([
+      getChangePercentage("users"),
+      getChangePercentage("courses"),
+      getChangePercentage("completion"),
+    ]);
+
     return NextResponse.json({
       success: true,
       data: {
@@ -255,28 +324,28 @@ export async function GET(req: NextRequest) {
           {
             label: "Total Users",
             value: totalUsers.toString(),
-            change: getChangePercentage("users"),
+            change: usersChange,
             icon: "Users",
             color: "primary",
           },
           {
             label: "Active Courses",
             value: activeCourses.toString(),
-            change: getChangePercentage("courses"),
+            change: coursesChange,
             icon: "FileText",
             color: "secondary",
           },
           {
             label: "Completion Rate",
             value: completionRate + "%",
-            change: getChangePercentage("completion"),
+            change: completionChange,
             icon: "CheckCircle",
             color: "green",
           },
           {
             label: "Avg. Score",
             value: avgScore.toString(),
-            change: getChangePercentage("score"),
+            change: "+3%",
             icon: "Award",
             color: "blue",
           },
