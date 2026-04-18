@@ -153,13 +153,12 @@ export const useAuthStore = create<AuthStore>()(
           const transformedData = {
             email: data.email,
             password: data.password,
-            full_name: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+            firstName: data.firstName,
+            lastName: data.lastName,
             phone: data.phone,
             role: data.role,
             state: data.state,
             institution: data.institution,
-            passwordConfirm: data.passwordConfirm || data.passwordConfirm,
-            agreeToTerms: data.agreeToTerms,
           };
 
           console.log("📤 Sending registration to:", getApiUrl("/api/auth/register"));
@@ -184,37 +183,45 @@ export const useAuthStore = create<AuthStore>()(
             throw new Error(errorMessage);
           }
 
-          // Extract user from response
+          // Extract user and token from response
           let user: any = data_response.user || data_response.data?.user;
+          let token: string = data_response.token || data_response.data?.token;
           
           if (!user) {
             console.error("❌ No user object in registration response");
             throw new Error("Registration succeeded but no user data returned");
           }
 
-          console.log("✅ Registration successful, user created:", user);
-          console.log("   - User ID:", user.id);
-          console.log("   - User email:", user.email);
-          console.log("   - User role:", user.role);
-
-          // IMPORTANT: Registration doesn't return a token, so we need to auto-login
-          // This gives us a valid JWT token from the backend
-          console.log("🔑 Auto-logging in with credentials...");
-          
-          const loginResult = await login(data.email, data.password);
-          
-          if (!loginResult) {
-            // Login failed - this is a problem
-            console.error("⚠️ Registration succeeded but auto-login failed");
-            // Still return success with user data, user will see login redirect
-            return { success: true, user, error: "Please log in with your new account" };
+          if (!token) {
+            console.error("❌ No token in registration response");
+            throw new Error("Registration succeeded but no authentication token returned");
           }
 
-          // At this point, login was successful and state is updated
-          console.log("✅ Auto-login successful after registration!");
+          console.log("✅ Registration successful, user created:", user);
+          console.log("   - User ID:", user.uid);
+          console.log("   - User email:", user.email);
+          console.log("   - User role:", user.role);
+          console.log("✅ Token received directly from registration");
+
+          // Set auth state directly with token from register endpoint
+          // No need to call login() separately
+          set({
+            token,
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+
+          // Store token AND user in localStorage for API calls and page reloads
+          if (typeof window !== "undefined") {
+            localStorage.setItem(AUTH_TOKEN_KEY, token);
+            localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+          }
+
+          console.log("✅ Registration complete and user authenticated!");
           
-          const state = get();
-          return { success: true, token: state.token, user: state.user };
+          return { success: true, token, user };
         } catch (err) {
           const errorMessage =
             err instanceof Error ? err.message : "Registration failed";

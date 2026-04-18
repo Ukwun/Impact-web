@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
 
       const customToken = await auth.createCustomToken(userRecord.uid);
 
+      // Return user data with proper role
       const response = NextResponse.json(
         {
           success: true,
@@ -118,6 +119,7 @@ export async function POST(req: NextRequest) {
             uid: userRecord.uid,
             email: userRecord.email,
             displayName: userRecord.displayName,
+            role: role,
           },
           token: customToken,
         },
