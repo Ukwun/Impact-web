@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
+import { getApiUrl } from "@/lib/apiConfig";
 
 interface AchievementData {
   id: string;

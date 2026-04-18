@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { ArrowRight, Sparkles, TrendingUp, Users, Award, Loader, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { getApiUrl } from "@/lib/apiConfig";
 
 interface Metrics {
   totalLearners: number;
@@ -22,7 +23,7 @@ export default function HeroSection() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch("/api/public/metrics");
+        const response = await fetch(getApiUrl("/api/public/metrics"));
         if (!response.ok) throw new Error("Failed to fetch metrics");
         const data = await response.json();
         setMetrics(data.data);

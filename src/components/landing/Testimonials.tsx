@@ -3,6 +3,7 @@
 import { Star, Quote, Loader, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { getApiUrl } from "@/lib/apiConfig";
 
 interface Testimonial {
   id: string;
@@ -23,7 +24,7 @@ export default function Testimonials() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch("/api/public/testimonials?limit=3");
+        const response = await fetch(getApiUrl("/api/public/testimonials?limit=3"));
         if (!response.ok) throw new Error("Failed to fetch testimonials");
         const data = await response.json();
         

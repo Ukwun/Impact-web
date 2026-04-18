@@ -6,24 +6,29 @@
 /**
  * Get the base API URL for the current environment
  * - On Netlify: Uses NEXT_PUBLIC_API_URL env var (Render backend)
- * - In development: Uses localhost:3000
- * - Default: Uses relative URLs (same origin)
+ * - In development: Uses localhost:3000 or NEXT_PUBLIC_API_URL
+ * - Fallback: Uses relative URLs (same origin)
  */
 export function getApiBaseUrl(): string {
-  // If running in browser and we have a public API URL env var, use it
+  // First, check for explicit NEXT_PUBLIC_API_URL env var (set in Netlify or .env.local)
   if (typeof window !== 'undefined') {
     const publicApiUrl = process.env.NEXT_PUBLIC_API_URL;
     if (publicApiUrl) {
+      console.log('[API Config] Using NEXT_PUBLIC_API_URL:', publicApiUrl);
       return publicApiUrl;
     }
   }
 
-  // Development: use localhost
+  // In development, can use localhost or NEXT_PUBLIC_API_URL
   if (process.env.NODE_ENV === 'development') {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const localhostUrl = 'http://localhost:3000';
+    console.log('[API Config] Development mode, using localhost');
+    return localhostUrl;
   }
 
-  // Production: use relative URLs (will use same origin)
+  // Production without explicit env var: use relative URLs
+  // This requires NEXT_PUBLIC_API_URL to be set in Netlify dashboard
+  console.warn('[API Config] No NEXT_PUBLIC_API_URL set in production - using relative URLs (will hit Netlify)');
   return '';
 }
 

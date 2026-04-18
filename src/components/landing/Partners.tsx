@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Loader, AlertCircle } from "lucide-react";
+import { getApiUrl } from "@/lib/apiConfig";
 
 interface Partner {
   id: string;
@@ -22,7 +23,7 @@ export default function Partners() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch("/api/public/partners");
+        const response = await fetch(getApiUrl("/api/public/partners"));
         if (!response.ok) throw new Error("Failed to fetch partners");
         const data = await response.json();
 

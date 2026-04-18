@@ -4,6 +4,7 @@ import React, { useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { AchievementNotification } from "./AchievementsBadges";
 import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
+import { getApiUrl } from "@/lib/apiConfig";
 
 interface AchievementReward {
   badge: string;
@@ -38,7 +39,7 @@ export function WithAchievements({
 
       try {
         const token = localStorage.getItem(AUTH_TOKEN_KEY);
-        const res = await fetch("/api/achievements/user", {
+        const res = await fetch(getApiUrl("/api/achievements/user"), {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -110,7 +111,7 @@ export function useAchievementUnlocker() {
 
       try {
         const token = localStorage.getItem(AUTH_TOKEN_KEY);
-        const res = await fetch("/api/achievements/user", {
+        const res = await fetch(getApiUrl("/api/achievements/user"), {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
