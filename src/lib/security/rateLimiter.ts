@@ -31,9 +31,9 @@ export const RATE_LIMIT_CONFIGS = {
   } as RateLimitConfig,
 
   AUTH_SIGNUP: {
-    windowMs: 60 * 60 * 1000, // 1 hour
-    maxRequests: 3, // Max 3 signup attempts
-    message: 'Too many signup attempts. Please try again after 1 hour.',
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 10, // Max 10 signup attempts per minute (for testing)
+    message: 'Too many signup attempts. Please try again after 1 minute.',
   } as RateLimitConfig,
 
   AUTH_PASSWORD_RESET: {
