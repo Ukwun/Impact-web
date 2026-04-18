@@ -25,11 +25,10 @@ export default function LoginPage() {
     if (!hasHydrated) return; // Wait for hydration to complete
 
     if (user) {
-      // User is already authenticated, redirect to role-specific dashboard
-      const dashboardRoute = getDashboardRoute(user.role);
-      router.push(dashboardRoute);
+      // User is already authenticated, redirect to dashboard with full page reload
+      window.location.href = getDashboardRoute(user.role);
     }
-  }, [user, hasHydrated, router]);
+  }, [user, hasHydrated]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -45,15 +44,11 @@ export default function LoginPage() {
     const success = await login(formData.email, formData.password);
     if (success) {
       setSuccessMessage("Login successful! Redirecting...");
-      // Get the updated user from state
-      const state = useAuthStore.getState();
-      if (state.user) {
-        const dashboardRoute = getDashboardRoute(state.user.role);
-        // Use setTimeout to ensure state is updated
-        setTimeout(() => {
-          router.push(dashboardRoute);
-        }, 500);
-      }
+      // Use window.location to do a full page reload
+      // This ensures clean state and avoids redirect loops
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 500);
     }
   };
 

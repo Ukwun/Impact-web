@@ -147,11 +147,11 @@ export default function RegisterPage() {
       const dashboardRoute = getDashboardRoute(result.user.role);
       const finalRoute = dashboardRoute || "/dashboard";
       
-      // Use setTimeout to ensure state is updated
+      // Use window.location for full page reload to avoid state inconsistencies
       setTimeout(() => {
         console.log("🔄 Executing redirect to:", finalRoute);
-        router.push(finalRoute);
-      }, 500); // Short delay to ensure cookies/state are processed
+        window.location.href = finalRoute;
+      }, 500);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred. Please try again.";
       console.error("⚠️ Signup error:", errorMsg);
