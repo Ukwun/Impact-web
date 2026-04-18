@@ -13,13 +13,34 @@ export function initializeSocket(userId: string, token: string): Socket {
     return socket;
   }
 
-  // Use the same backend URL as fetch calls
-  // In development: relative URL (same origin)
-  // In production: Use NEXT_PUBLIC_SOCKET_URL or NEXT_PUBLIC_API_URL
-  const socketUrl = 
-    process.env.NEXT_PUBLIC_SOCKET_URL || 
-    process.env.NEXT_PUBLIC_API_URL || 
-    window.location.origin;
+  // Determine socket URL based on deployment environment
+  let socketUrl: string;
+  
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    
+    // Development: localhost
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      socketUrl = 'http://localhost:3000';
+    }
+    // Production: Netlify frontend
+    else if (origin.includes('netlify.app')) {
+      socketUrl = 'https://impactweb-backend.onrender.com';
+    }
+    // Fallback: use environment variable or same origin
+    else {
+      socketUrl = 
+        process.env.NEXT_PUBLIC_SOCKET_URL || 
+        process.env.NEXT_PUBLIC_API_URL || 
+        origin;
+    }
+  } else {
+    // Server-side fallback (shouldn't happen in practice)
+    socketUrl = 
+      process.env.NEXT_PUBLIC_SOCKET_URL || 
+      process.env.NEXT_PUBLIC_API_URL || 
+      'https://impactweb-backend.onrender.com';
+  }
 
   console.log('🔌 Socket URL:', socketUrl);
 
