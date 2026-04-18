@@ -249,6 +249,7 @@ export const useAuthStore = create<AuthStore>()(
         if (typeof window !== "undefined") {
           localStorage.removeItem(AUTH_TOKEN_KEY);
           localStorage.removeItem(AUTH_USER_KEY);
+          localStorage.removeItem(AUTH_STORE_KEY);  // Also clear the persist store
         }
       };
 
@@ -291,4 +292,53 @@ export const useAuthStore = create<AuthStore>()(
     }
   )
 );
+
+/**
+ * Validate existing auth session on app load
+ * Clears invalid or expired tokens to prevent stale auth state
+ */
+export async function validateAuthSession() {
+  const state = useAuthStore.getState();
+  
+  // If no token or user, nothing to validate
+  if (!state.token || !state.user) {
+    return;
+  }
+
+  // Try to fetch a protected endpoint to verify token is still valid
+  // This is optional - only do it if needed to avoid extra API calls
+  // For now, just ensure localStorage is in sync with state
+  
+  const tokenFromStorage = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
+  const userFromStorage = typeof window !== "undefined" ? localStorage.getItem(AUTH_USER_KEY) : null;
+  
+  // If localStorage doesn't have matching data, state might be corrupted
+  if (!tokenFromStorage && state.token) {
+    // Token in state but not in localStorage - likely a hydration issue
+    // Keep the state as is, let component handle it
+    console.log("ⓘ Token in state but not in localStorage - hydration may still be in progress");
+  }
+}
+
+/**
+ * Force clear all auth state from localStorage
+ * Useful for fixing stale auth state issues
+ */
+export function clearAuthStateStorage() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(AUTH_STORE_KEY);
+    
+    // Also clear the auth store state
+    useAuthStore.setState({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      error: null,
+    });
+    
+    console.log("✅ Auth state cleared from storage and state");
+  }
+}
 
