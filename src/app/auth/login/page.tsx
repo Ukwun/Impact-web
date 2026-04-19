@@ -17,8 +17,17 @@ export default function LoginPage() {
     password: "",
   });
   const [successMessage, setSuccessMessage] = useState("");
+  const [forceShowLogin, setForceShowLogin] = useState(false);
   const { login, user, error, isLoading, hasHydrated } = useAuthStore();
   const router = useRouter();
+
+  // Force show login form after 3 seconds even if hydration is slow
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setForceShowLogin(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -53,7 +62,7 @@ export default function LoginPage() {
   };
 
   // Show loading while checking authentication status or during login
-  if (!hasHydrated || isLoading) {
+  if ((!hasHydrated || isLoading) && !forceShowLogin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-dark">
         <div className="text-center">
