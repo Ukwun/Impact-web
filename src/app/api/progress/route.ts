@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { getUserEnrollments, getCourse } from "@/lib/firestore-utils";
+import prisma from "@/lib/db";
 
 /**
  * GET /api/progress
- * Fetch user's course progress and enrollment data from Firestore
+ * Fetch user's course progress and enrollment data from PostgreSQL via Prisma
  */
 export async function GET(req: NextRequest) {
   try {
@@ -30,53 +30,84 @@ export async function GET(req: NextRequest) {
     const userId = payload.sub;
     console.log(`📊 Fetching progress for user: ${userId}`);
 
-    // Fetch user's enrollments from Firestore
-    let enrollments: any[] = [];
-    try {
-      enrollments = await getUserEnrollments(userId);
-      console.log(`✅ Found ${enrollments.length} enrollments for user ${userId}`);
-    } catch (enrollError) {
-      console.warn(`⚠️ Error fetching enrollments, returning empty array:`, enrollError);
-      // Return empty enrollments instead of failing
-      enrollments = [];
-    }
+    // Fetch user's enrollments from Prisma with course and progress data
+    const enrollments = await prisma.enrollment.findMany({
+      where: { userId },
+      include: {
+        course: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            thumbnail: true,
+            difficulty: true,
+            duration: true,
+            modules: {
+              select: {
+                id: true,
+                lessons: {
+                  select: { id: true },
+                },
+              },
+            },
+          },
+        },
+        lessonProgress: {
+          select: {
+            id: true,
+            isCompleted: true,
+          },
+        },
+        assignmentSubmissions: {
+          select: {
+            id: true,
+            isSubmitted: true,
+            isGraded: true,
+          },
+        },
+      },
+      orderBy: { lastAccessedAt: "desc" },
+    });
 
-    // Map enrollments to include course details
-    const enrollmentData = await Promise.all(
-      enrollments.map(async (enrollment: any) => {
-        try {
-          const course = await getCourse(enrollment.courseId);
-          return {
-            enrollmentId: enrollment.id,
-            course: course ? {
-              id: course.id,
-              title: course.title,
-              description: course.description,
-              thumbnail: course.thumbnail,
-              difficulty: course.difficulty,
-              duration: course.duration,
-            } : null,
-            progress: enrollment.progress || 0,
-            isCompleted: enrollment.isCompleted || false,
-            completedAt: enrollment.completedAt,
-            lastAccessedAt: enrollment.lastAccessedAt,
-            enrolledAt: enrollment.enrolledAt,
-          };
-        } catch (courseError) {
-          console.warn(`⚠️ Error fetching course ${enrollment.courseId}:`, courseError);
-          // Return enrollment without course details if course fetch fails
-          return {
-            enrollmentId: enrollment.id,
-            course: null,
-            progress: enrollment.progress || 0,
-            isCompleted: enrollment.isCompleted || false,
-            completedAt: enrollment.completedAt,
-            lastAccessedAt: enrollment.lastAccessedAt,
-            enrolledAt: enrollment.enrolledAt,
-          };
-        }
-      })
-    );
+    console.log(`✅ Found ${enrollments.length} enrollments for user ${userId}`);
+
+    // Transform enrollments to match frontend interface
+    const enrollmentData = enrollments.map((enrollment) => {
+      // Calculate lesson stats
+      const totalLessons = enrollment.course.modules.reduce(
+        (acc, module) => acc + module.lessons.length,
+        0
+      );
+      const lessonsCompleted = enrollment.lessonProgress.filter(
+        (lp) => lp.isCompleted
+      ).length;
+
+      // Calculate assignment stats
+      const assignmentsSubmitted = enrollment.assignmentSubmissions.filter(
+        (sub) => sub.isSubmitted
+      ).length;
+
+      return {
+        enrollmentId: enrollment.id,
+        course: {
+          id: enrollment.course.id,
+          title: enrollment.course.title,
+          description: enrollment.course.description,
+          thumbnail: enrollment.course.thumbnail || "",
+          difficulty: enrollment.course.difficulty || "BEGINNER",
+          duration: enrollment.course.duration || 0,
+        },
+        progress: enrollment.progress,
+        isCompleted: enrollment.isCompleted,
+        completedAt: enrollment.completedAt?.toISOString() || null,
+        lessonsCompleted,
+        totalLessons,
+        quizzesCompleted: 0, // TODO: Calculate from quizAttempts
+        assignmentsSubmitted,
+        lastAccessedAt: enrollment.lastAccessedAt?.toISOString() || null,
+        enrolledAt: enrollment.enrolledAt.toISOString(),
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -87,13 +118,9 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("❌ Fetch progress error:", error);
-    // Return empty enrollments on error instead of 500
-    return NextResponse.json({
-      success: true,
-      data: {
-        enrollments: [],
-        total: 0,
-      },
-    });
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch progress" },
+      { status: 500 }
+    );
   }
 }
