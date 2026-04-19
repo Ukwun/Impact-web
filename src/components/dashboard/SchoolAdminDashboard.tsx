@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { useUserProgress } from "@/hooks/useLMS";
 import { useSchoolMetrics } from "@/hooks/useRoleDashboards";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   Building2,
   Users,
@@ -27,12 +27,49 @@ import {
 export default function SchoolAdminDashboard() {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
-  const { progress } = useUserProgress();
   const { data: schoolData, loading: schoolLoading, error: schoolError } = useSchoolMetrics();
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Handle invalid token errors
+  useEffect(() => {
+    if (schoolError && (schoolError.toLowerCase().includes("invalid token") || schoolError.includes("401"))) {
+      console.error("❌ Invalid token detected, clearing auth and redirecting to login");
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_USER_KEY);
+      router.push("/auth/login?error=invalid_token");
+    }
+  }, [schoolError, router]);
+
+  if (schoolLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Card className="p-8 flex flex-col items-center gap-4">
+          <Loader className="w-8 h-8 animate-spin text-primary-600" />
+          <p className="text-gray-300">Loading dashboard...</p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (schoolError) {
+    return (
+      <Card className="p-8 border-l-4 border-danger-500 bg-danger-50">
+        <div className="flex items-start gap-4">
+          <AlertCircle className="w-7 h-7 text-danger-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-bold text-danger-700 text-lg">Error Loading Dashboard</h3>
+            <p className="text-danger-600 mt-2">{schoolError}</p>
+            <Button onClick={() => router.refresh()} className="mt-4">
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   const schoolMetrics = schoolData?.metrics || {
     totalStudents: 0,
