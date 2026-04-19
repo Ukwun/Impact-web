@@ -189,43 +189,38 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("⚠️  Database error, returning mock data:", error);
-    // Return mock data if database is unavailable
     return NextResponse.json({
       success: true,
-      profile: {
-        name: "Demo Member",
-        email: "member@example.com",
-        avatar: null,
-        institution: "Demo Institution",
-        joinedAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
-        completedCourses: 2,
-        totalConnections: 15,
-      },
-      stats: {
-        coursesEnrolled: 4,
-        certificatesEarned: 2,
-        postsShared: 8,
-        engagementScore: 750,
-      },
-      connections: [
-        {
-          id: "c1",
-          name: "John Entrepreneur",
-          title: "Tech Founder",
-          company: "StartupCo",
-          mutualConnections: 5,
-          connected: true,
+      data: {
+        profile: {
+          name: "Demo Member",
+          email: "member@example.com",
+          avatar: null,
+          institution: "Demo Institution",
         },
-      ],
-      opportunities: [
-        {
-          id: "opp1",
-          title: "Mentorship Program",
-          description: "Connect with experienced professionals",
-          deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        profileStats: {
+          connections: 15,
+          followers: 150,
+          posts: 8,
+          engagementRate: 75,
+          profileViews: 200,
+          achievements: 3,
         },
-      ],
+        connections: [
+          {
+            id: "c1",
+            name: "John Entrepreneur",
+            title: "Tech Founder",
+            company: "StartupCo",
+            mutualConnections: 5,
+            connected: true,
+          },
+        ],
+        posts: [],
+        opportunities: [],
+        enrolledCourses: 0,
+        achievements: [],
+      },
     });
-  }
   }
 }
