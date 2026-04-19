@@ -1,10 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listEvents, createEvent, logActivity } from "@/lib/firestore-utils";
+import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
+import { z } from "zod";
+
+// ============================================================================
+// VALIDATION SCHEMAS
+// ============================================================================
+
+const CreateEventSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  eventDate: z.string().datetime(),
+  startTime: z.string(),
+  endTime: z.string(),
+  venue: z.string(),
+  location: z.string(),
+  capacity: z.number().min(1, "Capacity must be at least 1"),
+  image: z.string().url().optional(),
+  eventType: z.enum(["NATIONAL", "STATE", "SCHOOL", "CIRCLE", "WEBINAR", "WORKSHOP"]),
+});
 
 /**
  * GET /api/events
- * Fetch all published events from Firestore (upcoming by default)
+ * Fetch all published events from PostgreSQL
  */
 export async function GET(req: NextRequest) {
   try {
@@ -13,18 +31,26 @@ export async function GET(req: NextRequest) {
     const includePast = searchParams.get("includePast") === "true";
 
     // Build filter query
-    const filters: any = {
-      upcoming: !includePast,
-    };
-
-    if (eventType && eventType !== "all") {
-      filters.eventType = eventType.toUpperCase();
+    const where: any = { isPublished: true };
+    if (!includePast) {
+      where.eventDate = { gte: new Date() };
     }
 
-    const events = await listEvents(filters);
+    if (eventType && eventType !== "all") {
+      where.eventType = eventType.toUpperCase();
+    }
+
+    const events = await prisma.event.findMany({
+      where,
+      include: {
+        registrations: { select: { id: true } },
+        createdBy: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { eventDate: "asc" },
+    });
 
     // Transform data
-    const eventsResponse = events.map((event: any) => ({
+    const eventsResponse = events.map((event) => ({
       id: event.id,
       title: event.title,
       description: event.description,
@@ -35,8 +61,10 @@ export async function GET(req: NextRequest) {
       venue: event.venue,
       location: event.location,
       capacity: event.capacity,
-      currentAttendees: event.registeredCount || 0,
+      currentAttendees: event.registrations.length,
       image: event.image,
+      creator: `${event.createdBy.firstName} ${event.createdBy.lastName}`,
+      isCancelled: event.isCancelled,
       createdAt: event.createdAt,
     }));
 
@@ -69,7 +97,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user is admin or facilitator
+    // Check if user is admin, facilitator
     if (!["ADMIN", "FACILITATOR"].includes(payload.role?.toUpperCase() || "")) {
       return NextResponse.json(
         { error: "Only admins and facilitators can create events" },
@@ -78,47 +106,46 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, eventDate, startTime, endTime, venue, location, capacity, image, eventType } = body;
+    const validatedData = CreateEventSchema.parse(body);
 
-    if (!title || !eventDate) {
-      return NextResponse.json(
-        { error: "Title and event date are required" },
-        { status: 400 }
-      );
-    }
-
-    const eventData = {
-      title,
-      description,
-      eventDate: new Date(eventDate),
-      startTime,
-      endTime,
-      venue,
-      location,
-      capacity: capacity || 0,
-      image,
-      eventType: eventType || "MEETUP",
-      createdBy: payload.sub,
-    };
-
-    const newEvent = await createEvent(eventData);
-
-    // Log activity
-    await logActivity(payload.sub, {
-      type: 'event_created',
-      description: `Created event: ${title}`,
-      eventId: newEvent.id,
-      timestamp: new Date(),
+    // Create event in PostgreSQL
+    const newEvent = await prisma.event.create({
+      data: {
+        ...validatedData,
+        createdById: payload.sub,
+      },
+      include: {
+        createdBy: { select: { firstName: true, lastName: true } },
+      },
     });
+
+    console.log(`✅ Event created: ${newEvent.id}`);
 
     return NextResponse.json(
       {
         success: true,
-        data: newEvent,
+        data: {
+          id: newEvent.id,
+          title: newEvent.title,
+          eventDate: newEvent.eventDate,
+          creator: `${newEvent.createdBy.firstName} ${newEvent.createdBy.lastName}`,
+          createdAt: newEvent.createdAt,
+        },
       },
       { status: 201 }
     );
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Validation failed",
+          details: error.errors,
+        },
+        { status: 400 }
+      );
+    }
+
     console.error("❌ Error creating event:", error);
     return NextResponse.json(
       { success: false, error: "Failed to create event" },

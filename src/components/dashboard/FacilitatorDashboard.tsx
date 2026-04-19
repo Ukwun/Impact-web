@@ -291,11 +291,21 @@ export default function FacilitatorDashboard() {
             <Plus className="w-5 h-5" />
             Create Class
           </Button>
-          <Button variant="secondary" size="lg" className="w-full justify-center gap-2">
+          <Button 
+            variant="secondary" 
+            size="lg" 
+            className="w-full justify-center gap-2"
+            onClick={() => router.push("/dashboard/facilitator/analytics")}
+          >
             <Activity className="w-5 h-5" />
             View Analytics
           </Button>
-          <Button variant="outline" size="lg" className="w-full justify-center gap-2">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="w-full justify-center gap-2"
+            onClick={() => router.push("/dashboard/facilitator/content")}
+          >
             <BookOpen className="w-5 h-5" />
             Manage Content
           </Button>

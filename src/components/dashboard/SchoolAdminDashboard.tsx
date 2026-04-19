@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useUserProgress } from "@/hooks/useLMS";
@@ -24,6 +25,7 @@ import {
 } from "@/components/dashboard/cards";
 
 export default function SchoolAdminDashboard() {
+  const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const { progress } = useUserProgress();
   const { data: schoolData, loading: schoolLoading, error: schoolError } = useSchoolMetrics();
@@ -81,7 +83,7 @@ export default function SchoolAdminDashboard() {
           icon={UserCheck}
           primaryAction={{
             label: "Manage Team",
-            onClick: () => console.log("Manage facilitators"),
+            onClick: () => router.push("/dashboard/admin/facilitators"),
           }}
         />
 
@@ -108,11 +110,11 @@ export default function SchoolAdminDashboard() {
         icon={BarChart3}
         primaryAction={{
           label: "View Reports",
-          onClick: () => console.log("View attendance reports"),
+          onClick: () => router.push("/dashboard/admin/reports"),
         }}
         secondaryAction={{
           label: "Send Alert",
-          onClick: () => console.log("Send engagement alert"),
+          onClick: () => router.push("/dashboard/admin/alerts"),
         }}
         variant="secondary"
       />
@@ -124,7 +126,7 @@ export default function SchoolAdminDashboard() {
         icon={AlertCircle}
         primaryAction={{
           label: "View All Alerts",
-          onClick: () => console.log("View all alerts"),
+          onClick: () => router.push("/dashboard/admin/alerts"),
         }}
         variant="warning"
       />

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { X, Loader, Users } from 'lucide-react';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 
 interface Tier {

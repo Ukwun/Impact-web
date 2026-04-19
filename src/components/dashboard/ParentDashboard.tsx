@@ -143,7 +143,7 @@ export default function ParentDashboard() {
           icon={BookOpen}
           primaryAction={{
             label: "View Progress",
-            onClick: () => console.log("View progress details"),
+            onClick: () => router.push(`/dashboard/parent/child/${primaryChild.id}/progress`),
           }}
         />
 

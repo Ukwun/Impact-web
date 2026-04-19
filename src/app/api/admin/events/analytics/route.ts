@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+export const dynamic = 'force-dynamic';import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/admin/events/analytics

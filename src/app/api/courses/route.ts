@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { createCourse, listCourses, getCourse, updateCourse, deleteCourse } from "@/lib/firestore-utils";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 // ============================================================================
@@ -10,11 +10,11 @@ import { z } from "zod";
 const CreateCourseSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(255),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  category: z.string().optional(),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).optional().default("BEGINNER"),
-  duration: z.number().min(1).optional().default(0),
+  duration: z.number().min(1, "Duration must be at least 1 minute").optional().default(60),
   language: z.string().optional().default("English"),
   thumbnail: z.string().url().optional(),
+  instructor: z.string().optional().default("Unknown Instructor"),
   isPublished: z.boolean().optional().default(false),
 });
 
@@ -31,8 +31,6 @@ function getAuthUser(req: NextRequest): any {
 function isAuthorized(userRole: string) {
   return ["ADMIN", "FACILITATOR"].includes(userRole?.toUpperCase());
 }
-
-
 /**
  * GET /api/courses
  * Fetch all published courses with optional filtering by difficulty
@@ -42,28 +40,45 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const difficulty = searchParams.get("difficulty");
 
-    // Fetch courses from Firestore
-    const filters: any = {};
+    // Build filter
+    const where: any = { isPublished: true };
     if (difficulty && difficulty !== "all") {
-      filters.difficulty = difficulty.toUpperCase();
+      where.difficulty = difficulty.toUpperCase();
     }
 
-    const courses = await listCourses(filters);
+    // Fetch courses from PostgreSQL using Prisma
+    const courses = await prisma.course.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        thumbnail: true,
+        difficulty: true,
+        duration: true,
+        instructor: true,
+        createdAt: true,
+        enrollments: {
+          select: { id: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
     console.log(`✅ Fetched ${courses.length} published courses`);
 
     return NextResponse.json({
       success: true,
       data: {
-        courses: courses.map(course => ({
+        courses: courses.map((course) => ({
           id: course.id,
           title: course.title,
           description: course.description,
           thumbnail: course.thumbnail,
           difficulty: course.difficulty,
           duration: course.duration,
-          enrollmentCount: course.enrollmentCount || 0,
-          ratingAverage: course.ratingAverage || 0,
+          instructor: course.instructor,
+          enrollmentCount: course.enrollments.length,
           createdAt: course.createdAt,
         })),
         total: courses.length,
@@ -96,7 +111,10 @@ export async function POST(req: NextRequest) {
     // Verify authorization
     if (!isAuthorized(user.role)) {
       return NextResponse.json(
-        { success: false, error: "Only facilitators and admins can create courses" },
+        {
+          success: false,
+          error: "Only facilitators and admins can create courses",
+        },
         { status: 403 }
       );
     }
@@ -105,13 +123,15 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validatedData = CreateCourseSchema.parse(body);
 
-    // Create course in Firestore
-    const course = await createCourse({
-      ...validatedData,
-      createdBy: user.sub,
+    // Create course in PostgreSQL using Prisma
+    const course = await prisma.course.create({
+      data: {
+        ...validatedData,
+        createdById: user.sub,
+      },
     });
 
-    console.log(`✅ Course created: ${course.id}`);
+    console.log(`✅ Course created: ${course.id} by ${user.sub}`);
 
     return NextResponse.json(
       {
@@ -121,6 +141,8 @@ export async function POST(req: NextRequest) {
           title: course.title,
           description: course.description,
           difficulty: course.difficulty,
+          duration: course.duration,
+          isPublished: course.isPublished,
           createdAt: course.createdAt,
         },
       },

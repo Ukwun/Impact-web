@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useSocket } from "@/hooks/useSocket";
@@ -23,6 +24,7 @@ import {
 } from "@/components/dashboard/cards";
 
 export default function UniversityMemberDashboard() {
+  const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const { user } = useAuth();
   const { data: universityData, loading, error } = useUniversityMember();
@@ -121,7 +123,7 @@ export default function UniversityMemberDashboard() {
           icon={Target}
           primaryAction={{
             label: "View Progress",
-            onClick: () => console.log("View all programs"),
+            onClick: () => router.push("/dashboard/university/programs"),
           }}
         />
 
@@ -235,11 +237,11 @@ export default function UniversityMemberDashboard() {
         icon={Users}
         primaryAction={{
           label: "Browse Resources",
-          onClick: () => console.log("Access learning resources"),
+          onClick: () => router.push("/dashboard/resources"),
         }}
         secondaryAction={{
           label: "Community Forum",
-          onClick: () => console.log("Join community"),
+          onClick: () => router.push("/dashboard/community"),
         }}
         variant="success"
       />
