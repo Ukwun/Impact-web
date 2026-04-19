@@ -24,7 +24,13 @@ export async function GET(req: NextRequest) {
         { status: 401 }
       );
     }
-
+    // Verify FACILITATOR role
+    if (payload.role?.toUpperCase() !== "FACILITATOR") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized - FACILITATOR role required" },
+        { status: 403 }
+      );
+    }
     const userId = payload.sub;
     console.log(`📚 Fetching classes for facilitator: ${userId}`);
 

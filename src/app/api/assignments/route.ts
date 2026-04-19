@@ -25,6 +25,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Verify STUDENT role
+    if (payload.role?.toUpperCase() !== "STUDENT") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized - STUDENT role required" },
+        { status: 403 }
+      );
+    }
+
     const userId = payload.sub;
     console.log(`📝 Fetching assignments for user: ${userId}`);
 

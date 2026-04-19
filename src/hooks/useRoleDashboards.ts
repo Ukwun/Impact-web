@@ -423,15 +423,15 @@ export function useCircleMemberData() {
   return { data, loading, error };
 }
 
-// ============ ADMIN TYPES ============
+// ============ ADMIN SYSTEM TYPES ============
 
-export interface AdminMetric {
+export interface AdminSystemMetric {
   label: string;
   value: string | number;
   trend: string;
 }
 
-export interface AdminDashboardData {
+export interface AdminSystemDashboardData {
   totalUsers: number;
   activeCourses: number;
   completionRate: number;
@@ -444,11 +444,11 @@ export interface AdminDashboardData {
   roleDistribution: Record<string, number>;
   submissionBreakdown: Record<string, number>;
   recentEnrollments: Array<{ date: string; progress: number }>;
-  topMetrics: AdminMetric[];
+  topMetrics: AdminSystemMetric[];
 }
 
-export function useAdminDashboard() {
-  const [data, setData] = useState<AdminDashboardData | null>(null);
+export function useAdminSystemDashboard() {
+  const [data, setData] = useState<AdminSystemDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

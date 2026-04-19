@@ -24,6 +24,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Verify PARENT role
+    if (payload.role?.toUpperCase() !== "PARENT") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized - PARENT role required" },
+        { status: 403 }
+      );
+    }
+
     const userId = payload.sub;
 
     // Get all student enrollments (representing children's learning progress)

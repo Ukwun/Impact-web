@@ -25,6 +25,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Verify UNIVERSITY_MEMBER role
+    if (payload.role?.toUpperCase() !== "UNIVERSITY_MEMBER") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized - UNIVERSITY_MEMBER role required" },
+        { status: 403 }
+      );
+    }
+
     const userId = payload.sub;
     console.log(`🎓 Fetching university profile for member: ${userId}`);
 

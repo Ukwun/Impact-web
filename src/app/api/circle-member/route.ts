@@ -27,6 +27,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Verify CIRCLE_MEMBER role
+    if (payload.role?.toUpperCase() !== "CIRCLE_MEMBER") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized - CIRCLE_MEMBER role required" },
+        { status: 403 }
+      );
+    }
+
     const userId = payload.sub;
 
     // Get user profile

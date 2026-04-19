@@ -12,11 +12,16 @@ export async function GET(request: NextRequest) {
     }
 
     const decoded = await verifyToken(token);
-    if (!decoded || !decoded.userId) {
+  if (!decoded || !decoded.sub) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
-    // Get mentor's mentees and session data
+    // Verify MENTOR role
+    if (decoded.role?.toUpperCase() !== "MENTOR") {
+      return NextResponse.json({ error: "Unauthorized - MENTOR role required" }, { status: 403 });
+    }
+
+    const userId = decoded.sub;
     // For now, fetching students who might be mentees
     const menteeEnrollments = await prisma.enrollment.findMany({
       where: {
