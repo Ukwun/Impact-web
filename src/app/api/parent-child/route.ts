@@ -26,9 +26,104 @@ export async function GET(request: NextRequest) {
 
     const userId = payload.sub;
 
-    // TODO: Implement when database is available
-    // For now, return empty array
-    return NextResponse.json({ children: [] });
+    // Get all student enrollments (representing children's learning progress)
+    const studentEnrollments = await prisma.enrollment.findMany({
+      where: {
+        user: { role: "STUDENT" },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            avatar: true,
+          },
+        },
+        course: true,
+      },
+      distinct: ["userId"],
+    });
+
+    // Get unique children and their progress
+    const uniqueStudentIds = [
+      ...new Set(studentEnrollments.map((e) => e.userId)),
+    ];
+
+    const childrenData = await Promise.all(
+      uniqueStudentIds.slice(0, 10).map(async (childId) => {
+        // Get all enrollments for this child
+        const enrollments = await prisma.enrollment.findMany({
+          where: { userId: childId },
+          include: { course: true },
+        });
+
+        // Get assignment submissions
+        const submissions = await prisma.assignmentSubmission.findMany({
+          where: {
+            assignment: {
+              enrollments: {
+                some: {
+                  userId: childId,
+                },
+              },
+            },
+          },
+        });
+
+        const childUser = studentEnrollments.find(
+          (e) => e.userId === childId
+        )?.user;
+
+        const completedCourses = enrollments.filter(
+          (e) => e.completionPercentage === 100
+        ).length;
+
+        return {
+          childId,
+          childName:
+            `${childUser?.firstName || "Student"} ${childUser?.lastName || ""}`.trim() ||
+            "Student",
+          childEmail: childUser?.email,
+          childAvatar: childUser?.avatar,
+          enrolledCourses: enrollments.length,
+          completedCourses,
+          averageProgress:
+            enrollments.length > 0
+              ? Math.round(
+                  enrollments.reduce(
+                    (acc, e) => acc + e.completionPercentage,
+                    0
+                  ) / enrollments.length
+                )
+              : 0,
+          currentCourses: enrollments
+            .filter((e) => e.completionPercentage < 100)
+            .map((e) => ({
+              courseId: e.courseId,
+              courseName: e.course.title,
+              progress: e.completionPercentage,
+            })),
+          submittedAssignments: submissions.filter(
+            (s) => s.status === "SUBMITTED"
+          ).length,
+          totalAssignments: submissions.length,
+          totalGrade:
+            submissions.length > 0
+              ? Math.round(
+                  submissions.reduce((acc, s) => acc + (s.grade || 0), 0) /
+                    submissions.length
+                )
+              : 0,
+        };
+      })
+    );
+
+    return NextResponse.json({
+      children: childrenData,
+      total: uniqueStudentIds.length,
+    });
   } catch (error) {
     console.error('Error fetching parent children:', error);
     return NextResponse.json(

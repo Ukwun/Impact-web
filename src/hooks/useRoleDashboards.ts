@@ -213,3 +213,63 @@ export function useUniversityMember() {
 
   return { data, loading, error };
 }
+
+// ============ PARENT TYPES ============
+
+export interface ParentChild {
+  childId: string;
+  childName: string;
+  childEmail?: string;
+  childAvatar?: string;
+  enrolledCourses: number;
+  completedCourses: number;
+  averageProgress: number;
+  currentCourses: Array<{
+    courseId: string;
+    courseName: string;
+    progress: number;
+  }>;
+  submittedAssignments: number;
+  totalAssignments: number;
+  totalGrade: number;
+}
+
+export interface ParentDashboardData {
+  children: ParentChild[];
+  total: number;
+}
+
+export function useParentChildren() {
+  const [data, setData] = useState<ParentDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        const response = await fetch("/api/parent-child", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || "Failed to fetch children data");
+        }
+
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        console.error("❌ Error fetching parent children data:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  return { data, loading, error };
+}
