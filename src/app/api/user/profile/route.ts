@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { getUserProfile } from "@/lib/firestore-utils";
+import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/user/profile
- * Fetch current user's fresh profile from Firestore (including latest role)
+ * Fetch current user's profile from PostgreSQL
  */
 export async function GET(req: NextRequest) {
   try {
@@ -21,11 +21,27 @@ export async function GET(req: NextRequest) {
     const userId = payload.sub;
     console.log(`📋 Fetching profile for user: ${userId}`);
 
-    // Get fresh user profile from Firestore
-    const userProfile = await getUserProfile(userId);
+    // Get user profile from PostgreSQL
+    const userProfile = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        verified: true,
+        avatar: true,
+        state: true,
+        institution: true,
+        phone: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
     if (!userProfile) {
-      console.error(`❌ User profile not found: ${userId}`);
+      console.error(`❌ User profile not found in PostgreSQL: ${userId}`);
       return NextResponse.json(
         { error: "User profile not found" },
         { status: 404 }
@@ -38,7 +54,7 @@ export async function GET(req: NextRequest) {
       success: true,
       data: {
         id: userProfile.id,
-        uid: userProfile.uid || userId,
+        uid: userId,
         email: userProfile.email,
         firstName: userProfile.firstName,
         lastName: userProfile.lastName,
@@ -47,7 +63,8 @@ export async function GET(req: NextRequest) {
         avatar: userProfile.avatar || null,
         state: userProfile.state || "",
         institution: userProfile.institution || "",
-        membershipStatus: userProfile.membershipStatus || "ACTIVE",
+        phone: userProfile.phone || "",
+        membershipStatus: "ACTIVE",
         createdAt: userProfile.createdAt,
         updatedAt: userProfile.updatedAt,
       },

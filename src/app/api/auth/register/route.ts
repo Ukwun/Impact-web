@@ -8,6 +8,7 @@ import {
 } from "@/lib/security";
 import { getFirebaseAuth, getFirestore } from "@/lib/firebase-admin";
 import { generateToken } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 
@@ -107,6 +108,29 @@ export async function POST(req: NextRequest) {
         console.log("Profile stored in Firestore");
       } catch (firestoreError) {
         console.warn("Firestore write failed (non-critical): " + (firestoreError as Error).message);
+      }
+
+      // Also create user in PostgreSQL for role-based endpoints
+      try {
+        await prisma.user.create({
+          data: {
+            id: userRecord.uid,
+            email: email,
+            firstName: firstName,
+            lastName: lastName,
+            role: role,
+            phone: phone,
+            state: state,
+            institution: body.institution || '',
+            verified: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+        console.log("✅ User created in PostgreSQL:", userRecord.uid);
+      } catch (prismaError) {
+        console.error("❌ PostgreSQL user creation failed:", prismaError);
+        // Don't fail the registration if PostgreSQL fails, user is in Firestore
       }
 
       const customToken = await auth.createCustomToken(userRecord.uid);
