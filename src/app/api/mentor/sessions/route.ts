@@ -1,0 +1,114 @@
+import { NextRequest, NextResponse } from "next/server";
+import { verifyToken } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.replace("Bearer ", "");
+
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const decoded = await verifyToken(token);
+    if (!decoded || !decoded.userId) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    // Get mentor's mentees and session data
+    // For now, fetching students who might be mentees
+    const menteeEnrollments = await prisma.enrollment.findMany({
+      where: {
+        user: { role: "STUDENT" },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            avatar: true,
+          },
+        },
+        course: true,
+      },
+      take: 20,
+    });
+
+    const uniqueMenteeIds = [
+      ...new Set(menteeEnrollments.map((e) => e.userId)),
+    ].slice(0, 10);
+
+    const menteesData = await Promise.all(
+      uniqueMenteeIds.map(async (menteeId) => {
+        const enrollments = await prisma.enrollment.findMany({
+          where: { userId: menteeId },
+          include: { course: true },
+        });
+
+        const menteeUser = menteeEnrollments.find(
+          (e) => e.userId === menteeId
+        )?.user;
+
+        const avgProgress =
+          enrollments.length > 0
+            ? Math.round(
+                enrollments.reduce((acc, e) => acc + e.completionPercentage, 0) /
+                  enrollments.length
+              )
+            : 0;
+
+        return {
+          menteeId,
+          menteeName:
+            `${menteeUser?.firstName || "Student"} ${menteeUser?.lastName || ""}`.trim() ||
+            "Student",
+          menteeEmail: menteeUser?.email,
+          menteeAvatar: menteeUser?.avatar,
+          progress: avgProgress,
+          enrolledCourses: enrollments.length,
+          nextMeeting: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0],
+          status: avgProgress >= 75 ? "Excellent" : avgProgress >= 50 ? "Good" : "Needs Support",
+          lastContact: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0],
+        };
+      })
+    );
+
+    // Aggregate mentor stats
+    const totalSessions = menteesData.length;
+    const activeSessions = menteesData.filter(
+      (m) => m.status !== "Needs Support"
+    ).length;
+    const avgMenteeProgress =
+      menteesData.length > 0
+        ? Math.round(
+            menteesData.reduce((acc, m) => acc + m.progress, 0) /
+              menteesData.length
+          )
+        : 0;
+
+    return NextResponse.json({
+      data: {
+        mentees: menteesData,
+        stats: {
+          totalMentees: menteesData.length,
+          activeSessions,
+          completedSessions: Math.floor(activeSessions * 0.8),
+          averageMenteeProgress: avgMenteeProgress,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching mentor data:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

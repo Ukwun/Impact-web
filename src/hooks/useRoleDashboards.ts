@@ -273,3 +273,64 @@ export function useParentChildren() {
 
   return { data, loading, error };
 }
+
+// ============ MENTOR TYPES ============
+
+export interface MenteeData {
+  menteeId: string;
+  menteeName: string;
+  menteeEmail?: string;
+  menteeAvatar?: string;
+  progress: number;
+  enrolledCourses: number;
+  nextMeeting: string;
+  status: "Excellent" | "Good" | "Needs Support";
+  lastContact: string;
+}
+
+export interface MentorStats {
+  totalMentees: number;
+  activeSessions: number;
+  completedSessions: number;
+  averageMenteeProgress: number;
+}
+
+export interface MentorDashboardData {
+  mentees: MenteeData[];
+  stats: MentorStats;
+}
+
+export function useMentorData() {
+  const [data, setData] = useState<MentorDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        const response = await fetch("/api/mentor/sessions", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || "Failed to fetch mentor data");
+        }
+
+        const result = await response.json();
+        setData(result.data);
+      } catch (err) {
+        console.error("❌ Error fetching mentor data:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  return { data, loading, error };
+}

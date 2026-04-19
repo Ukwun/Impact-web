@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { useMentorProgress } from "@/hooks/useLMS";
+import { useMentorData } from "@/hooks/useRoleDashboards";
 import {
   Users,
   Calendar,
@@ -18,28 +18,21 @@ import {
   Loader,
   AlertCircle,
 } from "lucide-react";
+import {
+  KPICard,
+  ActionCard,
+  InsightCard,
+} from "@/components/dashboard/cards";
 
 export default function MentorDashboard() {
   const [isVisible, setIsVisible] = useState(false);
-  const { progress, loading, error } = useMentorProgress();
+  const { data: mentorData, loading, error } = useMentorData();
   const { success } = useToast();
 
   // Animation trigger
   useEffect(() => {
     setIsVisible(true);
   }, []);
-
-  // Use fetched data or provide defaults
-  const mentorStats = progress?.stats || {
-    totalMentees: 0,
-    activeSessions: 0,
-    completedSessions: 0,
-    upcomingMeetings: 0,
-    avgMenteeProgress: 0,
-  };
-
-  const mentees = progress?.mentees || [];
-  const sessions = progress?.sessions || [];
 
   if (loading) {
     return (
