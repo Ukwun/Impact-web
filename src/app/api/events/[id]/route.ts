@@ -1,32 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getEvent, updateEvent, deleteEvent, logActivity } from "@/lib/firestore-utils";
 import { verifyToken } from "@/lib/auth";
-import { z } from "zod";
-
-// Validation schema for updating event
-const UpdateEventSchema = z.object({
-  title: z.string().min(3).optional(),
-  description: z.string().min(10).optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
-  location: z.string().optional(),
-  capacity: z.number().min(1).optional(),
-  registeredCount: z.number().min(0).optional(),
-  eventType: z.enum(["NATIONAL", "STATE", "SCHOOL", "CIRCLE"]).optional(),
-  status: z.enum(["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"]).optional(),
-  thumbnail: z.string().url().optional(),
-});
-
-// Helper to get auth user from token
-function getAuthUser(req: NextRequest): any {
-  const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) return null;
-  return verifyToken(token);
-}
 
 /**
  * GET /api/events/[id]
- * Get event details
+ * Get event details from Firestore
  */
 export async function GET(
   req: NextRequest,
@@ -35,37 +13,7 @@ export async function GET(
   try {
     const eventId = params.id;
 
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-      include: {
-        createdBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-        registrations: {
-          select: {
-            id: true,
-            registeredAt: true,
-            attendanceStatus: true,
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            registrations: true,
-          },
-        },
-      },
-    });
+    const event = await getEvent(eventId);
 
     if (!event) {
       return NextResponse.json(
@@ -76,13 +24,10 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      data: {
-        ...event,
-        registrationCount: event._count.registrations,
-      },
+      data: event,
     });
   } catch (error) {
-    console.error("Get event error:", error);
+    console.error("❌ Get event error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch event" },
       { status: 500 }
@@ -100,21 +45,18 @@ export async function PUT(
 ) {
   try {
     const eventId = params.id;
-    const user = getAuthUser(req);
+    const token = req.headers.get("Authorization")?.split(" ")[1];
+    const payload = verifyToken(token || "");
 
-    // Verify authentication
-    if (!user) {
+    if (!payload) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    // Get event and verify creator/admin
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-      select: { createdById: true, title: true },
-    });
+    // Get event from Firestore
+    const event = await getEvent(eventId);
 
     if (!event) {
       return NextResponse.json(
@@ -123,55 +65,46 @@ export async function PUT(
       );
     }
 
-    // Verify authorization
-    if (
-      event.createdById !== user.sub &&
-      user.role !== "ADMIN"
-    ) {
+    // Verify authorization (creator or admin)
+    if (event.createdBy !== payload.sub && payload.role?.toUpperCase() !== "ADMIN") {
       return NextResponse.json(
         { success: false, error: "Not authorized to update this event" },
         { status: 403 }
       );
     }
 
-    // Validate input
     const body = await req.json();
-    const validatedData = UpdateEventSchema.parse(body);
+    const { title, description, eventDate, startTime, endTime, venue, location, capacity, image, eventType } = body;
 
-    // Update event
-    const updatedEvent = await prisma.event.update({
-      where: { id: eventId },
-      data: validatedData,
-      include: {
-        createdBy: {
-          select: { firstName: true, lastName: true },
-        },
-      },
+    // Prepare updates
+    const updates: any = {};
+    if (title) updates.title = title;
+    if (description) updates.description = description;
+    if (eventDate) updates.eventDate = new Date(eventDate);
+    if (startTime) updates.startTime = startTime;
+    if (endTime) updates.endTime = endTime;
+    if (venue) updates.venue = venue;
+    if (location) updates.location = location;
+    if (capacity !== undefined) updates.capacity = capacity;
+    if (image) updates.image = image;
+    if (eventType) updates.eventType = eventType;
+
+    const updatedEvent = await updateEvent(eventId, updates);
+
+    // Log activity
+    await logActivity(payload.sub, {
+      type: 'event_updated',
+      description: `Updated event: ${event.title}`,
+      eventId: eventId,
+      timestamp: new Date(),
     });
 
     return NextResponse.json({
       success: true,
-      data: {
-        id: updatedEvent.id,
-        title: updatedEvent.title,
-        description: updatedEvent.description,
-        status: updatedEvent.status,
-        updatedAt: updatedEvent.updatedAt,
-      },
+      data: updatedEvent,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Validation failed",
-          details: error.errors,
-        },
-        { status: 400 }
-      );
-    }
-
-    console.error("Update event error:", error);
+    console.error("❌ Update event error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to update event" },
       { status: 500 }
@@ -189,21 +122,18 @@ export async function DELETE(
 ) {
   try {
     const eventId = params.id;
-    const user = getAuthUser(req);
+    const token = req.headers.get("Authorization")?.split(" ")[1];
+    const payload = verifyToken(token || "");
 
-    // Verify authentication
-    if (!user) {
+    if (!payload) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    // Get event and verify creator/admin
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-      select: { createdById: true, title: true },
-    });
+    // Get event from Firestore
+    const event = await getEvent(eventId);
 
     if (!event) {
       return NextResponse.json(
@@ -212,20 +142,23 @@ export async function DELETE(
       );
     }
 
-    // Verify authorization
-    if (
-      event.createdById !== user.sub &&
-      user.role !== "ADMIN"
-    ) {
+    // Verify authorization (creator or admin)
+    if (event.createdBy !== payload.sub && payload.role?.toUpperCase() !== "ADMIN") {
       return NextResponse.json(
         { success: false, error: "Not authorized to delete this event" },
         { status: 403 }
       );
     }
 
-    // Delete event (cascade deletes registrations)
-    await prisma.event.delete({
-      where: { id: eventId },
+    // Delete event
+    await deleteEvent(eventId);
+
+    // Log activity
+    await logActivity(payload.sub, {
+      type: 'event_deleted',
+      description: `Deleted event: ${event.title}`,
+      eventId: eventId,
+      timestamp: new Date(),
     });
 
     return NextResponse.json({
@@ -233,7 +166,7 @@ export async function DELETE(
       message: `Event "${event.title}" has been deleted`,
     });
   } catch (error) {
-    console.error("Delete event error:", error);
+    console.error("❌ Delete event error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to delete event" },
       { status: 500 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getLesson, updateLesson, deleteLesson } from "@/lib/firestore-utils";
 import { verifyToken } from "@/lib/auth";
 import { z } from "zod";
 
@@ -31,25 +31,12 @@ export async function GET(
   { params }: { params: { id: string; lessonId: string } }
 ) {
   try {
-    const courseId = params.id;
-    const lessonId = params.lessonId;
+    const { id: courseId, lessonId } = params;
 
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
-      include: {
-        materials: {
-          select: {
-            id: true,
-            title: true,
-            type: true,
-            url: true,
-            fileSize: true,
-          },
-        },
-      },
-    });
+    // Fetch lesson from Firestore
+    const lesson = await getLesson(courseId, lessonId);
 
-    if (!lesson || lesson.courseId !== courseId) {
+    if (!lesson) {
       return NextResponse.json(
         { success: false, error: "Lesson not found" },
         { status: 404 }
@@ -61,7 +48,7 @@ export async function GET(
       data: lesson,
     });
   } catch (error) {
-    console.error("Get lesson error:", error);
+    console.error("❌ Get lesson error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch lesson" },
       { status: 500 }
@@ -78,73 +65,38 @@ export async function PUT(
   { params }: { params: { id: string; lessonId: string } }
 ) {
   try {
-    const courseId = params.id;
-    const lessonId = params.lessonId;
+    const { id: courseId, lessonId } = params;
     const user = getAuthUser(req);
 
-    // Verify authentication
-    if (!user) {
+    if (!user || !['FACILITATOR', 'ADMIN'].includes(user.role?.toUpperCase())) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    // Get the lesson and course
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
-      select: { courseId: true },
-    });
+    const body = await req.json();
+    const validatedData = UpdateLessonSchema.parse(body);
 
-    if (!lesson || lesson.courseId !== courseId) {
+    // Update lesson in Firestore
+    const updatedLesson = await updateLesson(
+      courseId,
+      lessonId,
+      validatedData
+    );
+
+    if (!updatedLesson) {
       return NextResponse.json(
         { success: false, error: "Lesson not found" },
         { status: 404 }
       );
     }
 
-    // Get course and verify creator/admin
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { createdById: true },
-    });
-
-    if (!course) {
-      return NextResponse.json(
-        { success: false, error: "Course not found" },
-        { status: 404 }
-      );
-    }
-
-    // Verify authorization
-    if (
-      course.createdById !== user.sub &&
-      user.role !== "ADMIN"
-    ) {
-      return NextResponse.json(
-        { success: false, error: "Not authorized to update this lesson" },
-        { status: 403 }
-      );
-    }
-
-    // Validate input
-    const body = await req.json();
-    const validatedData = UpdateLessonSchema.parse(body);
-
-    // Update lesson
-    const updatedLesson = await prisma.lesson.update({
-      where: { id: lessonId },
-      data: validatedData,
-    });
+    console.log(`✅ Lesson updated: ${lessonId}`);
 
     return NextResponse.json({
       success: true,
-      data: {
-        id: updatedLesson.id,
-        title: updatedLesson.title,
-        description: updatedLesson.description,
-        updatedAt: updatedLesson.updatedAt,
-      },
+      data: updatedLesson,
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -158,7 +110,7 @@ export async function PUT(
       );
     }
 
-    console.error("Update lesson error:", error);
+    console.error("❌ Update lesson error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to update lesson" },
       { status: 500 }
@@ -175,66 +127,34 @@ export async function DELETE(
   { params }: { params: { id: string; lessonId: string } }
 ) {
   try {
-    const courseId = params.id;
-    const lessonId = params.lessonId;
+    const { id: courseId, lessonId } = params;
     const user = getAuthUser(req);
 
-    // Verify authentication
-    if (!user) {
+    if (!user || !['FACILITATOR', 'ADMIN'].includes(user.role?.toUpperCase())) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    // Get the lesson and course
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
-      select: { courseId: true, title: true },
-    });
+    // Delete lesson from Firestore
+    const success = await deleteLesson(courseId, lessonId);
 
-    if (!lesson || lesson.courseId !== courseId) {
+    if (!success) {
       return NextResponse.json(
         { success: false, error: "Lesson not found" },
         { status: 404 }
       );
     }
 
-    // Get course and verify creator/admin
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { createdById: true },
-    });
-
-    if (!course) {
-      return NextResponse.json(
-        { success: false, error: "Course not found" },
-        { status: 404 }
-      );
-    }
-
-    // Verify authorization
-    if (
-      course.createdById !== user.sub &&
-      user.role !== "ADMIN"
-    ) {
-      return NextResponse.json(
-        { success: false, error: "Not authorized to delete this lesson" },
-        { status: 403 }
-      );
-    }
-
-    // Delete lesson (cascade deletes materials, progress, etc.)
-    await prisma.lesson.delete({
-      where: { id: lessonId },
-    });
+    console.log(`✅ Lesson deleted: ${lessonId}`);
 
     return NextResponse.json({
       success: true,
-      message: `Lesson "${lesson.title}" has been deleted`,
+      message: "Lesson deleted successfully",
     });
   } catch (error) {
-    console.error("Delete lesson error:", error);
+    console.error("❌ Delete lesson error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to delete lesson" },
       { status: 500 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { getEmailService, emailTemplates } from "@/lib/email-service";
-import prisma from "@/lib/db";
+import { getEvent, registerForEvent, getEventRegistrations, logActivity } from "@/lib/firestore-utils";
+import * as admin from "firebase-admin";
 
 /**
  * POST /api/events/[id]/register
@@ -25,28 +25,8 @@ export async function POST(
     const userId = payload.sub as string;
     const eventId = params.id;
 
-    // Check if event exists and is available for registration
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        location: true,
-        venue: true,
-        eventDate: true,
-        startTime: true,
-        endTime: true,
-        capacity: true,
-        isPublished: true,
-        isCancelled: true,
-        _count: {
-          select: {
-            registrations: true,
-          },
-        },
-      },
-    });
+    // Get event from Firestore
+    const event = await getEvent(eventId);
 
     if (!event) {
       return NextResponse.json(
@@ -55,14 +35,9 @@ export async function POST(
       );
     }
 
-    if (!event.isPublished || event.isCancelled) {
-      return NextResponse.json(
-        { error: "Event is not available for registration" },
-        { status: 400 }
-      );
-    }
-
-    if (event.eventDate < new Date()) {
+    // Check if event has already started
+    const eventDate = event.eventDate ? new Date(event.eventDate) : new Date();
+    if (eventDate < new Date()) {
       return NextResponse.json(
         { error: "Event has already started" },
         { status: 400 }
@@ -70,72 +45,35 @@ export async function POST(
     }
 
     // Check capacity
-    if (event.capacity && event._count.registrations >= event.capacity) {
+    if (event.capacity && event.registeredCount >= event.capacity) {
       return NextResponse.json(
         { error: "Event is full" },
         { status: 400 }
       );
     }
 
-    // Check if user is already registered
-    const existingRegistration = await prisma.eventRegistration.findUnique({
-      where: {
-        eventId_userId: {
-          eventId,
-          userId,
-        },
-      },
-    });
+    // Register for event (will check for existing registration)
+    const result = await registerForEvent(eventId, userId);
 
-    if (existingRegistration) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: "You are already registered for this event" },
-        { status: 409 }
+        { error: result.message || "Could not register for event" },
+        { status: result.conflict ? 409 : 400 }
       );
     }
 
-    // Create registration
-    const registration = await prisma.eventRegistration.create({
-      data: {
-        userId,
-        eventId,
-        status: "REGISTERED",
-        registeredAt: new Date(),
-      },
-      include: {
-        event: true,
-        user: true,
-      },
+    // Log activity
+    await logActivity(userId, {
+      type: 'event_registered',
+      description: `Registered for event: ${event.title}`,
+      eventId: eventId,
+      timestamp: new Date(),
     });
-
-    // Create notification
-    await prisma.notification.create({
-      data: {
-        userId,
-        title: "Event Registration Confirmed 🎉",
-        message: `You have successfully registered for "${event.title}". Location: ${event.location || event.venue}`,
-        type: "EVENT_REMINDER",
-        link: `/dashboard/events/${eventId}`,
-      },
-    });
-
-    // Send confirmation email
-    try {
-      const emailService = getEmailService();
-      const emailContent = emailTemplates.eventRegistration(registration);
-
-      await emailService.send({
-        to: registration.user.email,
-        ...emailContent,
-      });
-    } catch (error) {
-      console.error("Error sending event registration email:", error);
-    }
 
     return NextResponse.json({
       success: true,
       data: {
-        registrationId: registration.id,
+        registrationId: result.registrationId,
         event: {
           id: event.id,
           title: event.title,
@@ -146,11 +84,11 @@ export async function POST(
           location: event.location,
           capacity: event.capacity,
         },
-        status: registration.status,
+        status: "REGISTERED",
       },
     });
   } catch (error) {
-    console.error("Error registering for event:", error);
+    console.error("❌ Error registering for event:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -180,53 +118,51 @@ export async function DELETE(
     const userId = payload.sub as string;
     const eventId = params.id;
 
-    // Find and delete registration
-    const registration = await prisma.eventRegistration.findUnique({
-      where: {
-        eventId_userId: {
-          eventId,
-          userId,
-        },
-      },
-      include: {
-        event: true,
-      },
-    });
+    // Get event and check if event exists and hasn't started
+    const event = await getEvent(eventId);
 
-    if (!registration) {
+    if (!event) {
       return NextResponse.json(
-        { error: "Registration not found" },
+        { error: "Event not found" },
         { status: 404 }
       );
     }
 
     // Check if event has already started
-    if (registration.event.eventDate < new Date()) {
+    const eventDate = event.eventDate ? new Date(event.eventDate) : new Date();
+    if (eventDate < new Date()) {
       return NextResponse.json(
         { error: "Cannot cancel registration for an event that has already started" },
         { status: 400 }
       );
     }
 
-    // Delete registration
-    await prisma.eventRegistration.delete({
-      where: {
-        eventId_userId: {
-          eventId,
-          userId,
-        },
-      },
+    // Get registrations to find and delete user registration
+    const registrations = await getEventRegistrations(eventId);
+    const userReg = registrations.find((reg: any) => reg.userId === userId);
+
+    if (!userReg) {
+      return NextResponse.json(
+        { error: "You are not registered for this event" },
+        { status: 404 }
+      );
+    }
+
+    // Delete registration from Firestore
+    const db = admin.firestore();
+    await db.collection("event_registrations").doc(userReg.id).delete();
+
+    // Decrement registered count
+    await db.collection("events").doc(eventId).update({
+      registeredCount: admin.firestore.FieldValue.increment(-1),
     });
 
-    // Create cancellation notification
-    await prisma.notification.create({
-      data: {
-        userId,
-        title: "Registration Cancelled",
-        message: `Your registration for "${registration.event.title}" has been cancelled.`,
-        type: "SYSTEM",
-        link: `/dashboard/events`,
-      },
+    // Log activity
+    await logActivity(userId, {
+      type: 'event_registration_cancelled',
+      description: `Cancelled registration for event: ${event.title}`,
+      eventId: eventId,
+      timestamp: new Date(),
     });
 
     return NextResponse.json({
@@ -234,7 +170,7 @@ export async function DELETE(
       message: "Registration cancelled successfully",
     });
   } catch (error) {
-    console.error("Error cancelling event registration:", error);
+    console.error("❌ Error cancelling event registration:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

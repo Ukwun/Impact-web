@@ -501,6 +501,119 @@ export async function getLeaderboard(courseId: string, limit = 100) {
 }
 
 // ============================================================================
+// EVENT OPERATIONS
+// ============================================================================
+
+export async function createEvent(eventData: any) {
+  const db = getFirestore();
+  const eventRef = db.collection('events').doc();
+  
+  const event = {
+    id: eventRef.id,
+    title: eventData.title,
+    description: eventData.description || '',
+    eventDate: eventData.eventDate,
+    startTime: eventData.startTime || '',
+    endTime: eventData.endTime || '',
+    venue: eventData.venue || '',
+    location: eventData.location || '',
+    capacity: eventData.capacity || 0,
+    registeredCount: 0,
+    image: eventData.image || null,
+    eventType: eventData.eventType || 'MEETUP',
+    isPublished: eventData.isPublished !== false,
+    isCancelled: false,
+    createdBy: eventData.createdBy,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  await eventRef.set(event);
+  return { id: eventRef.id, ...event };
+}
+
+export async function getEvent(eventId: string) {
+  const db = getFirestore();
+  const doc = await db.collection('events').doc(eventId).get();
+  return doc.exists ? { id: doc.id, ...doc.data() } : null;
+}
+
+export async function updateEvent(eventId: string, updates: any) {
+  const db = getFirestore();
+  updates.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+  await db.collection('events').doc(eventId).update(updates);
+  return getEvent(eventId);
+}
+
+export async function deleteEvent(eventId: string) {
+  const db = getFirestore();
+  await db.collection('events').doc(eventId).delete();
+}
+
+export async function listEvents(filters?: any) {
+  const db = getFirestore();
+  const now = new Date();
+  
+  let query: any = db.collection('events')
+    .where('isPublished', '==', true)
+    .where('isCancelled', '==', false);
+  
+  if (filters?.upcoming !== false) {
+    query = query.where('eventDate', '>=', now);
+  }
+  
+  if (filters?.eventType) {
+    query = query.where('eventType', '==', filters.eventType);
+  }
+  
+  const snapshot = await query.orderBy('eventDate', 'asc').get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+export async function registerForEvent(eventId: string, userId: string) {
+  const db = getFirestore();
+  const registrationRef = db.collection('event_registrations').doc();
+  
+  const registration = {
+    id: registrationRef.id,
+    eventId,
+    userId,
+    status: 'registered',
+    registeredAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  await registrationRef.set(registration);
+  
+  // Increment registered count
+  await db.collection('events').doc(eventId).update({
+    registeredCount: admin.firestore.FieldValue.increment(1),
+  });
+  
+  return { id: registrationRef.id, ...registration };
+}
+
+export async function getEventRegistrations(eventId: string) {
+  const db = getFirestore();
+  const snapshot = await db.collection('event_registrations')
+    .where('eventId', '==', eventId)
+    .where('status', '!=', 'cancelled')
+    .orderBy('status')
+    .orderBy('registeredAt', 'desc')
+    .get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+export async function getUserEventRegistrations(userId: string) {
+  const db = getFirestore();
+  const snapshot = await db.collection('event_registrations')
+    .where('userId', '==', userId)
+    .where('status', '!=', 'cancelled')
+    .orderBy('registeredAt', 'desc')
+    .get();
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+// ============================================================================
 // ADMIN OPERATIONS
 // ============================================================================
 

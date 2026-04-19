@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { getEmailService, emailTemplates } from "@/lib/email-service";
-import prisma from "@/lib/db";
+import { getQuiz, createQuizAttempt, logActivity } from "@/lib/firestore-utils";
 
 /**
  * POST /api/quizzes/[id]/submit
- * Submit quiz answers and calculate score
+ * Submit quiz answers and calculate score using Firestore
  */
 export async function POST(
   request: NextRequest,
@@ -34,20 +33,8 @@ export async function POST(
       );
     }
 
-    // Get quiz with questions
-    const quiz = await prisma.quiz.findUnique({
-      where: { id: quizId },
-      include: {
-        questions: true,
-        course: {
-          select: {
-            id: true,
-            title: true,
-            instructor: true,
-          },
-        },
-      },
-    });
+    // Get quiz from Firestore
+    const quiz = await getQuiz(quizId);
 
     if (!quiz) {
       return NextResponse.json(
@@ -56,35 +43,17 @@ export async function POST(
       );
     }
 
-    // Check if user has already passed this quiz
-    const existingPassedAttempt = await prisma.quizAttempt.findFirst({
-      where: {
-        quizId,
-        userId,
-        isPassed: true,
-      },
-    });
-
-    if (existingPassedAttempt && !quiz.allowRetake) {
-      return NextResponse.json(
-        { error: "You have already passed this quiz and retakes are not allowed" },
-        { status: 400 }
-      );
-    }
-
     // Calculate score
     let correctAnswers = 0;
     let earnedPoints = 0;
-    const totalPossiblePoints = quiz.questions.reduce(
-      (sum, question) => sum + question.points,
-      0
-    );
+    const totalPossiblePoints = quiz.totalPoints || 100;
     const questionResults = [];
 
-    for (const question of quiz.questions) {
+    const questions = quiz.questions || [];
+    for (const question of questions) {
       const userAnswer = answers[question.id];
       const isCorrect = userAnswer === question.correctAnswer;
-      const points = isCorrect ? question.points : 0;
+      const points = isCorrect ? (question.points || 0) : 0;
 
       correctAnswers += isCorrect ? 1 : 0;
       earnedPoints += points;
@@ -98,149 +67,67 @@ export async function POST(
       });
     }
 
-    const percentage = totalPossiblePoints
-      ? Math.round((earnedPoints / totalPossiblePoints) * 100)
+    const percentageScore = questions.length > 0 
+      ? Math.round((correctAnswers / questions.length) * 100) 
       : 0;
-    const passed = percentage >= quiz.passingScore;
+    const isPassed = percentageScore >= (quiz.passingScore || 60);
 
-    // Create quiz attempt record
-    const attempt = await prisma.quizAttempt.create({
-      data: {
-        quizId,
-        userId,
-        score: earnedPoints,
-        scoredOutOf: totalPossiblePoints,
-        percentageScore: percentage,
-        isPassed: passed,
-        completedAt: new Date(),
-        answers: {
-          create: questionResults.map((result) => ({
-            questionId: result.questionId,
-            answer: result.userAnswer,
-            isCorrect: result.isCorrect,
-            pointsEarned: result.points,
-          })),
-        },
-      },
-      include: {
-        user: true,
-        quiz: {
-          include: {
-            course: true,
-          },
-        },
-      },
+    // Create quiz attempt record in Firestore
+    const attemptData = {
+      quizId,
+      userId,
+      score: earnedPoints,
+      scoredOutOf: totalPossiblePoints,
+      percentageScore,
+      isPassed,
+      answers,
+      timeSpent: timeSpent || 0,
+      submittedAt: new Date(),
+      completedAt: new Date(),
+    };
+
+    const attempt = await createQuizAttempt(attemptData);
+
+    // Log activity
+    await logActivity(userId, {
+      type: 'quiz_attempt',
+      description: `Completed quiz: ${quiz.title}`,
+      quizId,
+      score: percentageScore,
+      passed: isPassed,
+      timestamp: new Date(),
     });
 
-    // Update enrollment progress if this is the first passing attempt
-    if (passed) {
-      const enrollment = await prisma.enrollment.findFirst({
-        where: {
-          userId,
-          courseId: quiz.courseId,
-        },
-      });
-
-      if (enrollment) {
-        // Check if this quiz completion affects course completion
-        const totalQuizzes = await prisma.quiz.count({
-          where: { courseId: quiz.courseId },
-        });
-
-        const passedQuizzes = await prisma.quizAttempt.count({
-          where: {
-            userId,
-            quiz: { courseId: quiz.courseId },
-            isPassed: true,
-          },
-        });
-
-        // Update enrollment with quiz progress
-        await prisma.enrollment.update({
-          where: { id: enrollment.id },
-          data: {
-            quizAttempts: {
-              connect: { id: attempt.id },
-            },
-          },
-        });
-
-        // Check if course is now complete
-        const courseLessons = await prisma.lesson.count({
-          where: { courseId: quiz.courseId },
-        });
-
-        const completedLessons = await prisma.lessonProgress.count({
-          where: {
-            enrollmentId: enrollment.id,
-            isCompleted: true,
-          },
-        });
-
-        const courseComplete = completedLessons >= courseLessons && passedQuizzes >= totalQuizzes;
-
-        if (courseComplete && !enrollment.isCompleted) {
-          await prisma.enrollment.update({
-            where: { id: enrollment.id },
-            data: { isCompleted: true },
-          });
-
-          // Award certificate automatically
-          try {
-            const certResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/certificates/generate`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                courseId: quiz.courseId,
-                enrollmentId: enrollment.id,
-              }),
-            });
-
-            if (certResponse.ok) {
-              console.log('Certificate generated automatically for course completion');
-            }
-          } catch (error) {
-            console.error('Error generating certificate:', error);
-          }
-        }
-      }
-    }
-
-    // Send notification email
-    try {
-      const emailService = getEmailService();
-      const emailContent = emailTemplates.quizCompleted(attempt);
-
-      await emailService.send({
-        to: attempt.user.email,
-        ...emailContent,
-      });
-    } catch (error) {
-      console.error("Error sending quiz completion email:", error);
-    }
+    // Prepare response
+    const resultsResponse = {
+      score: earnedPoints,
+      percentageScore,
+      isPassed,
+      totalQuestions: questions.length,
+      correctAnswers,
+      totalPoints: totalPossiblePoints,
+      passingScore: quiz.passingScore || 60,
+      message: isPassed
+        ? `🎉 Congratulations! You passed with ${percentageScore}%`
+        : `📊 You scored ${percentageScore}%. You need ${quiz.passingScore || 60}% to pass.`,
+      answers: (quiz.showResults !== false)
+        ? questionResults.map((a) => ({
+            questionId: a.questionId,
+            isCorrect: a.isCorrect,
+            pointsEarned: a.points,
+          }))
+        : [],
+    };
 
     return NextResponse.json({
       success: true,
-      data: {
-        attemptId: attempt.id,
-        score: percentage,
-        pointsEarned: earnedPoints,
-        totalPossiblePoints,
-        passed,
-        correctAnswers,
-        totalQuestions: quiz.questions.length,
-        timeSpent: timeSpent || 0,
-        showResults: quiz.showResults,
-        results: quiz.showResults ? questionResults : null,
-      },
+      message: "Quiz submitted successfully",
+      data: resultsResponse,
     });
   } catch (error) {
-    console.error("Error submitting quiz:", error);
+    console.error("❌ Submit quiz error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { success: false, error: "Failed to submit quiz" },
       { status: 500 }
     );
   }

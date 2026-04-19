@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getUserFromToken, verifyToken } from "@/lib/auth";
+import { verifyToken } from "@/lib/auth";
+import { createLesson, listLessons, getLesson, updateLesson, deleteLesson } from "@/lib/firestore-utils";
 import { z } from "zod";
 
 // Validation schema for creating lesson
 const CreateLessonSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  content: z.string().optional().default(""),
   videoUrl: z.string().url().optional(),
-  videoThumbnail: z.string().url().optional(),
+  transcript: z.string().optional().default(""),
   duration: z.number().min(0).optional().default(0),
   order: z.number().min(0).optional().default(0),
-  moduleId: z.string().optional(),
 });
+
+const UpdateLessonSchema = CreateLessonSchema.partial();
 
 // Helper to get auth user from token
 function getAuthUser(req: NextRequest): any {
@@ -24,13 +24,7 @@ function getAuthUser(req: NextRequest): any {
 
 /**
  * GET /api/courses/[id]/lessons
- * Get all lessons for a course with user's progress
- * 
- * Response:
- * - 200: { success: true, lessons: [...] }
- * - 404: Course not found or not enrolled
- * - 401: Not authenticated
- * - 500: Server error
+ * Get all lessons for a course
  */
 export async function GET(
   req: NextRequest,
@@ -38,99 +32,21 @@ export async function GET(
 ) {
   try {
     const courseId = params.id;
-    const user = await getUserFromToken(req);
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Not authenticated" },
-        { status: 401 }
-      );
-    }
+    // Fetch all lessons from Firestore
+    const lessons = await listLessons(courseId);
 
-    // Verify course exists
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-    });
-
-    if (!course) {
-      return NextResponse.json(
-        { success: false, error: "Course not found" },
-        { status: 404 }
-      );
-    }
-
-    // Verify user is enrolled
-    const enrollment = await prisma.enrollment.findUnique({
-      where: {
-        courseId_userId: {
-          courseId: courseId,
-          userId: user.id,
-        },
-      },
-    });
-
-    if (!enrollment) {
-      return NextResponse.json(
-        { success: false, error: "Not enrolled in this course" },
-        { status: 403 }
-      );
-    }
-
-    // Get all lessons with user's progress
-    const lessons = await prisma.lesson.findMany({
-      where: { courseId },
-      include: {
-        progress: {
-          where: {
-            enrollmentId: enrollment.id,
-          },
-          select: {
-            isCompleted: true,
-            completedAt: true,
-            secondsWatched: true,
-          },
-        },
-        materials: {
-          select: {
-            id: true,
-            title: true,
-            type: true,
-            url: true,
-            fileSize: true,
-          },
-        },
-        _count: {
-          select: {
-            notes: true,
-          },
-        },
-      },
-      orderBy: { order: "asc" },
-    });
-
-    const transformedLessons = lessons.map((lesson) => ({
-      id: lesson.id,
-      title: lesson.title,
-      description: lesson.description,
-      content: lesson.content,
-      videoUrl: lesson.videoUrl,
-      videoThumbnail: lesson.videoThumbnail,
-      duration: lesson.duration,
-      order: lesson.order,
-      moduleId: lesson.moduleId,
-      materials: lesson.materials,
-      progress: lesson.progress && lesson.progress.length > 0 ? lesson.progress[0] : null,
-      notesCount: lesson._count.notes,
-    }));
+    console.log(`✅ Fetched ${lessons.length} lessons for course ${courseId}`);
 
     return NextResponse.json({
       success: true,
-      courseId,
-      enrollmentId: enrollment.id,
-      lessons: transformedLessons,
+      data: {
+        lessons,
+        total: lessons.length,
+      },
     });
   } catch (error) {
-    console.error("Get lessons error:", error);
+    console.error("❌ Get lessons error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch lessons" },
       { status: 500 }
@@ -140,7 +56,7 @@ export async function GET(
 
 /**
  * POST /api/courses/[id]/lessons
- * Create a new lesson in course (creator or admin only)
+ * Create a new lesson (facilitator/admin only)
  */
 export async function POST(
   req: NextRequest,
@@ -158,26 +74,10 @@ export async function POST(
       );
     }
 
-    // Get course and verify creator/admin
-    const course = await prisma.course.findUnique({
-      where: { id: courseId },
-      select: { createdById: true },
-    });
-
-    if (!course) {
-      return NextResponse.json(
-        { success: false, error: "Course not found" },
-        { status: 404 }
-      );
-    }
-
     // Verify authorization
-    if (
-      course.createdById !== user.sub &&
-      user.role !== "ADMIN"
-    ) {
+    if (!["FACILITATOR", "ADMIN"].includes(user.role?.toUpperCase())) {
       return NextResponse.json(
-        { success: false, error: "Not authorized to add lessons to this course" },
+        { success: false, error: "Only facilitators can create lessons" },
         { status: 403 }
       );
     }
@@ -186,34 +86,15 @@ export async function POST(
     const body = await req.json();
     const validatedData = CreateLessonSchema.parse(body);
 
-    // Get the next order number
-    const lastLesson = await prisma.lesson.findFirst({
-      where: { courseId },
-      orderBy: { order: "desc" },
-      select: { order: true },
-    });
+    // Create lesson in Firestore
+    const lesson = await createLesson(courseId, validatedData);
 
-    const nextOrder = (lastLesson?.order ?? -1) + 1;
-
-    // Create lesson
-    const lesson = await prisma.lesson.create({
-      data: {
-        ...validatedData,
-        order: validatedData.order > 0 ? validatedData.order : nextOrder,
-        courseId,
-      },
-    });
+    console.log(`✅ Lesson created: ${lesson.id}`);
 
     return NextResponse.json(
       {
         success: true,
-        data: {
-          id: lesson.id,
-          title: lesson.title,
-          description: lesson.description,
-          order: lesson.order,
-          createdAt: lesson.createdAt,
-        },
+        data: lesson,
       },
       { status: 201 }
     );
@@ -229,7 +110,7 @@ export async function POST(
       );
     }
 
-    console.error("Create lesson error:", error);
+    console.error("❌ Create lesson error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to create lesson" },
       { status: 500 }
