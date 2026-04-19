@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useSocket } from "@/hooks/useSocket";
+import { useUniversityMember } from "@/hooks/useRoleDashboards";
 import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
 import {
-  Lightbulb,
   TrendingUp,
   BookOpen,
   Target,
@@ -20,37 +20,12 @@ import {
   KPICard,
   ActionCard,
   InsightCard,
-  OpportunityCard,
 } from "@/components/dashboard/cards";
-
-interface VentureData {
-  id: string;
-  name: string;
-  stage: "ideation" | "validation" | "development" | "launch" | "growth";
-  progress: number;
-  milestone: string;
-  nextMilestone: string;
-  teamSize: number;
-  fundingStatus: "not-started" | "seeking" | "secured";
-  fundingAmount?: number;
-}
-
-interface OpportunityData {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  deadline?: string;
-  priority: "high" | "medium" | "low";
-}
 
 export default function UniversityMemberDashboard() {
   const [isVisible, setIsVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [ventureData, setVentureData] = useState<VentureData | null>(null);
-  const [opportunities, setOpportunities] = useState<OpportunityData[]>([]);
   const { user } = useAuth();
+  const { data: universityData, loading, error } = useUniversityMember();
   const { isConnected } = useSocket({
     userId: user?.id,
     token:
@@ -60,66 +35,9 @@ export default function UniversityMemberDashboard() {
     enabled: !!user,
   });
 
-  // Load venture data
   useEffect(() => {
-    const loadVentureData = async () => {
-      try {
-        setLoading(true);
-        // Mock data for demonstration - replace with actual API call
-        const mockVenture: VentureData = {
-          id: "venture-001",
-          name: "FinTech Innovation Hub",
-          stage: "development",
-          progress: 65,
-          milestone: "MVP Development",
-          nextMilestone: "Beta Testing",
-          teamSize: 4,
-          fundingStatus: "seeking",
-          fundingAmount: 50000,
-        };
-
-        const mockOpportunities: OpportunityData[] = [
-          {
-            id: "opp-001",
-            title: "Google for Startups Program",
-            description: "Access to Google Cloud credits and mentorship",
-            category: "Program",
-            deadline: "2026-04-15",
-            priority: "high",
-          },
-          {
-            id: "opp-002",
-            title: "TechCrunch Startup Battlefield",
-            description: "Pitch competition for $500K winners",
-            category: "Competition",
-            deadline: "2026-05-01",
-            priority: "high",
-          },
-          {
-            id: "opp-003",
-            title: "VC Networking Event - Lagos",
-            description: "Connect with angel investors and VCs",
-            category: "Networking",
-            deadline: "2026-03-25",
-            priority: "medium",
-          },
-        ];
-
-        setVentureData(mockVenture);
-        setOpportunities(mockOpportunities);
-        setError(null);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load venture data"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadVentureData();
     setIsVisible(true);
-  }, [user]);
+  }, []);
 
   if (loading) {
     return (
@@ -148,36 +66,20 @@ export default function UniversityMemberDashboard() {
     );
   }
 
-  if (!ventureData) {
+  if (!universityData?.profile) {
     return (
       <Card className="p-8 text-center">
-        <Lightbulb className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-bold text-white mb-2">No Venture Yet</h3>
+        <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-bold text-white mb-2">Welcome to ImpactUni</h3>
         <p className="text-gray-400 mb-6">
-          Create your first startup to unlock the full ImpactUni experience
+          Explore programs and start your learning journey today
         </p>
         <Button variant="primary" size="lg">
-          Start a New Venture
+          Browse Programs
         </Button>
       </Card>
     );
   }
-
-  const stageColors = {
-    ideation: "from-blue-500 to-blue-600",
-    validation: "from-cyan-500 to-cyan-600",
-    development: "from-primary-500 to-primary-600",
-    launch: "from-green-500 to-green-600",
-    growth: "from-purple-500 to-purple-600",
-  };
-
-  const stageBorderColors = {
-    ideation: "border-blue-400",
-    validation: "border-cyan-400",
-    development: "border-primary-400",
-    launch: "border-green-400",
-    growth: "border-purple-400",
-  };
 
   return (
     <div className="space-y-8 pb-12">
@@ -191,109 +93,153 @@ export default function UniversityMemberDashboard() {
       >
         <div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-2">
-            Your Venture Journey 🚀
+            Welcome, {universityData.profile.name} 🎓
           </h1>
           <p className="text-base sm:text-lg text-gray-300">
-            Track your startup progress, unlock opportunities, and scale your impact
+            Your learning hub at {universityData.profile.institution}
           </p>
         </div>
       </div>
 
-      {/* TOP ROW: Status, Next Action, Progress */}
+      {/* TOP ROW: Learning Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* My Venture Stage - Status Card (Top Row) */}
+        {/* Total Learning Hours */}
         <KPICard
-          icon={Lightbulb}
-          label="Current Stage"
-          value={ventureData.stage.charAt(0).toUpperCase() + ventureData.stage.slice(1)}
-          status="Active"
-          gradientFrom={stageColors[ventureData.stage].split(" ")[0]}
-          gradientTo={stageColors[ventureData.stage].split(" ")[2]}
-          borderColor={stageBorderColors[ventureData.stage]}
+          icon={TrendingUp}
+          label="Learning Hours"
+          value={universityData.stats.totalLearningHours || 0}
+          status={`${universityData.stats.enrolledPrograms} courses`}
+          gradientFrom="from-primary-500"
+          gradientTo="to-primary-600"
+          borderColor="border-primary-400"
         />
 
-        {/* Startup Progress - Next Action Card (Top Row) */}
+        {/* Completed Programs */}
         <ActionCard
-          title="Next Milestone"
-          description={ventureData.milestone}
+          title="Programs Progress"
+          description={`${universityData.stats.completedPrograms} of ${universityData.stats.enrolledPrograms} completed`}
           icon={Target}
           primaryAction={{
-            label: "View Details",
-            onClick: () => console.log("View milestone details"),
+            label: "View Progress",
+            onClick: () => console.log("View all programs"),
           }}
         />
 
-        {/* Team & Funding - Progress Card (Top Row) */}
+        {/* Achievements Earned */}
         <InsightCard
-          title="Venture Overview"
-          icon={TrendingUp}
+          title="Achievements"
+          icon={BookOpen}
           stats={[
-            { label: "Team Size", value: ventureData.teamSize },
-            { label: "Progress", value: `${ventureData.progress}%` },
-            { label: "Status", value: ventureData.fundingStatus === "secured" ? "✓" : "○" },
+            { label: "Total Achievements", value: universityData.stats.totalAchievements },
+            { label: "Certificates", value: universityData.stats.certificatesEarned },
+            { label: "Avg Progress", value: `${universityData.stats.averageProgress}%` },
           ]}
         >
           <p className="text-xs text-gray-400">
-            {ventureData.fundingStatus === "seeking" && "Currently seeking funding"}
-            {ventureData.fundingStatus === "secured" && "Funding secured"}
-            {ventureData.fundingStatus === "not-started" && "Funding planning phase"}
+            Great progress! Keep learning to unlock more achievements.
           </p>
         </InsightCard>
       </div>
 
-      {/* ROW 2: Additional cards limited to max 5 per dashboard */}
-
-      {/* Learning & Labs - Action Card */}
-      <ActionCard
-        title="Learning & Labs"
-        description="Access founder education, labs, and resources"
-        icon={BookOpen}
-        primaryAction={{
-          label: "Explore Programs",
-          onClick: () => console.log("Explore learning programs"),
-        }}
-        secondaryAction={{
-          label: "Your Certificates",
-          onClick: () => console.log("View certificates"),
-        }}
-      />
-
-      {/* Opportunities - Opportunity Cards Grid */}
+      {/* Enrolled Programs Section */}
       <div className="space-y-3">
-        <h2 className="text-xl font-bold text-white">Matching Opportunities</h2>
+        <h2 className="text-xl font-bold text-white">Your Learning Journey</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {opportunities.slice(0, 2).map((opp) => (
-            <OpportunityCard
-              key={opp.id}
-              title={opp.title}
-              description={opp.description}
-              category={opp.category}
-              icon={Target}
-              metadata={
-                opp.deadline
-                  ? [{ label: "Deadline", value: new Date(opp.deadline).toLocaleDateString() }]
-                  : undefined
-              }
-              actionLabel="Learn More"
-              onAction={() => console.log("View opportunity:", opp.id)}
-              priority={opp.priority}
-            />
+          {universityData.enrolledPrograms.map((program) => (
+            <Card
+              key={program.id}
+              className="p-6 hover:border-primary-400 transition-colors border border-gray-700"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-white">{program.title}</h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Difficulty: {program.difficulty}
+                  </p>
+                </div>
+                {program.isCompleted && (
+                  <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">
+                    Completed
+                  </span>
+                )}
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-primary-500 h-2 rounded-full transition-all"
+                  style={{ width: `${program.progress}%` }}
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-2">{program.progress}% Complete</p>
+            </Card>
           ))}
         </div>
       </div>
 
-      {/* Mentor Access - Action Card */}
+      {/* Recent Achievements Section */}
+      {universityData.recentAchievements && universityData.recentAchievements.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-xl font-bold text-white">Recent Achievements</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {universityData.recentAchievements.slice(0, 3).map((achievement: any) => (
+              <Card
+                key={achievement.id}
+                className="p-6 text-center hover:border-green-400 transition-colors border border-gray-700"
+              >
+                <div className="text-3xl mb-2">🏆</div>
+                <h3 className="font-bold text-white">{achievement.title || "Achievement"}</h3>
+                <p className="text-xs text-gray-400 mt-2">
+                  {achievement.description || "Badge Earned"}
+                </p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Available Programs To Explore */}
+      <div className="space-y-3">
+        <h2 className="text-xl font-bold text-white">Explore More Programs</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {universityData.availablePrograms.slice(0, 2).map((program) => (
+            <Card
+              key={program.id}
+              className="p-6 hover:border-cyan-400 transition-colors border border-gray-700 cursor-pointer"
+            >
+              <h3 className="font-bold text-white">{program.title}</h3>
+              <p className="text-sm text-gray-400 mt-2">{program.description}</p>
+              <div className="flex items-center justify-between mt-4">
+                <span className="text-xs text-gray-500">
+                  {program.enrollmentCount} enrolled
+                </span>
+                <span className="text-xs bg-cyan-500 text-white px-2 py-1 rounded">
+                  {program.difficulty}
+                </span>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full mt-4"
+                onClick={() => console.log("Enroll in", program.title)}
+              >
+                Learn More
+              </Button>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Resources & Support Section */}
       <ActionCard
-        title="Mentor Access"
-        description="Connect with experienced mentors and get guidance on your venture"
+        title="Learning Resources"
+        description="Access study materials, mentorship, and community support"
         icon={Users}
         primaryAction={{
-          label: "Find a Mentor",
-          onClick: () => console.log("Access mentor network"),
+          label: "Browse Resources",
+          onClick: () => console.log("Access learning resources"),
         }}
         secondaryAction={{
-          label: "Schedule Session",
-          onClick: () => console.log("Schedule mentor session"),
+          label: "Community Forum",
+          onClick: () => console.log("Join community"),
         }}
         variant="success"
       />

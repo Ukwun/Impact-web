@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useUserProgress } from "@/hooks/useLMS";
+import { useSchoolMetrics } from "@/hooks/useRoleDashboards";
 import {
   Building2,
   Users,
@@ -25,17 +26,19 @@ import {
 export default function SchoolAdminDashboard() {
   const [isVisible, setIsVisible] = useState(false);
   const { progress } = useUserProgress();
+  const { data: schoolData, loading: schoolLoading, error: schoolError } = useSchoolMetrics();
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
-  const schoolMetrics = {
-    totalStudents: 1250,
-    totalFacilitators: 45,
-    completionRate: 72,
-    averageScore: 81,
-    courseEnrollment: 3421,
+  const schoolMetrics = schoolData?.metrics || {
+    totalStudents: 0,
+    totalFacilitators: 0,
+    totalCourses: 0,
+    totalEnrollments: 0,
+    completionRate: 0,
+    averageProgress: 0,
   };
 
   return (
@@ -89,7 +92,7 @@ export default function SchoolAdminDashboard() {
           stats={[
             { label: "Students", value: schoolMetrics.totalStudents },
             { label: "Completion", value: `${schoolMetrics.completionRate}%` },
-            { label: "Avg Score", value: `${schoolMetrics.averageScore}%` },
+            { label: "Avg Progress", value: `${schoolMetrics.averageProgress}%` },
           ]}
         >
           <p className="text-xs text-gray-400">

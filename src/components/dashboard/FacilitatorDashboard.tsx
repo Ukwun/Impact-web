@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useUserProgress } from "@/hooks/useLMS";
+import { useFacilitatorClasses } from "@/hooks/useRoleDashboards";
 import {
   KPICard,
   ActionCard,
@@ -53,6 +54,7 @@ export default function FacilitatorDashboard() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { progress, loading, error } = useUserProgress();
+  const { data: classesData, loading: classesLoading, error: classesError } = useFacilitatorClasses();
   const { success, error: errorToast } = useToast();
 
   useEffect(() => {
@@ -127,15 +129,25 @@ export default function FacilitatorDashboard() {
   };
 
   const enrollments = progress?.enrollments || [];
-  const totalStudents = enrollments.length;
-  const activeClasses = enrollments.filter((e) => !e.isCompleted).length;
-  const avgEngagement = enrollments.length > 0
-    ? Math.round(enrollments.reduce((sum, e) => sum + e.progress, 0) / enrollments.length)
-    : 0;
-  const assignmentsPending = enrollments.reduce(
-    (sum, e) => sum + e.assignmentsSubmitted,
-    0
-  );
+  const teachingMetrics = classesData
+    ? {
+        totalStudents: classesData.classes.reduce((acc, c) => acc + c.totalStudents, 0),
+        activeClasses: classesData.classes.length,
+        avgEngagement: Math.round(
+          classesData.classes.reduce((acc, c) => acc + c.averageProgress, 0) /
+            (classesData.classes.length || 1)
+        ),
+        assignmentsPending: classesData.classes.reduce(
+          (acc, c) => acc + (c.totalAssignments - c.submittedAssignments),
+          0
+        ),
+      }
+    : {
+        totalStudents: 0,
+        activeClasses: 0,
+        avgEngagement: 0,
+        assignmentsPending: 0,
+      };
 
   if (loading) {
     return (
@@ -204,7 +216,7 @@ export default function FacilitatorDashboard() {
         <KPICard
           icon={BookOpen}
           label="Active Classes"
-          value={activeClasses}
+          value={teachingMetrics.activeClasses}
           status="In Session"
           gradientFrom="from-primary-500"
           gradientTo="to-primary-600"
@@ -214,7 +226,7 @@ export default function FacilitatorDashboard() {
         {/* CARD 2: Assignments to Review - Next Action */}
         <ActionCard
           title="Assignments to Review"
-          description={`${assignmentsPending} awaiting your feedback`}
+          description={`${teachingMetrics.assignmentsPending} awaiting your feedback`}
           icon={CheckCircle}
           primaryAction={{
             label: "Review Now",
@@ -227,13 +239,13 @@ export default function FacilitatorDashboard() {
           title="Class Engagement"
           icon={TrendingUp}
           stats={[
-            { label: "Students", value: totalStudents },
-            { label: "Avg Progress", value: `${avgEngagement}%` },
-            { label: "Active", value: activeClasses },
+            { label: "Students", value: teachingMetrics.totalStudents },
+            { label: "Avg Progress", value: `${teachingMetrics.avgEngagement}%` },
+            { label: "Active", value: teachingMetrics.activeClasses },
           ]}
         >
           <p className="text-xs text-gray-400">
-            {avgEngagement > 75 ? "Excellent engagement" : avgEngagement > 50 ? "Good progress" : "Needs attention"}
+            {teachingMetrics.avgEngagement > 75 ? "Excellent engagement" : teachingMetrics.avgEngagement > 50 ? "Good progress" : "Needs attention"}
           </p>
         </InsightCard>
       </div>
@@ -241,7 +253,7 @@ export default function FacilitatorDashboard() {
       {/* CARD 4: Student Alerts & Needs */}
       <ActionCard
         title="Student Alerts"
-        description={`${totalStudents - activeClasses} students may need support`}
+        description={`${Math.max(0, teachingMetrics.totalStudents - teachingMetrics.activeClasses)} students may need support`}
         icon={AlertCircle}
         primaryAction={{
           label: "View Details",
