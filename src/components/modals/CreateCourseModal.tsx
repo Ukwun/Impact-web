@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -9,27 +9,71 @@ import { useToast } from "@/components/ui/Toast";
 import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
 import { Loader } from "lucide-react";
 
+interface CourseData {
+  id?: string;
+  title: string;
+  description: string;
+  difficulty?: string;
+  duration?: number;
+  isPublished?: boolean;
+  thumbnail?: string;
+}
+
 interface CreateCourseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  initialData?: CourseData;
+  mode?: 'create' | 'edit';
 }
 
 export const CreateCourseModal = ({
   isOpen,
   onClose,
   onSuccess,
+  initialData,
+  mode = 'create',
 }: CreateCourseModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { success, error } = useToast();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CourseData & { category: string; level: string; estimatedHours: string }>({
     title: "",
     description: "",
     category: "Technology",
     level: "Beginner",
-    duration: "4",
-    maxStudents: "30",
+    difficulty: "BEGINNER",
+    estimatedHours: "4",
+    duration: 240,
   });
+
+  // Pre-fill form when initialData changes
+  useEffect(() => {
+    if (initialData && mode === 'edit') {
+      setFormData({
+        id: initialData.id,
+        title: initialData.title,
+        description: initialData.description,
+        category: "Technology",
+        level: initialData.difficulty || "Beginner",
+        difficulty: initialData.difficulty || "BEGINNER",
+        duration: initialData.duration || 240,
+        estimatedHours: String(initialData.duration ? Math.ceil(initialData.duration / 60) : 4),
+        isPublished: initialData.isPublished,
+        thumbnail: initialData.thumbnail,
+      });
+    } else {
+      // Reset form for create mode
+      setFormData({
+        title: "",
+        description: "",
+        category: "Technology",
+        level: "Beginner",
+        difficulty: "BEGINNER",
+        estimatedHours: "4",
+        duration: 240,
+      });
+    }
+  }, [initialData, mode, isOpen]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -40,13 +84,16 @@ export const CreateCourseModal = ({
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+      // Update difficulty when level changes
+      ...(name === 'level' && { difficulty: value.toUpperCase() }),
+      // Update duration when estimatedHours changes
+      ...(name === 'estimatedHours' && { duration: parseInt(value) * 60 }),
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     if (!formData.title.trim()) {
       error("Validation Error", "Course title is required");
       return;
@@ -60,8 +107,11 @@ export const CreateCourseModal = ({
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/courses", {
-        method: "POST",
+      const url = mode === 'edit' && formData.id ? '/api/courses/' + formData.id : '/api/courses';
+      const method = mode === 'edit' ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
@@ -69,35 +119,31 @@ export const CreateCourseModal = ({
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
-          category: formData.category,
-          level: formData.level,
-          estimatedHours: parseInt(formData.duration),
-          maxStudents: parseInt(formData.maxStudents),
+          difficulty: formData.difficulty || "BEGINNER",
+          duration: formData.duration || 240,
+          language: "English",
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create course");
+        throw new Error(data.error || `Failed to ${mode} course`);
       }
 
-      success("Course Created", `"${formData.title}" has been created successfully`);
+      const message = mode === 'edit' 
+        ? `"${formData.title}" has been updated successfully`
+        : `"${formData.title}" has been created successfully`;
       
-      // Reset form
-      setFormData({
-        title: "",
-        description: "",
-        category: "Technology",
-        level: "Beginner",
-        duration: "4",
-        maxStudents: "30",
-      });
+      success(
+        mode === 'edit' ? "Course Updated" : "Course Created",
+        message
+      );
 
       onClose();
       onSuccess?.();
     } catch (err) {
-      error("Error", err instanceof Error ? err.message : "Failed to create course");
+      error("Error", err instanceof Error ? err.message : `Failed to ${mode} course`);
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +153,7 @@ export const CreateCourseModal = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create New Course"
+      title={mode === 'edit' ? 'Edit Course' : 'Create New Course'}
       size="lg"
       footer={
         <>
@@ -121,7 +167,7 @@ export const CreateCourseModal = ({
             className="gap-2"
           >
             {isLoading && <Loader className="w-4 h-4 animate-spin" />}
-            {isLoading ? "Creating..." : "Create Course"}
+            {isLoading ? 'Saving...' : mode === 'edit' ? 'Update Course' : 'Create Course'}
           </Button>
         </>
       }
@@ -180,7 +226,7 @@ export const CreateCourseModal = ({
         {/* Level */}
         <div>
           <label className="block text-sm font-semibold text-gray-300 mb-2">
-            Course Level
+            Difficulty Level
           </label>
           <Select
             name="level"
@@ -190,46 +236,29 @@ export const CreateCourseModal = ({
             <option value="Beginner">Beginner</option>
             <option value="Intermediate">Intermediate</option>
             <option value="Advanced">Advanced</option>
-            <option value="Expert">Expert</option>
           </Select>
         </div>
 
         {/* Duration */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">
-              Duration (weeks)
-            </label>
-            <Input
-              type="number"
-              name="duration"
-              value={formData.duration}
-              onChange={handleInputChange}
-              min="1"
-              max="52"
-            />
-          </div>
-
-          {/* Max Students */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">
-              Max Students
-            </label>
-            <Input
-              type="number"
-              name="maxStudents"
-              value={formData.maxStudents}
-              onChange={handleInputChange}
-              min="1"
-              max="500"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-300 mb-2">
+            Estimated Duration (hours)
+          </label>
+          <Input
+            type="number"
+            name="estimatedHours"
+            value={formData.estimatedHours}
+            onChange={handleInputChange}
+            min="1"
+            max="200"
+            placeholder="4"
+          />
         </div>
 
         {/* Info Message */}
         <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
           <p className="text-sm text-blue-300">
-            ℹ️ After creating your course, you can add lessons and content from the course management page.
+            ℹ️ After {mode === 'edit' ? 'updating' : 'creating'} your course, you can add lessons and organize content.
           </p>
         </div>
       </form>

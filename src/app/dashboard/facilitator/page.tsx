@@ -3,75 +3,115 @@
 import { useAuth } from '@/hooks/useAuth';
 import { AUTH_TOKEN_KEY } from '@/lib/authStorage';
 import { useState, useEffect } from 'react';
-import { BookOpen, Users, BarChart3, TrendingUp } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { BookOpen, Users, BarChart3, TrendingUp, Loader, AlertCircle } from 'lucide-react';
 import CourseFormModal from '@/components/CourseFormModal';
 
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: string;
+  duration: number;
+  enrollmentCount: number;
+  isPublished: boolean;
+  thumbnail?: string;
+  createdAt: string;
+}
+
 export default function FacilitatorDashboard() {
+  const router = useRouter();
   const { user } = useAuth();
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [stats, setStats] = useState({
     totalCourses: 0,
     totalStudents: 0,
     avgCompletion: 0,
-    avgRating: 0,
+    avgRating: 4.5,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<any>(null);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
 
-  // Fetch facilitator's courses
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const token = localStorage.getItem(AUTH_TOKEN_KEY);
-        const response = await fetch('/api/courses?filter=facilitator', {
+  // Fetch facilitator's courses from the API
+  const fetchFacilitatorCourses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const token = localStorage.getItem(AUTH_TOKEN_KEY);
+      
+      // Fetch all courses (filtering for created by user happens server-side via auth context)
+      const response = await fetch('/api/facilitator/content', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        // Fallback: fetch from courses endpoint if facilitator endpoint not available
+        const coursesResponse = await fetch('/api/courses', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-
-        if (!response.ok) throw new Error('Failed to fetch courses');
-        const data = await response.json();
-
+        
+        if (!coursesResponse.ok) throw new Error('Failed to fetch courses');
+        const data = await coursesResponse.json();
+        
         if (data.success && data.data.courses) {
-          const facilitatorCourses = data.data.courses.filter(
-            (c: any) => c.createdBy === `${user?.firstName} ${user?.lastName}`
-          );
-          setCourses(facilitatorCourses);
-
-          // Calculate stats
-          const totalStudents = facilitatorCourses.reduce((sum: number, c: any) => sum + (c.enrollmentCount || 0), 0);
-          const avgCompletion = facilitatorCourses.length > 0
+          setCourses(data.data.courses);
+          
+          // Calculate aggregated stats
+          const totalStudents = data.data.courses.reduce((sum: number, c: any) => sum + (c.enrollmentCount || 0), 0);
+          const avgCompletion = data.data.courses.length > 0
             ? Math.round(
-                facilitatorCourses.reduce((sum: number, c: any) => sum + (c.completion || 0), 0) /
-                facilitatorCourses.length
+                data.data.courses.reduce((sum: number, c: any) => sum + (c.completionPercentage || 0), 0) /
+                data.data.courses.length
               )
-            : 0;
-          const avgRating = facilitatorCourses.length > 0
-            ? (
-                facilitatorCourses.reduce((sum: number, c: any) => sum + (c.rating || 4.5), 0) /
-                facilitatorCourses.length
-              ).toFixed(1)
             : 0;
 
           setStats({
-            totalCourses: facilitatorCourses.length,
+            totalCourses: data.data.courses.length,
             totalStudents,
             avgCompletion,
-            avgRating: parseFloat(avgRating as string),
+            avgRating: 4.5,
           });
         }
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      } else {
+        const data = await response.json();
+        if (data.data && data.data.courses) {
+          setCourses(data.data.courses);
+          
+          const totalStudents = data.data.courses.reduce((sum: number, c: any) => sum + (c.enrollmentCount || 0), 0);
+          const avgCompletion = data.data.courses.length > 0
+            ? Math.round(
+                data.data.courses.reduce((sum: number, c: any) => sum + (c.completionPercentage || 0), 0) /
+                data.data.courses.length
+              )
+            : 0;
 
-    if (user) {
-      fetchCourses();
+          setStats({
+            totalCourses: data.data.courses.length,
+            totalStudents,
+            avgCompletion,
+            avgRating: 4.5,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load courses');
+    } finally {
+      setLoading(false);
     }
-  }, [user]);
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchFacilitatorCourses();
+    }
+  }, [user?.id]);
 
   const statConfig = [
     { icon: BookOpen, label: 'Courses Teaching', value: stats.totalCourses.toString(), color: 'primary' },
@@ -118,6 +158,17 @@ export default function FacilitatorDashboard() {
         })}
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="bg-danger-500/20 border border-danger-500/50 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-danger-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-danger-300">Failed to load courses</p>
+            <p className="text-sm text-danger-200">{error}</p>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* My Courses */}
@@ -136,18 +187,23 @@ export default function FacilitatorDashboard() {
           </div>
 
           {loading ? (
-            <div className="text-center py-8 text-gray-400">Loading courses...</div>
+            <div className="text-center py-12">
+              <Loader className="w-8 h-8 animate-spin text-primary-500 mx-auto mb-2" />
+              <p className="text-gray-400">Loading your courses...</p>
+            </div>
           ) : courses.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              No courses yet. <span
+            <div className="bg-dark-500 border-2 border-dark-400 rounded-lg p-12 text-center">
+              <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-300 mb-4">No courses yet. Create your first course to get started!</p>
+              <button
                 onClick={() => {
                   setEditingCourse(null);
                   setShowCreateModal(true);
                 }}
-                className="text-primary-400 cursor-pointer hover:text-primary-300"
+                className="text-primary-400 hover:text-primary-300 font-semibold"
               >
-                Create one now!
-              </span>
+                Create First Course →
+              </button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -157,23 +213,24 @@ export default function FacilitatorDashboard() {
                   className="bg-gradient-to-r from-dark-500 to-dark-600 rounded-lg p-6 border-2 border-dark-400 hover:border-primary-500 transition-all duration-300"
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-bold text-white">{course.title}</h3>
-                      <p className="text-sm text-gray-400 mt-1">{course.enrollmentCount || 0} students enrolled</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-1">
-                        <span className="text-lg font-black text-yellow-400">★</span>
-                        <span className="font-bold text-white">{course.rating || 4.5}</span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-bold text-white">{course.title}</h3>
+                        {course.isPublished && (
+                          <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded">
+                            Published
+                          </span>
+                        )}
                       </div>
+                      <p className="text-sm text-gray-400">{course.enrollmentCount || 0} students enrolled</p>
                     </div>
                   </div>
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-400">Difficulty</span>
-                      <span className="font-semibold text-white">{course.difficulty || 'Beginner'}</span>
-                    </div>
+                  <p className="text-sm text-gray-300 mb-4 line-clamp-2">{course.description}</p>
+
+                  <div className="flex items-center gap-2 mb-4 text-xs text-gray-400">
+                    <span className="px-2 py-1 bg-dark-400 rounded">{course.difficulty}</span>
+                    <span className="px-2 py-1 bg-dark-400 rounded">{course.duration} min</span>
                   </div>
 
                   <div className="flex items-center justify-between gap-2">
@@ -186,7 +243,10 @@ export default function FacilitatorDashboard() {
                     >
                       Edit Course
                     </button>
-                    <button className="flex-1 px-4 py-2 bg-dark-400 hover:bg-dark-300 text-white rounded font-semibold text-sm transition-colors">
+                    <button
+                      onClick={() => router.push(`/dashboard/facilitator/analytics?courseId=${course.id}`)}
+                      className="flex-1 px-4 py-2 bg-dark-400 hover:bg-dark-300 text-white rounded font-semibold text-sm transition-colors"
+                    >
                       View Analytics
                     </button>
                   </div>
@@ -212,14 +272,20 @@ export default function FacilitatorDashboard() {
               Create Course
             </button>
 
-            <button className="w-full px-6 py-4 bg-gradient-to-r from-secondary-600 to-secondary-700 hover:from-secondary-700 hover:to-secondary-800 text-white rounded-lg font-bold transition-all duration-300 flex items-center gap-3 justify-center">
-              <Users size={20} />
-              Message Students
+            <button
+              onClick={() => router.push('/dashboard/facilitator/analytics')}
+              className="w-full px-6 py-4 bg-gradient-to-r from-secondary-600 to-secondary-700 hover:from-secondary-700 hover:to-secondary-800 text-white rounded-lg font-bold transition-all duration-300 flex items-center gap-3 justify-center"
+            >
+              <BarChart3 size={20} />
+              View Analytics
             </button>
 
-            <button className="w-full px-6 py-4 bg-dark-500 hover:bg-dark-400 text-white rounded-lg font-bold transition-all duration-300 border-2 border-dark-400 flex items-center gap-3 justify-center">
-              <BarChart3 size={20} />
-              View Reports
+            <button
+              onClick={() => router.push('/dashboard/facilitator/content')}
+              className="w-full px-6 py-4 bg-dark-500 hover:bg-dark-400 text-white rounded-lg font-bold transition-all duration-300 border-2 border-dark-400 flex items-center gap-3 justify-center"
+            >
+              <Users size={20} />
+              Manage Content
             </button>
           </div>
 
@@ -251,12 +317,13 @@ export default function FacilitatorDashboard() {
           setShowCreateModal(false);
           setEditingCourse(null);
         }}
-        editingCourse={editingCourse}
+        initialData={editingCourse || undefined}
+        mode={editingCourse ? 'edit' : 'create'}
         onSuccess={() => {
           setShowCreateModal(false);
           setEditingCourse(null);
-          // Refresh courses
-          window.location.reload();
+          // Refresh courses list
+          fetchFacilitatorCourses();
         }}
       />
     </div>
