@@ -1,6 +1,6 @@
 const http = require('http');
 
-const BASE_URL = 'http://localhost:3002';
+const BASE_URL = 'http://localhost:3003';
 
 const TestRoles = [
   { role: 'STUDENT', endpoint: '/api/progress', color: '\x1b[36m' },
