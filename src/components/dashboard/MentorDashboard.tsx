@@ -29,6 +29,25 @@ export default function MentorDashboard() {
   const { data: mentorData, loading, error } = useMentorData();
   const { success } = useToast();
 
+  // Destructure data from mentor response
+  const mentorStats = mentorData?.stats || {
+    totalMentees: 0,
+    activeSessions: 0,
+    completedSessions: 0,
+    averageMenteeProgress: 0,
+  };
+  
+  const mentees = mentorData?.mentees || [];
+  
+  // Generate upcoming sessions from mentees data
+  const sessions = mentees.map((mentee) => ({
+    id: mentee.menteeId,
+    mentee: mentee.menteeName,
+    topic: `Check-in with ${mentee.menteeName}`,
+    duration: '30 min',
+    date: mentee.nextMeeting || 'TBD',
+  })).slice(0, 3);
+
   // Animation trigger
   useEffect(() => {
     setIsVisible(true);
