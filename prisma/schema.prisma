@@ -885,3 +885,38 @@ enum PaymentStatus {
   CANCELLED
   REFUNDED
 }
+
+// ============================================================================
+// SYSTEM ALERTS (Real-time Monitoring & Admin Dashboard)
+// ============================================================================
+
+enum AlertSeverity {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+model SystemAlert {
+  id                    String      @id @default(cuid())
+  title                 String
+  message               String
+  severity              AlertSeverity
+  category              String      // "System", "Performance", "Security", "Features", etc.
+  
+  // Alert status
+  resolved              Boolean     @default(false)
+  resolvedAt            DateTime?
+  
+  // Metadata for tracking
+  source                String?     // Where the alert came from (e.g., "monitoring", "manual")
+  metadata              Json?       // Additional data
+  
+  // Timestamps
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([severity])
+  @@index([resolved])
+  @@index([category])
+  @@index([createdAt])
+}

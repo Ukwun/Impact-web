@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 function getAuthUser(req: NextRequest): any {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -7,67 +8,9 @@ function getAuthUser(req: NextRequest): any {
   return verifyToken(token);
 }
 
-// In-memory alert storage for now (in production, use database)
-let alerts: any[] = [
-  {
-    id: "1",
-    title: "Database Connection Error",
-    message: "Connection pool exhausted. Consider increasing pool size.",
-    severity: "critical",
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    resolved: false,
-    category: "System",
-  },
-  {
-    id: "2",
-    title: "High Error Rate Detected",
-    message: "Error rate exceeds 1% threshold. Investigate API endpoints.",
-    severity: "critical",
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    resolved: false,
-    category: "Performance",
-  },
-  {
-    id: "3",
-    title: "High Memory Usage",
-    message: "Server memory usage at 85%. Consider optimization.",
-    severity: "warning",
-    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    resolved: false,
-    category: "System",
-  },
-  {
-    id: "4",
-    title: "Unusual User Activity",
-    message: "Spike in login attempts detected from suspicious locations.",
-    severity: "warning",
-    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-    resolved: false,
-    category: "Security",
-  },
-  {
-    id: "5",
-    title: "Scheduled Maintenance Completed",
-    message: "Database backup completed successfully.",
-    severity: "info",
-    timestamp: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
-    resolved: true,
-    category: "System",
-  },
-  {
-    id: "6",
-    title: "New Feature Deployed",
-    message: "Advanced analytics dashboard released to all users.",
-    severity: "info",
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    resolved: true,
-    category: "Features",
-  },
-];
-
 /**
  * GET /api/admin/alerts
- * Get system alerts
+ * Get system alerts from database
  * Admin only endpoint
  */
 export async function GET(req: NextRequest) {
@@ -82,23 +25,43 @@ export async function GET(req: NextRequest) {
     }
 
     const severity = req.nextUrl.searchParams.get("severity") || "all";
+    const includeResolved = req.nextUrl.searchParams.get("includeResolved") === "true";
 
-    let filtered = alerts;
+    // Build query filter
+    const where: any = {
+      resolved: includeResolved ? undefined : false,
+    };
+
     if (severity !== "all") {
-      filtered = alerts.filter((a) => a.severity === severity);
+      where.severity = severity.toUpperCase();
     }
 
-    // Group by severity
-    const critical = alerts.filter((a) => a.severity === "critical");
-    const warnings = alerts.filter((a) => a.severity === "warning");
-    const info = alerts.filter((a) => a.severity === "info");
+    // Fetch alerts from database
+    const allAlerts = await prisma.systemAlert.findMany({
+      where,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Group by severity for response format
+    const critical = allAlerts.filter((a) => a.severity === "CRITICAL");
+    const warnings = allAlerts.filter((a) => a.severity === "WARNING");
+    const info = allAlerts.filter((a) => a.severity === "INFO");
+
+    // Convert severity enum to lowercase for frontend compatibility
+    const formatAlert = (alert: any) => ({
+      ...alert,
+      severity: alert.severity.toLowerCase(),
+      timestamp: alert.createdAt.toISOString(),
+    });
 
     return NextResponse.json({
       success: true,
       data: {
-        critical,
-        warnings,
-        info,
+        critical: critical.map(formatAlert),
+        warnings: warnings.map(formatAlert),
+        info: info.map(formatAlert),
       },
     });
   } catch (error) {
@@ -111,11 +74,11 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * DELETE /api/admin/alerts/[id]
- * Dismiss/resolve an alert
- * Admin only endpoint
+ * POST /api/admin/alerts
+ * Create a new system alert
+ * Admin only endpoint (for manual alert creation)
  */
-export async function DELETE(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const user = getAuthUser(req);
 
@@ -126,30 +89,49 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Extract alert ID from URL
-    const url = new URL(req.url);
-    const parts = url.pathname.split("/");
-    const alertId = parts[parts.length - 1];
+    const body = await req.json();
+    const { title, message, severity = "INFO", category = "System" } = body;
 
-    // Find and remove alert
-    const alertIndex = alerts.findIndex((a) => a.id === alertId);
-    if (alertIndex === -1) {
+    if (!title || !message) {
       return NextResponse.json(
-        { success: false, error: "Alert not found" },
-        { status: 404 }
+        { success: false, error: "title and message are required" },
+        { status: 400 }
       );
     }
 
-    alerts.splice(alertIndex, 1);
+    // Validate severity
+    const validSeverities = ["CRITICAL", "WARNING", "INFO"];
+    const normalizedSeverity = severity.toUpperCase();
+    if (!validSeverities.includes(normalizedSeverity)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid severity level" },
+        { status: 400 }
+      );
+    }
+
+    // Create alert in database
+    const alert = await prisma.systemAlert.create({
+      data: {
+        title,
+        message,
+        severity: normalizedSeverity as any,
+        category,
+        source: "manual",
+      },
+    });
 
     return NextResponse.json({
       success: true,
-      message: "Alert dismissed",
+      data: {
+        ...alert,
+        severity: alert.severity.toLowerCase(),
+        timestamp: alert.createdAt.toISOString(),
+      },
     });
   } catch (error) {
-    console.error("❌ Error dismissing alert:", error);
+    console.error("❌ Error creating alert:", error);
     return NextResponse.json(
-      { success: false, error: "Failed to dismiss alert" },
+      { success: false, error: "Failed to create alert" },
       { status: 500 }
     );
   }
