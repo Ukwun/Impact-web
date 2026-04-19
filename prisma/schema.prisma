@@ -70,6 +70,8 @@ model User {
   createdEvents         Event[] @relation("CreatedBy")
   payments              Payment[]
   leaderboard           LeaderboardEntry?
+  messagesSent          Message[] @relation("MessagesSent")
+  messagesReceived      Message[] @relation("MessagesReceived")
   
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -797,6 +799,7 @@ model Notification {
   message               String
   type                  NotificationType
   link                  String?
+  relatedId             String?     // ID of related resource (submission, message, etc.)
   
   isRead                Boolean     @default(false)
   readAt                DateTime?
@@ -811,7 +814,9 @@ enum NotificationType {
   COURSE_ENROLLMENT
   QUIZ_SUBMITTED
   ASSIGNMENT_GRADED
+  GRADE_RECEIVED
   NEW_MESSAGE
+  MESSAGE_RECEIVED
   EVENT_REMINDER
   CERTIFICATE_EARNED
   MENTION
@@ -918,5 +923,36 @@ model SystemAlert {
   @@index([severity])
   @@index([resolved])
   @@index([category])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// MESSAGING SYSTEM
+// ============================================================================
+
+model Message {
+  id                    String      @id @default(cuid())
+  
+  senderId              String
+  sender                User        @relation("MessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
+  
+  recipientId           String
+  recipient             User        @relation("MessagesReceived", fields: [recipientId], references: [id], onDelete: Cascade)
+  
+  subject               String
+  content               String      @db.Text
+  messageType           String      @default("GENERAL") // GENERAL, FACILITATOR_TO_STUDENT, PARENT_TO_FACILITATOR, etc.
+  
+  // Read status
+  isRead                Boolean     @default(false)
+  readAt                DateTime?
+  
+  // Timestamps
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([isRead])
   @@index([createdAt])
 }

@@ -18,6 +18,7 @@ import {
   Plus,
   Edit2,
   Trash2,
+  Clipboard,
 } from "lucide-react";
 import { useFacilitatorClasses } from "@/hooks/useRoleDashboards";
 import {
@@ -28,6 +29,9 @@ import {
 import { CreateCourseModal } from "@/components/modals/CreateCourseModal";
 import { EditCourseModal } from "@/components/modals/EditCourseModal";
 import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
+import { GradeSubmissionModal } from "@/components/modals/GradeSubmissionModal";
+import { StudentRosterModal } from "@/components/modals/StudentRosterModal";
+import { MessageModal } from "@/components/modals/MessageModal";
 import { useToast } from "@/components/ui/Toast";
 
 interface Course {
@@ -42,16 +46,49 @@ interface Course {
   createdAt?: string;
 }
 
+interface Submission {
+  id: string;
+  studentName: string;
+  studentEmail: string;
+  assignmentTitle: string;
+  submittedAt: string;
+  grade?: number;
+  feedback?: string;
+}
+
+interface Student {
+  id: string;
+  name: string;
+  email: string;
+  enrollmentDate: string;
+  submissionsCount?: number;
+  averageGrade?: number;
+}
+
 export default function FacilitatorDashboard() {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
   const [showEditCourseModal, setShowEditCourseModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showGradeModal, setShowGradeModal] = useState(false);
+  const [showRosterModal, setShowRosterModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(true);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  
+  const [students, setStudents] = useState<Student[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  
+  const [messageRecipient, setMessageRecipient] = useState({ name: "", email: "" });
+  
   const { data: classesData, loading: classesLoading, error: classesError } = useFacilitatorClasses();
   const { success, error: errorToast } = useToast();
 
@@ -96,6 +133,108 @@ export default function FacilitatorDashboard() {
 
     loadCourses();
   }, []);
+
+  // Load pending submissions
+  useEffect(() => {
+    const loadSubmissions = async () => {
+      setSubmissionsLoading(true);
+      try {
+        const response = await fetch("/api/facilitator/submissions", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setSubmissions(data.data || []);
+        } else {
+          console.error("Failed to load submissions:", data.error);
+        }
+      } catch (err) {
+        console.error("Error loading submissions:", err);
+      } finally {
+        setSubmissionsLoading(false);
+      }
+    };
+
+    loadSubmissions();
+  }, []);
+
+  const handleLoadStudents = async (courseId: string) => {
+    setStudentsLoading(true);
+    try {
+      const response = await fetch(`/api/facilitator/classes/${courseId}/students`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setStudents(data.data || []);
+      } else {
+        errorToast("Error", data.error || "Failed to load students");
+      }
+    } catch (err) {
+      errorToast("Error", err instanceof Error ? err.message : "Failed to load students");
+    } finally {
+      setStudentsLoading(false);
+    }
+  };
+
+  const handleGradeSubmission = async (submissionId: string, grade: number, feedback: string) => {
+    try {
+      const response = await fetch(`/api/facilitator/submissions/${submissionId}/grade`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
+        },
+        body: JSON.stringify({ grade, feedback }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to save grade");
+      }
+
+      // Remove from submissions list
+      setSubmissions((prev) => prev.filter((s) => s.id !== submissionId));
+      setShowGradeModal(false);
+      setSelectedSubmission(null);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handleSendMessage = async (message: string, recipientEmail: string) => {
+    try {
+      const response = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
+        },
+        body: JSON.stringify({
+          recipientEmail,
+          message,
+          messageType: "FACILITATOR_TO_STUDENT",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send message");
+      }
+    } catch (err) {
+      throw err;
+    }
+  };
 
   const handleDeleteCourse = async () => {
     if (!selectedCourse) return;
@@ -220,14 +359,19 @@ export default function FacilitatorDashboard() {
           borderColor="border-primary-400"
         />
 
-        {/* CARD 2: Assignments to Review - Next Action */}
+        {/* CARD 2: Pending Submissions - Next Action */}
         <ActionCard
-          title="Assignments to Review"
-          description={`${teachingMetrics.assignmentsPending} awaiting your feedback`}
-          icon={CheckCircle}
+          title="Submissions to Grade"
+          description={`${submissions.length} awaiting your feedback`}
+          icon={Clipboard}
           primaryAction={{
-            label: "Review Now",
-            onClick: () => (window.location.href = "/dashboard/assignments"),
+            label: submissions.length > 0 ? "Grade Now" : "No Pending",
+            onClick: () => {
+              if (submissions.length > 0) {
+                setSelectedSubmission(submissions[0]);
+                setShowGradeModal(true);
+              }
+            },
           }}
         />
 
@@ -247,7 +391,26 @@ export default function FacilitatorDashboard() {
         </InsightCard>
       </div>
 
-      {/* CARD 4: Student Alerts & Needs */}
+      {/* CARD 4: View Class Roster */}
+      <ActionCard
+        title="Manage Class Roster"
+        description={`${teachingMetrics.totalStudents} students across ${teachingMetrics.activeClasses} classes`}
+        icon={Users}
+        primaryAction={{
+          label: "View Roster",
+          onClick: () => {
+            if (courses.length > 0) {
+              handleLoadStudents(courses[0].id);
+              setShowRosterModal(true);
+            } else {
+              errorToast("Info", "Create a class first to view roster");
+            }
+          },
+        }}
+        variant="secondary"
+      />
+
+      {/* CARD 5: Student Alerts & Needs */}
       <ActionCard
         title="Student Alerts"
         description={`${Math.max(0, teachingMetrics.totalStudents - teachingMetrics.activeClasses)} students may need support`}
@@ -258,12 +421,19 @@ export default function FacilitatorDashboard() {
         }}
         secondaryAction={{
           label: "Send Message",
-          onClick: () => (window.location.href = "/dashboard/messages"),
+          onClick: () => {
+            if (students.length > 0) {
+              setMessageRecipient({ name: students[0].name, email: students[0].email });
+              setShowMessageModal(true);
+            } else {
+              errorToast("Info", "Update roster first to send messages");
+            }
+          },
         }}
         variant="warning"
       />
 
-      {/* CARD 5: Messages & Communication */}
+      {/* CARD 6: Messages & Communication */}
       <ActionCard
         title="Class Messages"
         description="Stay connected with your students and facilitators"
@@ -444,6 +614,47 @@ export default function FacilitatorDashboard() {
         isLoading={isDeleting}
         type="warning"
       />
+
+      {/* Grade Submission Modal */}
+      {selectedSubmission && (
+        <GradeSubmissionModal
+          isOpen={showGradeModal}
+          submission={selectedSubmission}
+          onClose={() => setShowGradeModal(false)}
+          onSubmit={handleGradeSubmission}
+        />
+      )}
+
+      {/* Student Roster Modal */}
+      <StudentRosterModal
+        isOpen={showRosterModal}
+        className={selectedCourse?.title || "Class"}
+        students={students}
+        isLoading={studentsLoading}
+        onClose={() => setShowRosterModal(false)}
+        onMessageStudent={(studentId, studentName) => {
+          const student = students.find((s) => s.id === studentId);
+          if (student) {
+            setMessageRecipient({ name: studentName, email: student.email });
+            setShowMessageModal(true);
+          }
+        }}
+        onViewStudent={(studentId) => {
+          console.log("View student profile:", studentId);
+        }}
+      />
+
+      {/* Message Modal */}
+      {messageRecipient.email && (
+        <MessageModal
+          isOpen={showMessageModal}
+          recipientName={messageRecipient.name}
+          recipientEmail={messageRecipient.email}
+          context={{ type: "student", subject: "Class Update" }}
+          onClose={() => setShowMessageModal(false)}
+          onSendMessage={handleSendMessage}
+        />
+      )}
     </div>
   );
 }
