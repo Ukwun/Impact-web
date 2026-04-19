@@ -230,7 +230,7 @@ export default function FacilitatorDashboard() {
           icon={CheckCircle}
           primaryAction={{
             label: "Review Now",
-            onClick: () => (window.location.href = "/dashboard/grading"),
+            onClick: () => (window.location.href = "/dashboard/assignments"),
           }}
         />
 
