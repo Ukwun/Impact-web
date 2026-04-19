@@ -7,7 +7,7 @@ import {
   RATE_LIMIT_CONFIGS,
 } from "@/lib/security";
 import { getFirebaseAuth, getFirestore } from "@/lib/firebase-admin";
-import { generateToken } from "@/lib/auth";
+import { generateToken, hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
@@ -112,15 +112,19 @@ export async function POST(req: NextRequest) {
 
       // Also create user in PostgreSQL for role-based endpoints
       try {
+        // Hash the password for PostgreSQL
+        const passwordHash = await hashPassword(password);
+        
         await prisma.user.create({
           data: {
             id: userRecord.uid,
             email: email,
             firstName: firstName,
             lastName: lastName,
+            passwordHash: passwordHash,
             role: role,
             phone: phone,
-            state: state,
+            state: state || 'Unknown',
             institution: body.institution || '',
             verified: false,
             createdAt: new Date(),

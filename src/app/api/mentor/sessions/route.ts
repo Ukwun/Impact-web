@@ -22,6 +22,24 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = decoded.sub;
+    console.log(`🧑‍🏫 Mentor endpoint - User ID: ${userId}`);
+    
+    // First, verify the user exists in PostgreSQL
+    const mentorUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, firstName: true, lastName: true, role: true },
+    });
+    
+    if (!mentorUser) {
+      console.error(`❌ Mentor user not found in PostgreSQL: ${userId}`);
+      return NextResponse.json(
+        { error: "Mentor profile not found in database" },
+        { status: 404 }
+      );
+    }
+    
+    console.log(`✅ Found mentor: ${mentorUser.firstName} ${mentorUser.lastName}`);
+    
     // For now, fetching students who might be mentees
     const menteeEnrollments = await prisma.enrollment.findMany({
       where: {
@@ -37,10 +55,17 @@ export async function GET(request: NextRequest) {
             avatar: true,
           },
         },
-        course: true,
+        course: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
       take: 20,
     });
+    
+    console.log(`📊 Found ${menteeEnrollments.length} mentee enrollments`);
 
     const uniqueMenteeIds = [
       ...new Set(menteeEnrollments.map((e) => e.userId)),
@@ -110,9 +135,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching mentor data:", error);
+    console.error("❌ Error fetching mentor data:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: errorMessage },
       { status: 500 }
     );
   }
