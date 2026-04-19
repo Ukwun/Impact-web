@@ -19,7 +19,6 @@ import {
   Edit2,
   Trash2,
 } from "lucide-react";
-import { useUserProgress } from "@/hooks/useLMS";
 import { useFacilitatorClasses } from "@/hooks/useRoleDashboards";
 import {
   KPICard,
@@ -53,7 +52,6 @@ export default function FacilitatorDashboard() {
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { progress, loading, error } = useUserProgress();
   const { data: classesData, loading: classesLoading, error: classesError } = useFacilitatorClasses();
   const { success, error: errorToast } = useToast();
 
@@ -63,13 +61,13 @@ export default function FacilitatorDashboard() {
 
   // Handle invalid token errors
   useEffect(() => {
-    if (error && (error.toLowerCase().includes("invalid token") || error.includes("401"))) {
+    if (classesError && (classesError.toLowerCase().includes("invalid token") || classesError.includes("401"))) {
       console.error("❌ Invalid token detected, clearing auth and redirecting to login");
       localStorage.removeItem(AUTH_TOKEN_KEY);
       localStorage.removeItem(AUTH_USER_KEY);
       router.push("/auth/login?error=invalid_token");
     }
-  }, [error, router]);
+  }, [classesError, router]);
 
   // Load courses on mount
   useEffect(() => {
@@ -128,7 +126,6 @@ export default function FacilitatorDashboard() {
     }
   };
 
-  const enrollments = progress?.enrollments || [];
   const teachingMetrics = classesData
     ? {
         totalStudents: classesData.classes.reduce((acc, c) => acc + c.totalStudents, 0),
@@ -149,20 +146,20 @@ export default function FacilitatorDashboard() {
         assignmentsPending: 0,
       };
 
-  if (loading) {
+  if (classesLoading || coursesLoading) {
     return (
       <div className="flex items-center justify-center h-96">
         <Card className="p-8 flex flex-col items-center gap-4">
           <Loader className="w-8 h-8 animate-spin text-primary-600" />
-          <p className="text-gray-300">Loading dashboard...</p>
+          <p className="text-gray-300">Loading your classes and courses...</p>
         </Card>
       </div>
     );
   }
 
-  if (error) {
+  if (classesError) {
     // If it's a token error, show loading while redirecting
-    if (error.toLowerCase().includes("invalid token") || error.includes("401")) {
+    if (classesError.toLowerCase().includes("invalid token") || classesError.includes("401")) {
       return (
         <div className="flex items-center justify-center h-96">
           <Card className="p-6 flex flex-col items-center gap-4">
@@ -180,7 +177,7 @@ export default function FacilitatorDashboard() {
           <AlertCircle className="w-6 h-6 text-red-600 mt-1 flex-shrink-0" />
           <div>
             <h3 className="font-bold text-red-900">Error Loading Dashboard</h3>
-            <p className="text-red-700 mt-1">{error}</p>
+            <p className="text-red-700 mt-1">{classesError}</p>
             <Button onClick={() => window.location.reload()} className="mt-4">
               Try Again
             </Button>
