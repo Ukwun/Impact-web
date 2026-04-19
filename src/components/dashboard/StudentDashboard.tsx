@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSocket } from "@/hooks/useSocket";
-import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   BookOpen,
   TrendingUp,
@@ -27,6 +28,7 @@ import {
 } from "@/components/dashboard/cards";
 
 export default function StudentDashboard() {
+  const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
   const { progress, loading, error } = useUserProgress();
   const { user } = useAuth();
@@ -44,6 +46,16 @@ export default function StudentDashboard() {
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Handle invalid token errors
+  useEffect(() => {
+    if (error && error.toLowerCase().includes("invalid token")) {
+      console.error("❌ Invalid token detected, clearing auth and redirecting to login");
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_USER_KEY);
+      router.push("/auth/login?error=invalid_token");
+    }
+  }, [error, router]);
 
   // Real-time notifications for achievements
   useEffect(() => {
@@ -105,6 +117,19 @@ export default function StudentDashboard() {
   }
 
   if (error) {
+    // If it's a token error, show loading while redirecting
+    if (error.toLowerCase().includes("invalid token")) {
+      return (
+        <div className="flex items-center justify-center min-h-96">
+          <Card className="p-12 flex flex-col items-center gap-4 animate-fade-in">
+            <Loader className="w-10 h-10 animate-spin text-primary-500" />
+            <p className="text-gray-300 text-lg">Redirecting to login...</p>
+          </Card>
+        </div>
+      );
+    }
+
+    // For other errors, show error message with retry option
     return (
       <Card className="p-8 border-l-4 border-danger-500 bg-danger-50 animate-fade-in">
         <div className="flex items-start gap-4">
@@ -112,6 +137,9 @@ export default function StudentDashboard() {
           <div>
             <h3 className="font-bold text-danger-700 text-lg">Error Loading Dashboard</h3>
             <p className="text-danger-600 mt-2">{error}</p>
+            <Button onClick={() => router.refresh()} className="mt-4">
+              Try Again
+            </Button>
           </div>
         </div>
       </Card>

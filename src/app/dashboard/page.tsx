@@ -24,6 +24,37 @@ export default function DashboardPage() {
   // Check if user needs onboarding (not yet verified/completed onboarding)
   const needsOnboarding = user && user.verified !== true;
 
+  // Fetch fresh user profile from Firestore to get latest role
+  const fetchFreshUserProfile = async (token: string, userId: string) => {
+    try {
+      console.log("🔄 Fetching fresh user profile from Firestore...");
+      
+      // Use AbortController to timeout after 5 seconds
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch("/api/user/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const freshUser = data.data || data;
+        console.log("✅ Fresh user profile loaded:", freshUser.firstName, "Role:", freshUser.role);
+        return freshUser;
+      } else {
+        console.warn("⚠️ Could not fetch fresh profile, using cached");
+        return null;
+      }
+    } catch (err) {
+      console.error("❌ Error fetching fresh profile:", err);
+      return null;
+    }
+  };
+
   // Check auth AFTER Zustand hydrates
   useEffect(() => {
     // Wait for Zustand to hydrate from localStorage first
@@ -34,39 +65,68 @@ export default function DashboardPage() {
 
     console.log("✅ Zustand hydrated! storeUser:", storeUser);
 
-    // If user is in Zustand store, use it
-    if (storeUser) {
-      console.log("✅ Using user from Zustand store");
-      setLocalUser(storeUser);
-      setIsLoading(false);
-      return;
-    }
+    const loadUser = async () => {
+      let token: string | null = null;
+      let cachedUser: User | null = null;
 
-    // Otherwise check localStorage as fallback
-    const savedUser = localStorage.getItem(AUTH_USER_KEY);
-    const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
-    
-    if (savedUser && savedToken) {
-      try {
-        const parsedUser = JSON.parse(savedUser);
-        console.log("✅ Restoring user from localStorage");
-        setToken(savedToken);
-        setUser(parsedUser);
-        setLocalUser(parsedUser);
+      // If user is in Zustand store, use it
+      if (storeUser) {
+        console.log("✅ Using user from Zustand store");
+        token = localStorage.getItem(AUTH_TOKEN_KEY);
+        cachedUser = storeUser;
+      } else {
+        // Otherwise check localStorage as fallback
+        const savedUser = localStorage.getItem(AUTH_USER_KEY);
+        const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+        
+        if (savedUser && savedToken) {
+          try {
+            cachedUser = JSON.parse(savedUser);
+            token = savedToken;
+            console.log("✅ Restoring user from localStorage");
+            setToken(savedToken);
+            setUser(cachedUser);
+          } catch (e) {
+            console.error("❌ Failed to parse user:", e);
+            localStorage.removeItem(AUTH_USER_KEY);
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            setIsLoading(false);
+            router.push("/auth/login");
+            return;
+          }
+        }
+      }
+
+      if (token && cachedUser) {
+        // Skip upfront token validation - let dashboard components handle it
+        // If token is invalid, they'll get 401/403 errors and redirect to login
+        console.log("✅ User and token found, loading dashboard");
+        
+        // Try to refresh user profile in background without blocking
+        const freshUser = await fetchFreshUserProfile(token, cachedUser.id || cachedUser.uid || "");
+        if (freshUser) {
+          const updatedUser = { ...cachedUser, ...freshUser, role: freshUser.role || cachedUser.role };
+          setLocalUser(updatedUser);
+          setUser(updatedUser);
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(updatedUser));
+          console.log("✅ Updated user profile in background");
+        } else {
+          setLocalUser(cachedUser);
+          console.log("⚠️ Using cached user profile (background refresh failed)");
+        }
+        
         setIsLoading(false);
         return;
-      } catch (e) {
-        console.error("❌ Failed to parse user:", e);
-        localStorage.removeItem(AUTH_USER_KEY);
-        localStorage.removeItem(AUTH_TOKEN_KEY);
       }
-    }
 
-    // No auth found - redirect to login
-    console.log("❌ No auth found, redirecting to login");
-    setIsLoading(false);
-    router.push("/auth/login");
-  }, [hasHydrated, storeUser, router, setUser, setToken]); // Only run once on mount
+      // No auth found - redirect to login
+      console.log("❌ No auth found, redirecting to login");
+      setIsLoading(false);
+      router.push("/auth/login");
+    };
+
+    loadUser();
+  }, [hasHydrated, storeUser, router, setUser, setToken]);
 
   // Redirect to onboarding if needed
   useEffect(() => {

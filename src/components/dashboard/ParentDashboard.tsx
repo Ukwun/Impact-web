@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   User,
   TrendingUp,
@@ -36,6 +38,7 @@ interface ChildData {
 }
 
 export default function ParentDashboard() {
+  const router = useRouter();
   const [children, setChildren] = useState<ChildData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +48,16 @@ export default function ParentDashboard() {
     setIsVisible(true);
     fetchChildren();
   }, []);
+
+  // Handle invalid token errors
+  useEffect(() => {
+    if (error && (error.toLowerCase().includes("invalid token") || error.includes("401"))) {
+      console.error("❌ Invalid token detected, clearing auth and redirecting to login");
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_USER_KEY);
+      router.push("/auth/login?error=invalid_token");
+    }
+  }, [error, router]);
 
   const fetchChildren = async () => {
     try {
@@ -74,6 +87,19 @@ export default function ParentDashboard() {
   }
 
   if (error) {
+    // If it's a token error, show loading while redirecting
+    if (error.toLowerCase().includes("invalid token") || error.includes("401")) {
+      return (
+        <div className="flex items-center justify-center h-96">
+          <Card className="p-8 flex flex-col items-center gap-4">
+            <Loader className="w-8 h-8 animate-spin text-primary-600" />
+            <p className="text-gray-300">Redirecting to login...</p>
+          </Card>
+        </div>
+      );
+    }
+
+    // For other errors, show error message with retry option
     return (
       <Card className="p-6 border-l-4 border-red-500 bg-dark-700/50">
         <div className="flex items-start gap-4">
@@ -81,6 +107,9 @@ export default function ParentDashboard() {
           <div>
             <h3 className="font-bold text-red-900">Error Loading Dashboard</h3>
             <p className="text-red-700 mt-1">{error}</p>
+            <Button onClick={() => window.location.reload()} className="mt-4">
+              Try Again
+            </Button>
           </div>
         </div>
       </Card>
