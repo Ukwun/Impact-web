@@ -1,32 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { listUsers, updateUserProfile, logActivity } from "@/lib/firestore-utils";
 import { verifyToken } from "@/lib/auth";
-import { z } from "zod";
-
-// Validation schemas
-const UpdateUserSchema = z.object({
-  firstName: z.string().min(2).optional(),
-  lastName: z.string().min(2).optional(),
-  email: z.string().email().optional(),
-  role: z.enum(["STUDENT", "FACILITATOR", "MENTOR", "PARENT", "SCHOOL_ADMIN", "UNI_MEMBER", "CIRCLE_MEMBER", "ADMIN"]).optional(),
-  isActive: z.boolean().optional(),
-  state: z.string().optional(),
-});
-
-const CreateUserSchema = z.object({
-  email: z.string().email(),
-  firstName: z.string().min(2),
-  lastName: z.string().min(2),
-  password: z.string().min(8),
-  role: z.enum(["STUDENT", "FACILITATOR", "MENTOR", "PARENT", "SCHOOL_ADMIN", "UNI_MEMBER", "CIRCLE_MEMBER", "ADMIN"]),
-});
-
-// Helper to verify admin role
-function getAuthUser(req: NextRequest): any {
-  const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) return null;
-  return verifyToken(token);
-}
+import * as admin from "firebase-admin";
 
 /**
  * GET /api/admin/users
@@ -34,17 +9,17 @@ function getAuthUser(req: NextRequest): any {
  */
 export async function GET(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const token = req.headers.get("Authorization")?.split(" ")[1];
+    const payload = verifyToken(token || "");
 
-    // Verify authentication and admin role
-    if (!user) {
+    if (!payload) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    if (user.role !== "ADMIN") {
+    if (payload.role?.toUpperCase() !== "ADMIN") {
       return NextResponse.json(
         { success: false, error: "Only admin can access this endpoint" },
         { status: 403 }
@@ -57,68 +32,21 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const role = searchParams.get("role");
     const isActive = searchParams.get("isActive");
-    const search = searchParams.get("search");
-    const skip = (page - 1) * limit;
 
-    // Build filter
-    const where: any = {};
-    if (role) where.role = role;
-    if (isActive !== null) where.isActive = isActive === "true";
-    if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: "insensitive" } },
-        { lastName: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-      ];
-    }
+    // Build filters
+    const filters: any = {};
+    if (role) filters.role = role;
+    if (isActive !== null) filters.isActive = isActive === "true";
 
-    // Fetch users
-    const users = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        _count: {
-          select: {
-            enrollments: true,
-          },
-        },
-      },
-      skip,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-    });
-
-    // Get total count
-    const total = await prisma.user.count({ where });
+    // Fetch users using Firestore
+    const result = await listUsers(filters, page, limit);
 
     return NextResponse.json({
       success: true,
-      data: {
-        users: users.map((u: any) => ({
-          id: u.id,
-          email: u.email,
-          name: `${u.firstName} ${u.lastName}`,
-          role: u.role,
-          isActive: u.isActive,
-          enrollmentCount: u._count.enrollments,
-          createdAt: u.createdAt,
-        })),
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
-      },
+      data: result,
     });
   } catch (error) {
-    console.error("List users error:", error);
+    console.error("❌ List users error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch users" },
       { status: 500 }
@@ -128,88 +56,100 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/admin/users
- * Create a new user (admin only)
+ * Create a new user (admin only) via Firebase Auth
  */
 export async function POST(req: NextRequest) {
   try {
-    const user = getAuthUser(req);
+    const token = req.headers.get("Authorization")?.split(" ")[1];
+    const payload = verifyToken(token || "");
 
-    // Verify authentication and admin role
-    if (!user) {
+    if (!payload) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    if (user.role !== "ADMIN") {
+    if (payload.role?.toUpperCase() !== "ADMIN") {
       return NextResponse.json(
         { success: false, error: "Only admin can create users" },
         { status: 403 }
       );
     }
 
-    // Validate input
     const body = await req.json();
-    const validatedData = CreateUserSchema.parse(body);
+    const { email, firstName, lastName, password, role } = body;
 
-    // Check email doesn't already exist
-    const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email },
-    });
-
-    if (existingUser) {
+    if (!email || !firstName || !lastName || !password || !role) {
       return NextResponse.json(
-        { success: false, error: "Email already in use" },
+        { success: false, error: "Missing required fields" },
         { status: 400 }
       );
     }
 
-    // Hash password
-    const bcryptjs = require("bcryptjs");
-    const passwordHash = await bcryptjs.hash(validatedData.password, 10);
+    // Create user in Firebase Auth
+    const auth = admin.auth();
+    const userRecord = await auth.createUser({
+      email,
+      password,
+      displayName: `${firstName} ${lastName}`,
+    });
 
-    // Create user
-    const newUser = await prisma.user.create({
-      data: {
-        email: validatedData.email,
-        firstName: validatedData.firstName,
-        lastName: validatedData.lastName,
-        passwordHash,
-        role: validatedData.role,
-        state: "Lagos", // Default state
-        isActive: true,
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-      },
+    // Create user profile in Firestore
+    const userData = {
+      email,
+      firstName,
+      lastName,
+      role: role.toUpperCase(),
+    };
+
+    const db = admin.firestore();
+    await db.collection('users').doc(userRecord.uid).set({
+      uid: userRecord.uid,
+      email,
+      firstName,
+      lastName,
+      role: role.toUpperCase(),
+      isActive: true,
+      verified: false,
+      membershipStatus: 'ACTIVE',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Log activity
+    await logActivity(payload.sub, {
+      type: 'user_created_admin',
+      description: `Created user: ${firstName} ${lastName} (${email})`,
+      targetUserId: userRecord.uid,
+      timestamp: new Date(),
     });
 
     return NextResponse.json(
       {
         success: true,
-        data: newUser,
+        data: {
+          id: userRecord.uid,
+          email,
+          firstName,
+          lastName,
+          role: role.toUpperCase(),
+          createdAt: new Date(),
+        },
       },
       { status: 201 }
     );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
+  } catch (error: any) {
+    console.error("❌ Create user error:", error);
+    
+    // Handle Firebase specific errors
+    if (error.code === 'auth/email-already-exists') {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Validation failed",
-          details: error.errors,
-        },
+        { success: false, error: "Email already in use" },
         { status: 400 }
       );
     }
-
-    console.error("Create user error:", error);
+    
     return NextResponse.json(
       { success: false, error: "Failed to create user" },
       { status: 500 }

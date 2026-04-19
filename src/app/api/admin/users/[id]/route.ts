@@ -1,36 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getUserWithDetails, updateUserProfile, deactivateUser, updateUserRole, logActivity } from "@/lib/firestore-utils";
 import { verifyToken } from "@/lib/auth";
-import { z } from "zod";
-
-// Validation schemas
-const UpdateUserSchema = z.object({
-  firstName: z.string().min(2).optional(),
-  lastName: z.string().min(2).optional(),
-  role: z.enum(["STUDENT", "FACILITATOR", "MENTOR", "PARENT", "SCHOOL_ADMIN", "UNI_MEMBER", "CIRCLE_MEMBER", "ADMIN"]).optional(),
-  isActive: z.boolean().optional(),
-  state: z.string().optional(),
-});
-
-// Helper to verify admin role
-function getAuthUser(req: NextRequest): any {
-  const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) return null;
-  return verifyToken(token);
-}
 
 /**
  * GET /api/admin/users/[id]
- * Get user details (admin only)
+ * Get user details (admin only) from Firestore
  */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = getAuthUser(req);
+    const token = req.headers.get("Authorization")?.split(" ")[1];
+    const payload = verifyToken(token || "");
 
-    if (!user || user.role !== "ADMIN") {
+    if (!payload || payload.role?.toUpperCase() !== "ADMIN") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -38,28 +22,7 @@ export async function GET(
     }
 
     const userId = params.id;
-
-    const targetUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-        state: true,
-        createdAt: true,
-        lastLoginAt: true,
-        _count: {
-          select: {
-            enrollments: true,
-            assignments: true,
-            payments: true,
-          },
-        },
-      },
-    });
+    const targetUser = await getUserWithDetails(userId);
 
     if (!targetUser) {
       return NextResponse.json(
@@ -73,7 +36,7 @@ export async function GET(
       data: targetUser,
     });
   } catch (error) {
-    console.error("Get user error:", error);
+    console.error("❌ Get user error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch user" },
       { status: 500 }
@@ -90,9 +53,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = getAuthUser(req);
+    const token = req.headers.get("Authorization")?.split(" ")[1];
+    const payload = verifyToken(token || "");
 
-    if (!user || user.role !== "ADMIN") {
+    if (!payload || payload.role?.toUpperCase() !== "ADMIN") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -102,11 +66,7 @@ export async function PUT(
     const userId = params.id;
 
     // Verify user exists
-    const targetUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, firstName: true },
-    });
-
+    const targetUser = await getUserWithDetails(userId);
     if (!targetUser) {
       return NextResponse.json(
         { success: false, error: "User not found" },
@@ -114,23 +74,34 @@ export async function PUT(
       );
     }
 
-    // Validate input
     const body = await req.json();
-    const validatedData = UpdateUserSchema.parse(body);
+    const { firstName, lastName, role, isActive, state } = body;
 
-    // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: validatedData as any,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isActive: true,
-        updatedAt: true,
-      },
+    // Prepare updates
+    const updates: any = {};
+    if (firstName) updates.firstName = firstName;
+    if (lastName) updates.lastName = lastName;
+    if (role) updates.role = role.toUpperCase();
+    if (isActive !== undefined) updates.isActive = isActive;
+    if (state) updates.state = state;
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { success: false, error: "No updates provided" },
+        { status: 400 }
+      );
+    }
+
+    // Update user in Firestore
+    const updatedUser = await updateUserProfile(userId, updates);
+
+    // Log activity
+    await logActivity(payload.sub, {
+      type: 'user_updated_admin',
+      description: `Updated user: ${targetUser.firstName} ${targetUser.lastName}`,
+      targetUserId: userId,
+      changes: Object.keys(updates),
+      timestamp: new Date(),
     });
 
     return NextResponse.json({
@@ -138,18 +109,7 @@ export async function PUT(
       data: updatedUser,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Validation failed",
-          details: error.errors,
-        },
-        { status: 400 }
-      );
-    }
-
-    console.error("Update user error:", error);
+    console.error("❌ Update user error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to update user" },
       { status: 500 }
@@ -159,7 +119,7 @@ export async function PUT(
 
 /**
  * DELETE /api/admin/users/[id]
- * Deactivate/delete user (admin only)
+ * Deactivate user (admin only)
  * Soft delete - sets isActive = false, keeps data for records
  */
 export async function DELETE(
@@ -167,9 +127,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const user = getAuthUser(req);
+    const token = req.headers.get("Authorization")?.split(" ")[1];
+    const payload = verifyToken(token || "");
 
-    if (!user || user.role !== "ADMIN") {
+    if (!payload || payload.role?.toUpperCase() !== "ADMIN") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -179,11 +140,7 @@ export async function DELETE(
     const userId = params.id;
 
     // Verify user exists
-    const targetUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, firstName: true, isActive: true },
-    });
-
+    const targetUser = await getUserWithDetails(userId);
     if (!targetUser) {
       return NextResponse.json(
         { success: false, error: "User not found" },
@@ -192,7 +149,7 @@ export async function DELETE(
     }
 
     // Prevent self-deactivation
-    if (user.sub === userId) {
+    if (payload.sub === userId) {
       return NextResponse.json(
         { success: false, error: "You cannot deactivate your own account" },
         { status: 400 }
@@ -200,24 +157,23 @@ export async function DELETE(
     }
 
     // Soft deactivate user
-    const deactivatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { isActive: false },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        isActive: true,
-      },
+    const deactivatedUser = await deactivateUser(userId);
+
+    // Log activity
+    await logActivity(payload.sub, {
+      type: 'user_deactivated_admin',
+      description: `Deactivated user: ${targetUser.firstName} ${targetUser.lastName}`,
+      targetUserId: userId,
+      timestamp: new Date(),
     });
 
     return NextResponse.json({
       success: true,
-      message: `User "${deactivatedUser.firstName}" has been deactivated`,
+      message: `User "${targetUser.firstName}" has been deactivated`,
       data: deactivatedUser,
     });
   } catch (error) {
-    console.error("Delete user error:", error);
+    console.error("❌ Delete user error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to deactivate user" },
       { status: 500 }

@@ -668,3 +668,104 @@ export async function getSystemMetrics() {
     engagementRate: enrollmentCount > 0 ? ((uniqueActiveUsers.size / userCount) * 100).toFixed(2) : 0,
   };
 }
+
+export async function listUsers(filters: any = {}, page: number = 1, limit: number = 20) {
+  const db = getFirestore();
+  let query: any = db.collection('users');
+  
+  // Apply filters
+  if (filters.role) {
+    query = query.where('role', '==', filters.role.toUpperCase());
+  }
+  if (filters.isActive !== undefined) {
+    query = query.where('isActive', '==', filters.isActive);
+  }
+  
+  // Get total count
+  const countSnapshot = await query.count().get();
+  const total = countSnapshot.data().count;
+  
+  // Apply pagination
+  const skip = (page - 1) * limit;
+  const snapshot = await query
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
+    .offset(skip)
+    .get();
+  
+  const users = snapshot.docs.map(doc => ({
+    id: doc.id,
+    email: doc.data().email,
+    firstName: doc.data().firstName,
+    lastName: doc.data().lastName,
+    name: `${doc.data().firstName} ${doc.data().lastName}`,
+    role: doc.data().role,
+    isActive: doc.data().isActive,
+    createdAt: doc.data().createdAt,
+  }));
+  
+  return {
+    users,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
+
+export async function getUserWithDetails(userId: string) {
+  const db = getFirestore();
+  const userDoc = await db.collection('users').doc(userId).get();
+  
+  if (!userDoc.exists) {
+    return null;
+  }
+  
+  // Count enrollments
+  const enrollmentsSnapshot = await db.collection('enrollments')
+    .where('userId', '==', userId)
+    .count()
+    .get();
+  
+  // Count activity
+  const activitySnapshot = await db.collection('activity_logs')
+    .where('userId', '==', userId)
+    .count()
+    .get();
+  
+  return {
+    id: userDoc.id,
+    ...userDoc.data(),
+    enrollmentCount: enrollmentsSnapshot.data().count,
+    activityCount: activitySnapshot.data().count,
+  };
+}
+
+export async function updateUserRole(userId: string, newRole: string) {
+  const db = getFirestore();
+  await db.collection('users').doc(userId).update({
+    role: newRole.toUpperCase(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+  return getUserProfile(userId);
+}
+
+export async function deactivateUser(userId: string) {
+  const db = getFirestore();
+  await db.collection('users').doc(userId).update({
+    isActive: false,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+  return getUserProfile(userId);
+}
+
+export async function activateUser(userId: string) {
+  const db = getFirestore();
+  await db.collection('users').doc(userId).update({
+    isActive: true,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+  return getUserProfile(userId);
+}
