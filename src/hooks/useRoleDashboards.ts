@@ -334,3 +334,150 @@ export function useMentorData() {
 
   return { data, loading, error };
 }
+
+// ============ CIRCLE MEMBER TYPES ============
+
+export interface CircleConnection {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  mutualConnections: number;
+  connected: boolean;
+}
+
+export interface CirclePost {
+  id: number;
+  author: string;
+  content: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  timestamp: string;
+}
+
+export interface CircleOpportunity {
+  id: string;
+  title: string;
+  company: string;
+  type: string;
+  location: string;
+  posted: string;
+}
+
+export interface CircleMemberData {
+  profile: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    institution?: string;
+  };
+  profileStats: {
+    connections: number;
+    followers: number;
+    posts: number;
+    engagementRate: number;
+    profileViews: number;
+    achievements: number;
+  };
+  connections: CircleConnection[];
+  posts: CirclePost[];
+  opportunities: CircleOpportunity[];
+  enrolledCourses: number;
+  achievements: Array<{ id: string; title: string; unlockedDate: Date }>;
+}
+
+export function useCircleMemberData() {
+  const [data, setData] = useState<CircleMemberData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        const response = await fetch("/api/circle-member", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || "Failed to fetch circle data");
+        }
+
+        const result = await response.json();
+        setData(result.data);
+      } catch (err) {
+        console.error("❌ Error fetching circle member data:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  return { data, loading, error };
+}
+
+// ============ ADMIN TYPES ============
+
+export interface AdminMetric {
+  label: string;
+  value: string | number;
+  trend: string;
+}
+
+export interface AdminDashboardData {
+  totalUsers: number;
+  activeCourses: number;
+  completionRate: number;
+  avgScore: number;
+  totalEnrollments: number;
+  usersChange: string;
+  coursesChange: string;
+  completionChange: string;
+  scoreChange: string;
+  roleDistribution: Record<string, number>;
+  submissionBreakdown: Record<string, number>;
+  recentEnrollments: Array<{ date: string; progress: number }>;
+  topMetrics: AdminMetric[];
+}
+
+export function useAdminDashboard() {
+  const [data, setData] = useState<AdminDashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem(AUTH_TOKEN_KEY);
+        const response = await fetch("/api/admin/dashboard", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || "Failed to fetch admin data");
+        }
+
+        const result = await response.json();
+        setData(result.data);
+      } catch (err) {
+        console.error("❌ Error fetching admin data:", err);
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  return { data, loading, error };
+}

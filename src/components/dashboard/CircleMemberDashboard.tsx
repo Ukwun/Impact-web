@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { useCircleMemberProgress } from "@/hooks/useLMS";
+import { useCircleMemberData } from "@/hooks/useRoleDashboards";
 import {
   Users,
   Network,
@@ -24,7 +24,7 @@ import {
 
 export default function CircleMemberDashboard() {
   const [isVisible, setIsVisible] = useState(false);
-  const { progress, loading, error } = useCircleMemberProgress();
+  const { data: circleMemberData, loading, error } = useCircleMemberData();
 
   // Animation trigger
   useEffect(() => {
@@ -32,17 +32,18 @@ export default function CircleMemberDashboard() {
   }, []);
 
   // Use fetched data or provide defaults
-  const profileStats = progress?.profileStats || {
+  const profileStats = circleMemberData?.profileStats || {
     connections: 0,
     followers: 0,
     posts: 0,
     engagementRate: 0,
     profileViews: 0,
+    achievements: 0,
   };
 
-  const connections = progress?.connections || [];
-  const posts = progress?.posts || [];
-  const opportunities = progress?.opportunities || [];
+  const connections = circleMemberData?.connections || [];
+  const posts = circleMemberData?.posts || [];
+  const opportunities = circleMemberData?.opportunities || [];
 
   if (loading) {
     return (
