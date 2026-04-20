@@ -1,104 +1,122 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { verifyToken } from "@/lib/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyToken } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 
-function getAuthUser(req: NextRequest): any {
-  const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) return null;
-  return verifyToken(token);
-}
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-/**
- * GET /api/facilitator/analytics
- * Get analytics for facilitator's courses
- * Requires FACILITATOR or ADMIN role
- */
-export async function GET(req: NextRequest) {
+  const token = authHeader.slice(7);
+  const payload = await verifyToken(token);
+  if (!payload || payload.role !== 'FACILITATOR') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const userId = payload.userId;
+  const courseId = request.nextUrl.searchParams.get('courseId');
+
   try {
-    const user = getAuthUser(req);
-
-    if (!user || (user.role !== "FACILITATOR" && user.role !== "ADMIN")) {
+    if (!courseId) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { error: 'courseId parameter required' },
+        { status: 400 }
       );
     }
 
-    const period = req.nextUrl.searchParams.get("period") || "month";
+    // Verify facilitator owns this course
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { createdBy: true, title: true },
+    });
 
-    // Get facilitator's courses
-    const courses = await prisma.course.findMany({
-      where: {
-        createdById: user.sub,
-      },
+    if (!course || course.createdBy !== userId) {
+      return NextResponse.json(
+        { error: 'You do not have permission to view this course' },
+        { status: 403 }
+      );
+    }
+
+    // Get all enrollments in this course
+    const enrollments = await prisma.enrollment.findMany({
+      where: { courseId },
       select: {
         id: true,
-        title: true,
-        enrollments: {
-          select: {
-            userId: true,
-            progress: true,
-            lessonProgress: true,
-          },
-        },
+        student: { select: { id: true, name: true } },
+        enrolledAt: true,
+        status: true,
       },
     });
 
-    // Calculate analytics for each course
-    const courseAnalytics = courses.map((course) => {
-      const students = course.enrollments.length;
-      const avgProgress =
-        students > 0
-          ? Math.round(
-              course.enrollments.reduce((sum, e) => sum + e.progress, 0) /
-                students
-            )
-          : 0;
-      const completedCount = course.enrollments.filter(
-        (e) => e.progress === 100
-      ).length;
-      const completionRate = students > 0 ? Math.round((completedCount / students) * 100) : 0;
-
-      // Simple engagement score based on progress
-      const engagementScore = Math.min(avgProgress + 10, 100);
-
-      return {
-        id: course.id,
-        title: course.title,
-        students,
-        avgProgress,
-        completionRate,
-        engagementScore,
-        lastUpdated: new Date().toISOString().split("T")[0],
-      };
+    // Get all submissions for this course
+    const submissions = await prisma.submission.findMany({
+      where: { courseId },
+      select: {
+        studentId: true,
+        score: true,
+        gradeStatus: true,
+        submittedAt: true,
+      },
     });
+
+    // Calculate analytics
+    const totalStudents = enrollments.length;
+    const completionRate = enrollments.length > 0
+      ? Math.round((enrollments.filter(e => e.status === 'completed').length / totalStudents) * 100)
+      : 0;
+
+    const gradedSubmissions = submissions.filter(s => s.gradeStatus === 'graded');
+    const avgScore = gradedSubmissions.length > 0
+      ? Math.round(gradedSubmissions.reduce((sum, s) => sum + (s.score || 0), 0) / gradedSubmissions.length)
+      : 0;
+
+    const submissionRate = totalStudents > 0
+      ? Math.round((submissions.length / totalStudents) * 100)
+      : 0;
+
+    // Get top performers
+    const studentScores = new Map<string, { name: string; score: number; count: number }>();
+    submissions.forEach(sub => {
+      if (!studentScores.has(sub.studentId)) {
+        const student = enrollments.find(e => e.student.id === sub.studentId);
+        studentScores.set(sub.studentId, {
+          name: student?.student.name || 'Unknown',
+          score: sub.score || 0,
+          count: 1,
+        });
+      } else {
+        const existing = studentScores.get(sub.studentId)!;
+        existing.score += sub.score || 0;
+        existing.count += 1;
+      }
+    });
+
+    const topPerformers = Array.from(studentScores.values())
+      .map(s => ({ ...s, avgScore: Math.round(s.score / s.count) }))
+      .sort((a, b) => b.avgScore - a.avgScore)
+      .slice(0, 3);
+
+    const needsSupport = Array.from(studentScores.values())
+      .map(s => ({ ...s, avgScore: Math.round(s.score / s.count) }))
+      .sort((a, b) => a.avgScore - b.avgScore)
+      .slice(0, 3);
 
     return NextResponse.json({
-      success: true,
-      data: {
-        totalCourses: courses.length,
-        totalStudents: courseAnalytics.reduce((sum, c) => sum + c.students, 0),
-        avgCompletionRate:
-          courseAnalytics.length > 0
-            ? Math.round(
-                courseAnalytics.reduce((sum, c) => sum + c.completionRate, 0) /
-                  courseAnalytics.length
-              )
-            : 0,
-        avgEngagement:
-          courseAnalytics.length > 0
-            ? Math.round(
-                courseAnalytics.reduce((sum, c) => sum + c.engagementScore, 0) /
-                  courseAnalytics.length
-              )
-            : 0,
-        courses: courseAnalytics,
+      analytics: {
+        courseTitle: course.title,
+        totalStudents,
+        completionRate,
+        avgScore,
+        submissionRate,
       },
+      topPerformers,
+      needsSupport,
     });
   } catch (error) {
-    console.error("❌ Error fetching facilitator analytics:", error);
+    console.error('Error fetching analytics:', error);
     return NextResponse.json(
-      { success: false, error: "Failed to fetch analytics" },
+      { error: 'Failed to fetch analytics' },
       { status: 500 }
     );
   }
