@@ -11,6 +11,7 @@ import ParentDashboard from "@/components/dashboard/ParentDashboard";
 import SchoolAdminDashboard from "@/components/dashboard/SchoolAdminDashboard";
 import MentorDashboard from "@/components/dashboard/MentorDashboard";
 import CircleMemberDashboard from "@/components/dashboard/CircleMemberDashboard";
+import UniversityMemberDashboard from "@/components/dashboard/UniversityMemberDashboard";
 import { Card } from "@/components/ui/Card";
 import { AlertCircle, Loader } from "lucide-react";
 import { User } from "@/types";
@@ -184,8 +185,8 @@ export default function DashboardPage() {
           console.log("📊 Rendering CircleMemberDashboard");
           return <CircleMemberDashboard />;
         case "uni_member":
-          console.log("📊 Rendering StudentDashboard for uni_member");
-          return <StudentDashboard />;
+          console.log("📊 Rendering UniversityMemberDashboard");
+          return <UniversityMemberDashboard />;
         default:
           console.warn("⚠️ No dashboard for role:", user?.role, "normalized:", normalizedRole);
           return (
