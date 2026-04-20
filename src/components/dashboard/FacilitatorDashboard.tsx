@@ -295,9 +295,32 @@ export default function FacilitatorDashboard() {
             setSelectedSubmission(null);
           }}
           onSubmit={async (submissionId: string, grade: number, feedback: string) => {
-            console.log("Grading submission:", submissionId, grade, feedback);
-            success("Grade saved for " + selectedSubmission.studentName);
-            loadDashboardData();
+            try {
+              const response = await fetch("/api/assignments/grade", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
+                },
+                body: JSON.stringify({
+                  submissionId,
+                  score: grade,
+                  feedback,
+                }),
+              });
+
+              if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || "Failed to save grade");
+              }
+
+              success("Grade Saved", `${selectedSubmission.studentName} scored ${grade}%`);
+              setShowGradeModal(false);
+              setSelectedSubmission(null);
+              loadDashboardData();
+            } catch (err) {
+              errorToast("Error", err instanceof Error ? err.message : "Failed to save grade");
+            }
           }}
         />
       )}
