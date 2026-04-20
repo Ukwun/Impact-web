@@ -10,9 +10,9 @@ import {
   Users,
   BookOpen,
   TrendingUp,
-  Alert,
+  AlertCircle,
   Download,
-  DateRange,
+  Clock,
   Loader,
 } from "lucide-react";
 

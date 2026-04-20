@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEmailService, emailTemplates } from "@/lib/email-service";
-import prisma from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 import jwt from "jsonwebtoken";
 

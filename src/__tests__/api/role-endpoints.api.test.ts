@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 
 /**
  * PHASE 5: API ENDPOINT VERIFICATION TESTS
@@ -430,7 +430,7 @@ describe("PHASE 5: API ENDPOINT TESTS - All 8 Roles", () => {
 
     test("GET /api/circle/networks returns all communities", async () => {
       const mockNetworks = [
-        { id: "c1", name: "Tech Innovators", memberCount: 243, focus Area: "Technology" }
+        { id: "c1", name: "Tech Innovators", memberCount: 243, focusArea: "Technology" }
       ];
 
       (prisma.community.findMany as jest.Mock).mockResolvedValueOnce(mockNetworks);
@@ -569,3 +569,4 @@ describe("PHASE 5: API ENDPOINT TESTS - All 8 Roles", () => {
     });
   });
 });
+

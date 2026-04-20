@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { getEmailService, emailTemplates } from "@/lib/email-service";
-import prisma from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 /**
  * POST /api/assignments/:id/grade

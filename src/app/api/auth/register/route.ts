@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { validatePassword } from "@/lib/security/passwordValidator";
 import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
 import {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const phone = body.phone || '';
     const state = body.state || '';
 
-    console.log(`📝 Register Request - Email: ${email}, Role from form: "${body.role}", Normalized to: "${role}"`);
+    console.log(`?? Register Request - Email: ${email}, Role from form: "${body.role}", Normalized to: "${role}"`);
 
     const passwordCheck = validatePassword(password);
     if (!passwordCheck.isValid) {
@@ -131,9 +131,9 @@ export async function POST(req: NextRequest) {
             updatedAt: new Date(),
           },
         });
-        console.log("✅ User created in PostgreSQL:", userRecord.uid);
+        console.log("? User created in PostgreSQL:", userRecord.uid);
       } catch (prismaError) {
-        console.error("❌ PostgreSQL user creation failed:", prismaError);
+        console.error("? PostgreSQL user creation failed:", prismaError);
         // Don't fail the registration if PostgreSQL fails, user is in Firestore
       }
 
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
         updatedAt: new Date().toISOString(),
       };
 
-      console.log("✅ Complete user object being returned:", completedUser);
+      console.log("? Complete user object being returned:", completedUser);
 
       // Return user data with proper role
       const response = NextResponse.json(

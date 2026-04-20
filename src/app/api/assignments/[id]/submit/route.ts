@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { uploadToS3 } from "@/lib/s3-client";
 import { validateFile, generateS3Key } from "@/lib/file-validation";
-import prisma from "@/lib/db";
+import { prisma } from "@/lib/db";
 
 /**
  * POST /api/assignments/:id/submit

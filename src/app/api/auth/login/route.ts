@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
 import {
   checkRateLimit,
@@ -62,10 +62,10 @@ export async function POST(req: NextRequest) {
         if (userDoc.exists) {
           userProfile = userDoc.data();
           userRole = userProfile?.role || 'STUDENT';
-          console.log(`🔍 Role from Firestore for ${userRecord.uid}:`, userRole);
-          console.log(`📋 Full Firestore doc:`, userProfile);
+          console.log(`?? Role from Firestore for ${userRecord.uid}:`, userRole);
+          console.log(`?? Full Firestore doc:`, userProfile);
         } else {
-          console.warn(`⚠️ No Firestore document found for user ${userRecord.uid}`);
+          console.warn(`?? No Firestore document found for user ${userRecord.uid}`);
         }
       } catch (firestoreError) {
         console.error('Error fetching user role from Firestore:', firestoreError);
@@ -94,8 +94,8 @@ export async function POST(req: NextRequest) {
         updatedAt: userProfile?.updatedAt || new Date().toISOString(),
       };
 
-      console.log(`✅ Login token generated with role: ${userRole}`);
-      console.log(`✅ Complete user object: `, completedUser);
+      console.log(`? Login token generated with role: ${userRole}`);
+      console.log(`? Complete user object: `, completedUser);
 
       const response = NextResponse.json(
         {
