@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { ChildProgressDetailModal } from "@/components/modals/ChildProgressDetailModal";
 import { MessageModal } from "@/components/modals/MessageModal";
+import { StudentProgressModal } from "@/components/modals/StudentProgressModal";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   Users,
@@ -50,6 +51,7 @@ export default function ParentDashboard() {
   const [selectedChild, setSelectedChild] = useState<string | null>(null);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [selectedChildForModal, setSelectedChildForModal] = useState<any>(null);
 
   useEffect(() => {
@@ -247,7 +249,14 @@ export default function ParentDashboard() {
                         <MessageSquare className="w-4 h-4" />
                         Message Facilitator
                       </Button>
-                      <Button variant="secondary" className="w-full flex items-center gap-2">
+                      <Button 
+                        variant="secondary" 
+                        className="w-full flex items-center gap-2"
+                        onClick={() => {
+                          setSelectedChildForModal(child);
+                          setShowAnalyticsModal(true);
+                        }}
+                      >
                         <BarChart3 className="w-4 h-4" />
                         Performance Analysis
                       </Button>
@@ -285,6 +294,11 @@ export default function ParentDashboard() {
           console.log("Sent message:", message);
           setShowMessageModal(false);
         }}
+      />
+      <StudentProgressModal
+        isOpen={showAnalyticsModal}
+        onClose={() => setShowAnalyticsModal(false)}
+        student={selectedChildForModal}
       />
     </div>
   );

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { MentorSessionModal } from "@/components/modals/MentorSessionModal";
 import { MenteeProgressModal } from "@/components/modals/MenteeProgressModal";
+import { MessageModal } from "@/components/modals/MessageModal";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   Users,
@@ -48,6 +49,7 @@ export default function MentorDashboard() {
   const { success, error: errorToast } = useToast();
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedMentee, setSelectedMentee] = useState<any>(null);
 
   useEffect(() => {
@@ -244,12 +246,12 @@ export default function MentorDashboard() {
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-white">Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowMessageModal(true)}>
             <MessageSquare className="w-8 h-8 text-blue-400 mb-3" />
             <h3 className="font-semibold text-white">Send Feedback</h3>
             <p className="text-xs text-gray-400 mt-2">Provide guidance to your mentees</p>
           </Card>
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowProgressModal(true)}>
             <TrendingUp className="w-8 h-8 text-green-400 mb-3" />
             <h3 className="font-semibold text-white">Mentee Growth</h3>
             <p className="text-xs text-gray-400 mt-2">Track their development</p>
@@ -272,6 +274,16 @@ export default function MentorDashboard() {
         isOpen={showProgressModal}
         onClose={() => setShowProgressModal(false)}
         mentee={selectedMentee}
+      />
+      <MessageModal
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        recipientName={selectedMentee?.name || "Team"}
+        onSendMessage={(message: string) => {
+          console.log("Message sent:", message);
+          setShowMessageModal(false);
+          loadDashboardData();
+        }}
       />
     </div>
   );
