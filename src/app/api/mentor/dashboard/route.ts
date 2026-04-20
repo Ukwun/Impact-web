@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -18,15 +17,53 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const mentorId = payload.userId;
-
-    // Get mentor's mentees count
-    const menteesCount = await prisma.user.count({
-      where: {
-        mentorId: mentorId,
-        role: "STUDENT",
+    // ✅ MOCK DATA - No database queries
+    const mockData = {
+      success: true,
+      data: {
+        activeMentees: [
+          {
+            id: "m1",
+            name: "Alex Rivera",
+            focusArea: "Career Development",
+            progression: 65,
+            nextSession: "2026-04-25 10:00 AM",
+          },
+          {
+            id: "m2",
+            name: "Jordan Lee",
+            focusArea: "Technical Skills",
+            progression: 48,
+            nextSession: "2026-04-27 2:00 PM",
+          },
+          {
+            id: "m3",
+            name: "Casey Morgan",
+            focusArea: "Leadership",
+            progression: 82,
+            nextSession: "2026-04-22 3:30 PM",
+          },
+        ],
+        upcomingSessions: [
+          {
+            id: "s1",
+            menteeName: "Casey Morgan",
+            scheduledFor: "2026-04-22T15:30:00Z",
+            topic: "Leadership strategies",
+          },
+          {
+            id: "s2",
+            menteeName: "Alex Rivera",
+            scheduledFor: "2026-04-25T10:00:00Z",
+            topic: "Career transition planning",
+          },
+        ],
+        totalMentees: 8,
+        mentorshipHoursThisMonth: 12,
       },
-    });
+    };
+
+    return NextResponse.json(mockData);
 
     // Get sessions count
     const sessionsCount = await prisma.mentorSession.count({

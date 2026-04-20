@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/admin/dashboard
- * Fetch admin dashboard data with Prisma
+ * Fetch admin dashboard data with MOCK DATA
  */
 export async function GET(req: NextRequest) {
   try {
@@ -20,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     // Extract and verify token
     const token = authHeader.replace("Bearer ", "");
-    const payload = verifyToken(token);
+    const payload = await verifyToken(token);
     if (!payload) {
       console.error("❌ Invalid token");
       return NextResponse.json(
@@ -29,7 +28,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log("🔍 Admin request from user:", payload.sub, "role:", payload.role);
+    console.log("🔍 Admin request from user:", payload.userId, "role:", payload.role);
 
     // Verify admin role from token
     if (payload.role !== "ADMIN") {
@@ -40,163 +39,72 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Fetch comprehensive admin analytics from Prisma
-    const [
-      allUsers,
-      allCourses,
-      allEnrollments,
-      enrollmentsByStatus,
-      submissionStats,
-    ] = await Promise.all([
-      prisma.user.findMany({
-        select: { id: true, role: true, createdAt: true },
-      }),
-      prisma.course.findMany({
-        select: { id: true, title: true, createdAt: true },
-      }),
-      prisma.enrollment.findMany({
-        select: { completionPercentage: true, createdAt: true },
-      }),
-      prisma.enrollment.groupBy({
-        by: ["completionPercentage"],
-        _count: true,
-      }),
-      prisma.assignmentSubmission.findMany({
-        select: { status: true },
-      }),
-    ]);
-
-    // Calculate metrics
-    const totalUsers = allUsers.length;
-    const totalCourses = allCourses.length;
-    const totalEnrollments = allEnrollments.length;
-
-    const completionRate =
-      enrollmentsByStatus.length > 0
-        ? Math.round(
-            (enrollmentsByStatus.filter((e) => e.completionPercentage === 100)
-              ._count || 0) /
-              totalEnrollments *
-              100
-          )
-        : 0;
-
-    const avgScore = Math.round(
-      enrollmentsByStatus.reduce((sum, e) => sum + e.completionPercentage, 0) /
-        (enrollmentsByStatus.length || 1)
-    );
-
-    // User distribution by role
-    const roleDistribution = allUsers.reduce(
-      (acc, user) => {
-        acc[user.role] = (acc[user.role] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-
-    // Recent enrollments
-    const recentEnrollments = allEnrollments
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, 10)
-      .map((e) => ({
-        date: e.createdAt.toISOString().split("T")[0],
-        progress: e.completionPercentage,
-      }));
-
-    // Submission status breakdown
-    const submissionBreakdown = submissionStats.reduce(
-      (acc, s) => {
-        acc[s.status] = (acc[s.status] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-
-    console.log("✅ Admin dashboard data retrieved");
-
-    // Return comprehensive admin dashboard data
-    return NextResponse.json({
+    // ✅ MOCK DATA - No database queries
+    const mockData = {
       success: true,
       data: {
-        totalUsers,
-        activeCourses: totalCourses,
-        completionRate,
-        avgScore,
-        totalEnrollments,
-        usersChange: "+12%",
-        coursesChange: "+8%",
-        completionChange: "+5%",
-        scoreChange: "+3%",
-        roleDistribution,
-        submissionBreakdown,
-        recentEnrollments,
-        topMetrics: [
-          {
-            label: "Active Students",
-            value: roleDistribution["STUDENT"] || 0,
-            trend: "+8%",
-          },
-          {
-            label: "Active Facilitators",
-            value: roleDistribution["FACILITATOR"] || 0,
-            trend: "+5%",
-          },
-          {
-            label: "Completed Enrollments",
-            value: enrollmentsByStatus.filter((e) => e.completionPercentage === 100)
-              ._count || 0,
-            trend: "+12%",
-          },
-          {
-            label: "Avg Completion Time",
-            value: "24 days",
-            trend: "-3%",
-          },
-        ],
-      },
-    });
-  } catch (error) {
-    console.error("⚠️  Database error, returning mock data:", error);
-    // Return mock data if database is unavailable
-    return NextResponse.json({
-      success: true,
-      data: {
-        totalUsers: 1250,
-        totalCourses: 45,
-        totalEnrollments: 3400,
-        completionRate: 68,
-        usersByRole: {
-          STUDENT: 800,
-          FACILITATOR: 50,
-          MENTOR: 30,
-          ADMIN: 5,
-          PARENT: 200,
-          OTHER: 165,
+        platformStats: {
+          totalUsers: 1245,
+          totalSchools: 8,
+          activeToday: 342,
+          systemUptime: 99.2,
         },
-        kpis: [
+        systemHealth: [
           {
-            label: "Total Users",
-            value: 1250,
-            trend: "+15%",
+            name: "Database Health",
+            status: "healthy",
+            value: 98,
+            unit: "%",
           },
           {
-            label: "Active Courses",
-            value: 45,
-            trend: "+8%",
+            name: "API Response Time",
+            status: "healthy",
+            value: 145,
+            unit: "ms",
           },
           {
-            label: "Active Students",
-            value: 800,
-            trend: "+8%",
+            name: "Server Load",
+            status: "warning",
+            value: 72,
+            unit: "%",
           },
           {
-            label: "Active Facilitators",
-            value: 50,
-            trend: "+5%",
+            name: "Disk Usage",
+            status: "healthy",
+            value: 54,
+            unit: "%",
           },
         ],
+        recentAlerts: [
+          {
+            id: "alert1",
+            type: "warning",
+            message: "High server load detected",
+            timestamp: new Date(Date.now() - 3600000).toISOString(),
+            resolved: false,
+          },
+          {
+            id: "alert2",
+            type: "info",
+            message: "Scheduled maintenance completed",
+            timestamp: new Date(Date.now() - 7200000).toISOString(),
+            resolved: true,
+          },
+        ],
+        topSchools: [
+          { name: "Lincoln High School", users: 324, courses: 42 },
+          { name: "Central University", users: 287, courses: 38 },
+          { name: "Tech Institute", users: 156, courses: 21 },
+        ],
       },
-    });
+    };
+
+    return NextResponse.json(mockData);
+  } catch (error) {
+    console.error("❌ Error fetching admin dashboard:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch dashboard data" },
+      { status: 500 }
+    );
   }
 }
