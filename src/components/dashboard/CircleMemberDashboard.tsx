@@ -149,7 +149,7 @@ export default function CircleMemberDashboard() {
               <MessageSquare className="w-5 h-5 text-blue-400" />
               <p className="text-blue-400 font-semibold">You have {data.unreadMessages} new message{data.unreadMessages !== 1 ? 's' : ''}</p>
             </div>
-            <Button variant="secondary" size="sm">View</Button>
+            <Button variant="secondary" size="sm" onClick={() => setShowMessageModal(true)}>View</Button>
           </div>
         </Card>
       )}
@@ -260,12 +260,12 @@ export default function CircleMemberDashboard() {
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-white">Community Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowMessageModal(true)}>
             <Search className="w-8 h-8 text-blue-400 mb-3" />
             <h3 className="font-semibold text-white">Browse Communities</h3>
             <p className="text-xs text-gray-400 mt-2">Discover new communities</p>
           </Card>
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowMessageModal(true)}>
             <Share2 className="w-8 h-8 text-green-400 mb-3" />
             <h3 className="font-semibold text-white">Start Discussion</h3>
             <p className="text-xs text-gray-400 mt-2">Share knowledge & insights</p>
@@ -277,6 +277,18 @@ export default function CircleMemberDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Message Modal */}
+      <MessageModal
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        recipientName="Community"
+        onSend={(message: string) => {
+          console.log("Sent message:", message);
+          setShowMessageModal(false);
+          loadDashboardData();
+        }}
+      />
     </div>
   );
 }

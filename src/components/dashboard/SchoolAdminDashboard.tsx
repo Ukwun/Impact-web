@@ -157,7 +157,7 @@ export default function SchoolAdminDashboard() {
               <p className="text-2xl font-black text-white mt-2">{data.pendingApprovals.length}</p>
               <p className="text-sm text-gray-300 mt-1">New registrations awaiting approval</p>
             </div>
-            <Button>Review & Approve</Button>
+            <Button onClick={() => setShowApprovalModal(true)}>Review & Approve</Button>
           </div>
 
           {/* List */}
@@ -186,12 +186,12 @@ export default function SchoolAdminDashboard() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowRosterModal(true)}>
             <Users className="w-8 h-8 text-blue-400 mb-3" />
             <h3 className="font-semibold text-white">View All Users</h3>
             <p className="text-xs text-gray-400 mt-2">Manage active users</p>
           </Card>
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowApprovalModal(true)}>
             <CheckCircle2 className="w-8 h-8 text-green-400 mb-3" />
             <h3 className="font-semibold text-white">Review Approvals</h3>
             <p className="text-xs text-gray-400 mt-2">{data.pendingApprovals.length} pending</p>
@@ -260,6 +260,21 @@ export default function SchoolAdminDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Modals */}
+      <FacilitatorApprovalModal
+        isOpen={showApprovalModal}
+        onClose={() => setShowApprovalModal(false)}
+        onApprove={(facilitatorId: string) => {
+          console.log("Approved facilitator:", facilitatorId);
+          setShowApprovalModal(false);
+          loadDashboardData();
+        }}
+      />
+      <StudentRosterModal
+        isOpen={showRosterModal}
+        onClose={() => setShowRosterModal(false)}
+      />
     </div>
   );
 }

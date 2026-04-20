@@ -264,18 +264,40 @@ export default function UniversityMemberDashboard() {
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-white">Network Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowNetworking(true)}>
             <Network className="w-8 h-8 text-blue-400 mb-3" />
             <h3 className="font-semibold text-white">Browse All Peers</h3>
             <p className="text-xs text-gray-400 mt-2">Discover professionals in your field</p>
           </Card>
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowCourseDiscovery(true)}>
             <Briefcase className="w-8 h-8 text-purple-400 mb-3" />
             <h3 className="font-semibold text-white">My Profile</h3>
             <p className="text-xs text-gray-400 mt-2">Showcase your expertise</p>
           </Card>
         </div>
       </div>
+
+      {/* Modals */}
+      <CourseDiscoveryModal
+        isOpen={showCourseDiscovery}
+        courses={[]}
+        onClose={() => setShowCourseDiscovery(false)}
+        onEnrollCourse={(courseId: string) => {
+          console.log("Enrolled in course:", courseId);
+          setShowCourseDiscovery(false);
+          loadDashboardData();
+        }}
+      />
+      <NetworkingModal
+        isOpen={showNetworking}
+        peers={data?.recommendations || []}
+        onClose={() => setShowNetworking(false)}
+        onConnect={(peerId: string) => {
+          console.log("Connected with peer:", peerId);
+          setShowNetworking(false);
+          loadDashboardData();
+        }}
+      />
     </div>
   );
 }

@@ -247,7 +247,12 @@ export default function AdminDashboard() {
             <h3 className="font-semibold text-white">User Management</h3>
             <p className="text-xs text-gray-400 mt-2">Manage all platform users</p>
           </Card>
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowUserMgmtModal(true)}>
+            <Users className="w-8 h-8 text-blue-400 mb-3" />
+            <h3 className="font-semibold text-white">User Management</h3>
+            <p className="text-xs text-gray-400 mt-2">Manage all users</p>
+          </Card>
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowUserMgmtModal(true)}>
             <BarChart3 className="w-8 h-8 text-green-400 mb-3" />
             <h3 className="font-semibold text-white">Platform Analytics</h3>
             <p className="text-xs text-gray-400 mt-2">Global usage metrics</p>
@@ -259,6 +264,17 @@ export default function AdminDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Modals */}
+      <UserManagementModal
+        isOpen={showUserMgmtModal}
+        onClose={() => setShowUserMgmtModal(false)}
+        onAction={(userId: string, action: string) => {
+          console.log("User action:", action, "on user:", userId);
+          setShowUserMgmtModal(false);
+          loadDashboardData();
+        }}
+      />
     </div>
   );
 }
