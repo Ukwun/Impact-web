@@ -7,82 +7,51 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
+  CheckCircle2,
+  Flame,
+  Trophy,
   BookOpen,
-  TrendingUp,
-  CheckCircle,
-  Award,
   Clock,
   AlertCircle,
   Loader,
-  Eye,
+  ArrowRight,
+  Zap,
+  Award,
 } from "lucide-react";
-import { KPICard, InsightCard } from "@/components/dashboard/cards";
-import { AssignmentDetailModal } from "@/components/modals/AssignmentDetailModal";
-import { StudentProgressModal } from "@/components/modals/StudentProgressModal";
 
-interface CourseProgress {
-  courseId: string;
-  courseName: string;
-  facilitatorName: string;
-  completionPercent: number;
-  lessonsCompleted: number;
-  lessonsTotal: number;
-  assignmentsSubmitted: number;
-  assignmentsTotal: number;
-  averageGrade?: number;
-  status: "active" | "completed" | "pending";
-  enrolledDate: string;
-}
-
-interface Assignment {
+interface EnrolledCourse {
   id: string;
   title: string;
-  courseId: string;
-  courseName: string;
-  dueDate: string;
-  pointsTotal: number;
-  submitted: boolean;
-  graded: boolean;
-  status: "pending" | "submitted" | "graded";
+  facilitatorName: string;
+  progress: number;
+  status: "active" | "completed";
 }
 
-interface DashboardData {
-  student: {
-    name: string;
-    email: string;
-    avatar?: string;
-  };
-  courses: CourseProgress[];
-  assignments: Assignment[];
-  stats: {
-    totalCourses: number;
-    activeCourses: number;
-    completedCourses: number;
-    avgProgress: number;
-    pendingCount: number;
-    submittedCount: number;
-    gradedCount: number;
-  };
+interface PendingAssignment {
+  id: string;
+  title: string;
+  course: string;
+  daysUntilDue: number;
+  difficulty: "easy" | "medium" | "hard";
+}
+
+interface StudentDashboardData {
+  enrolledCourses: EnrolledCourse[];
+  pendingAssignments: PendingAssignment[];
+  studyStreak: number;
+  recentGrades: Array<{
+    course: string;
+    score: number;
+  }>;
 }
 
 export default function StudentDashboard() {
   const router = useRouter();
-  const [isVisible, setIsVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<StudentDashboardData | null>(null);
   const { success, error: errorToast } = useToast();
 
-  // Dashboard data
-  const [data, setData] = useState<DashboardData | null>(null);
-
-  // Modal states
-  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
-  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<CourseProgress | null>(null);
-  const [showProgressModal, setShowProgressModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   useEffect(() => {
-    setIsVisible(true);
     loadDashboardData();
   }, []);
 
@@ -108,7 +77,7 @@ export default function StudentDashboard() {
       const result = await response.json();
       if (result.success) {
         setData(result.data);
-        success("Dashboard loaded successfully");
+        success("Dashboard loaded");
       }
     } catch (err) {
       console.error("Error loading dashboard:", err);
@@ -118,59 +87,10 @@ export default function StudentDashboard() {
     }
   };
 
-  const handleViewAssignment = (assignment: Assignment) => {
-    setSelectedAssignment(assignment);
-    setShowAssignmentModal(true);
-  };
-
-  const handleViewCourseProgress = (course: CourseProgress) => {
-    setSelectedCourse(course);
-    setShowProgressModal(true);
-  };
-
-  const handleSubmitAssignment = async (
-    assignmentId: string,
-    content: string,
-    fileUrl?: string
-  ) => {
-    setIsSubmitting(true);
-    try {
-      const response = await fetch("/api/student/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
-        },
-        body: JSON.stringify({
-          assignmentId,
-          content,
-          fileUrl,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to submit assignment");
-      }
-
-      success("Assignment submitted successfully!");
-      await loadDashboardData();
-    } catch (err) {
-      console.error("Error submitting assignment:", err);
-      errorToast("Failed to submit assignment");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <Card className="p-12 flex flex-col items-center gap-4 animate-fade-in">
-          <Loader className="w-10 h-10 animate-spin text-primary-500" />
-          <p className="text-gray-300 text-lg">Loading your dashboard...</p>
-        </Card>
+        <Loader className="w-10 h-10 animate-spin text-primary-500" />
       </div>
     );
   }
@@ -178,177 +98,149 @@ export default function StudentDashboard() {
   if (!data) {
     return (
       <Card className="p-8 border-l-4 border-danger-500 bg-danger-500/10">
-        <div className="flex items-start gap-4">
-          <AlertCircle className="w-7 h-7 text-danger-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-bold text-danger-400 text-lg">Error Loading Dashboard</h3>
-            <p className="text-gray-300 mt-2">Failed to load your dashboard data</p>
-            <Button onClick={loadDashboardData} className="mt-4">
-              Try Again
-            </Button>
-          </div>
-        </div>
+        <AlertCircle className="w-6 h-6 text-danger-400 mb-2" />
+        <p className="text-danger-400">Failed to load dashboard</p>
+        <Button onClick={loadDashboardData} className="mt-4">Try Again</Button>
       </Card>
     );
   }
 
-  const pendingAssignments = data.assignments.filter((a) => a.status === "pending");
-  const recentAssignments = [...data.assignments]
-    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
-    .slice(0, 5);
+  const urgentAssignments = data.pendingAssignments.filter(a => a.daysUntilDue <= 3);
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Header Section */}
-      <div
-        className={`space-y-4 transition-all duration-700 transform ${
-          isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-10"
-        }`}
-      >
+      {/* Header with Study Streak */}
+      <div className="space-y-6">
         <div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-2">
-            Welcome, {data.student.name || "Student"}! 🎓
-          </h1>
-          <p className="text-base sm:text-lg text-gray-300">
-            Track your courses, submit assignments, and monitor your progress.
-          </p>
+          <h1 className="text-4xl font-black text-white mb-2">🎓 Continue Learning</h1>
+          <p className="text-gray-300">Your personal learning dashboard</p>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KPICard
-            label="Active Courses"
-            value={data.stats.activeCourses}
-            icon={BookOpen}
-            trend={`${data.stats.totalCourses} total`}
-          />
-          <KPICard
-            label="Avg Progress"
-            value={`${data.stats.avgProgress}%`}
-            icon={TrendingUp}
-          />
-          <KPICard
-            label="Pending"
-            value={data.stats.pendingCount}
-            icon={Clock}
-            color="warning"
-          />
-          <KPICard
-            label="Graded"
-            value={data.stats.gradedCount}
-            icon={CheckCircle}
-            color="success"
-          />
-        </div>
+        {/* Study Streak */}
+        <Card className="p-6 bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-300 text-sm">Current Study Streak</p>
+              <p className="text-4xl font-black text-white mt-2">{data.studyStreak} Days</p>
+              <p className="text-orange-400 text-sm mt-1">Keep it going! 🔥</p>
+            </div>
+            <Flame className="w-16 h-16 text-orange-500 opacity-50" />
+          </div>
+        </Card>
       </div>
 
-      {/* Pending Assignments Alert */}
-      {pendingAssignments.length > 0 && (
-        <Card className="p-4 border-l-4 border-yellow-500 bg-yellow-500/10">
+      {/* ⚠️ URGENT: Assignments Due Soon */}
+      {urgentAssignments.length > 0 && (
+        <Card className="p-4 border-l-4 border-red-500 bg-red-500/10">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-semibold text-yellow-400">
-                You have {pendingAssignments.length} pending assignment{pendingAssignments.length !== 1 ? "s" : ""}
-              </p>
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-red-400">⚠️ Due Soon!</p>
               <p className="text-sm text-gray-300 mt-1">
-                {pendingAssignments[0].title} is due on {new Date(pendingAssignments[0].dueDate).toLocaleDateString()}
+                {urgentAssignments.length} assignment{urgentAssignments.length !== 1 ? "s" : ""} due in the next 3 days
               </p>
             </div>
+          </div>
+          <div className="mt-3 space-y-2">
+            {urgentAssignments.map(a => (
+              <div key={a.id} className="text-xs bg-dark-700 p-2 rounded">
+                <p className="text-white font-semibold">{a.title}</p>
+                <p className="text-gray-400">{a.course} • Due in {a.daysUntilDue} days</p>
+              </div>
+            ))}
           </div>
         </Card>
       )}
 
-      {/* Recent Assignments */}
-      {recentAssignments.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">Your Assignments</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recentAssignments.map((assignment) => (
-              <Card key={assignment.id} className="p-4 hover:border-primary-500 transition-colors cursor-pointer"
-                onClick={() => handleViewAssignment(assignment)}
-              >
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-white text-sm">{assignment.title}</h3>
-                      <p className="text-xs text-gray-400">{assignment.courseName}</p>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded font-semibold ${
-                      assignment.status === "pending"
-                        ? "bg-yellow-500/20 text-yellow-400"
-                        : assignment.status === "submitted"
-                        ? "bg-blue-500/20 text-blue-400"
-                        : "bg-green-500/20 text-green-400"
-                    }`}>
-                      {assignment.status === "pending" ? "📝 Pending" : assignment.status === "submitted" ? "✓ Submitted" : "✓ Graded"}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400">Due: {new Date(assignment.dueDate).toLocaleDateString()}</p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* My Courses I'm Enrolled In */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <BookOpen className="w-6 h-6" />
+          My Courses ({data.enrolledCourses.length})
+        </h2>
 
-      {/* Your Courses */}
-      {data.courses.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-white">Your Courses</h2>
+        {data.enrolledCourses.length === 0 ? (
+          <Card className="p-8 text-center">
+            <p className="text-gray-400">No courses enrolled yet</p>
+            <Button className="mt-4">Browse Available Courses</Button>
+          </Card>
+        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data.courses.map((course) => (
-              <Card key={course.courseId} className="p-4 hover:border-primary-500 transition-colors">
-                <div className="space-y-3">
+            {data.enrolledCourses.map(course => (
+              <Card key={course.id} className="p-5 hover:border-primary-500 transition-all duration-200 cursor-pointer hover:shadow-lg hover:shadow-primary-500/10">
+                <div className="space-y-4">
+                  {/* Course Header */}
                   <div>
-                    <h3 className="font-semibold text-white">{course.courseName}</h3>
-                    <p className="text-xs text-gray-400">Facilitator: {course.facilitatorName}</p>
+                    <h3 className="font-bold text-white text-lg">{course.title}</h3>
+                    <p className="text-xs text-gray-400 mt-1">with {course.facilitatorName}</p>
                   </div>
 
                   {/* Progress Bar */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-300">Progress</span>
-                      <span className="text-xs font-bold text-primary-400">{course.completionPercent}%</span>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-semibold text-gray-300">Progress</span>
+                      <span className="text-sm font-bold text-primary-400">{course.progress}%</span>
                     </div>
-                    <div className="w-full bg-dark-700 rounded-full h-2">
+                    <div className="w-full bg-dark-700 rounded-full h-2.5 overflow-hidden">
                       <div
-                        className="bg-primary-500 h-2 rounded-full"
-                        style={{ width: `${course.completionPercent}%` }}
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          course.progress >= 80 ? 'bg-green-500' :
+                          course.progress >= 50 ? 'bg-primary-500' : 'bg-yellow-500'
+                        }`}
+                        style={{ width: `${course.progress}%` }}
                       />
                     </div>
                   </div>
 
-                  {/* Stats */}
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-dark-700 p-2 rounded">
-                      <p className="text-gray-400">Lessons</p>
-                      <p className="font-bold text-white">{course.lessonsCompleted}/{course.lessonsTotal}</p>
-                    </div>
-                    <div className="bg-dark-700 p-2 rounded">
-                      <p className="text-gray-400">Assignments</p>
-                      <p className="font-bold text-white">{course.assignmentsSubmitted}/{course.assignmentsTotal}</p>
-                    </div>
-                    {course.averageGrade !== undefined && (
-                      <div className="bg-dark-700 p-2 rounded">
-                        <p className="text-gray-400">Grade</p>
-                        <p className="font-bold text-white">{course.averageGrade}%</p>
-                      </div>
-                    )}
+                  {/* Status Badge */}
+                  <div>
+                    <span className={`text-xs px-3 py-1 rounded-full font-semibold ${
+                      course.status === 'completed'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-primary-500/20 text-primary-400'
+                    }`}>
+                      {course.status === 'completed' ? '✓ Completed' : '📖 In Progress'}
+                    </span>
                   </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
 
-                  {/* Action Button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => handleViewCourseProgress(course)}
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Details
-                  </Button>
+      {/* All Pending Assignments */}
+      {data.pendingAssignments.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <CheckCircle2 className="w-6 h-6" />
+            Assignments to Submit ({data.pendingAssignments.length})
+          </h2>
+          
+          <div className="space-y-3">
+            {data.pendingAssignments.map(assignment => (
+              <Card key={assignment.id} className="p-4 hover:border-primary-500 transition-colors cursor-pointer">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-white">{assignment.title}</h3>
+                    <p className="text-sm text-gray-400 mt-1">{assignment.course}</p>
+                  </div>
+                  
+                  <div className="text-right">
+                    <div className={`text-sm font-bold ${
+                      assignment.daysUntilDue <= 1 ? 'text-red-400' :
+                      assignment.daysUntilDue <= 3 ? 'text-yellow-400' : 'text-gray-400'
+                    }`}>
+                      {assignment.daysUntilDue} day{assignment.daysUntilDue !== 1 ? 's' : ''} left
+                    </div>
+                    <span className={`inline-block text-xs px-2 py-1 rounded mt-1 ${
+                      assignment.difficulty === 'hard' ? 'bg-red-500/20 text-red-400' :
+                      assignment.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-green-500/20 text-green-400'
+                    }`}>
+                      {assignment.difficulty}
+                    </span>
+                  </div>
                 </div>
               </Card>
             ))}
@@ -356,27 +248,34 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* Modals */}
-      {selectedAssignment && (
-        <AssignmentDetailModal
-          isOpen={showAssignmentModal}
-          assignment={{
-            ...selectedAssignment,
-            description: "Assignment instructions",
-            pointsTotal: selectedAssignment.pointsTotal,
-          } as any}
-          onClose={() => setShowAssignmentModal(false)}
-          onSubmit={handleSubmitAssignment}
-          isSubmitting={isSubmitting}
-        />
-      )}
-
-      {selectedCourse && (
-        <StudentProgressModal
-          isOpen={showProgressModal}
-          progress={selectedCourse}
-          onClose={() => setShowProgressModal(false)}
-        />
+      {/* Recent Grades */}
+      {data.recentGrades.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Award className="w-6 h-6" />
+            Recent Grades
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {data.recentGrades.map((grade, idx) => (
+              <Card key={idx} className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400">{grade.course}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-2xl font-black ${
+                      grade.score >= 80 ? 'text-green-400' :
+                      grade.score >= 60 ? 'text-yellow-400' : 'text-red-400'
+                    }`}>
+                      {grade.score}%
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

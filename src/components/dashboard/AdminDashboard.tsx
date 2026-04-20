@@ -1,497 +1,262 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { useAdminDashboard } from "@/hooks/useLMS";
-import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
+import { useToast } from "@/components/ui/Toast";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
+  Globe,
+  AlertTriangle,
+  Activity,
+  Loader,
+  AlertCircle,
+  Settings,
   Users,
   BarChart3,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Award,
-  FileText,
-  ArrowRight,
-  Download,
-  Crown,
-  Lock,
-  Unlock,
-  Loader,
-  Plus,
-  Edit2,
-  Trash2,
+  Database,
 } from "lucide-react";
-import { getAllTiers } from "@/lib/membershipTierMapping";
-import { CreateTierModal } from "@/components/modals/CreateTierModal";
-import { EditTierModal } from "@/components/modals/EditTierModal";
-import { DeleteConfirmModal } from "@/components/modals/DeleteConfirmModal";
-import { useToast } from "@/components/ui/Toast";
 
-interface Tier {
-  id: string;
+interface SystemHealthMetric {
   name: string;
-  description?: string;
-  monthlyFee?: number;
-  yearlyFee?: number;
-  maxCourses?: number;
-  maxStudents?: number;
-  benefits?: string[];
+  status: "healthy" | "warning" | "critical";
+  value: number;
+  unit: string;
+}
+
+interface SystemAlert {
+  id: string;
+  type: "error" | "warning" | "info";
+  message: string;
+  timestamp: string;
+  resolved: boolean;
+}
+
+interface AdminDashboardData {
+  platformStats: {
+    totalUsers: number;
+    totalSchools: number;
+    activeToday: number;
+    systemUptime: number;
+  };
+  systemHealth: SystemHealthMetric[];
+  recentAlerts: SystemAlert[];
+  topSchools: Array<{
+    name: string;
+    users: number;
+    courses: number;
+  }>;
 }
 
 export default function AdminDashboard() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [showCreateTierModal, setShowCreateTierModal] = useState(false);
-  const [showEditTierModal, setShowEditTierModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [tiers, setTiers] = useState<Tier[]>([]);
-  const [tiersLoading, setTiersLoading] = useState(true);
-  const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const { progress, loading, error } = useAdminDashboard();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<AdminDashboardData | null>(null);
   const { success, error: errorToast } = useToast();
 
-  // Animation trigger
   useEffect(() => {
-    setIsVisible(true);
+    loadDashboardData();
   }, []);
 
-  // Load tiers from API
-  useEffect(() => {
-    const loadTiers = async () => {
-      setTiersLoading(true);
-      try {
-        const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
-        const response = await fetch("/api/admin/tiers", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-          setTiers(data.data || []);
-        } else {
-          console.error("Failed to load tiers:", data.error);
-          // Fallback to hardcoded tiers
-          setTiers(getAllTiers() as any);
-        }
-      } catch (err) {
-        console.error("Error loading tiers:", err);
-        setTiers(getAllTiers() as any);
-      } finally {
-        setTiersLoading(false);
-      }
-    };
-
-    loadTiers();
-  }, []);
-
-  const handleDeleteTier = async () => {
-    if (!selectedTier) return;
-
-    setIsDeleting(true);
+  const loadDashboardData = async () => {
+    setLoading(true);
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
-      const response = await fetch(`/api/admin/tiers/${selectedTier.id}`, {
-        method: "DELETE",
+      const response = await fetch("/api/admin/dashboard", {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
         },
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Failed to delete tier");
+        if (response.status === 401) {
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+          localStorage.removeItem(AUTH_USER_KEY);
+          router.push("/auth/login?error=invalid_token");
+          return;
+        }
+        throw new Error("Failed to load dashboard");
       }
 
-      success("Tier Deleted", `"${selectedTier.name}" has been deleted`);
-      setTiers((prev) => prev.filter((t) => t.id !== selectedTier.id));
-      setShowDeleteModal(false);
-      setSelectedTier(null);
+      const result = await response.json();
+      if (result.success) {
+        setData(result.data);
+        success("Dashboard loaded");
+      }
     } catch (err) {
-      errorToast("Error", err instanceof Error ? err.message : "Failed to delete tier");
+      console.error("Error loading dashboard:", err);
+      errorToast("Failed to load dashboard");
     } finally {
-      setIsDeleting(false);
+      setLoading(false);
     }
-  }
-
-  // Use fetched data or provide defaults
-  const analyticsData = progress?.analytics || [
-    { label: "Total Users", value: "0", change: "+0%", icon: "Users", color: "primary" },
-    { label: "Active Courses", value: "0", change: "+0%", icon: "FileText", color: "secondary" },
-    { label: "Completion Rate", value: "0%", change: "+0%", icon: "CheckCircle", color: "green" },
-    { label: "Avg. Score", value: "0", change: "+0%", icon: "Award", color: "blue" },
-  ];
-
-  const schoolStats = progress?.institutions || [];
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <Card className="p-12 flex flex-col items-center gap-4 animate-fade-in">
-          <Loader className="w-10 h-10 animate-spin text-primary-500" />
-          <p className="text-gray-300 text-lg">Loading admin dashboard...</p>
-        </Card>
+        <Loader className="w-10 h-10 animate-spin text-primary-500" />
       </div>
     );
   }
 
-  if (error) {
+  if (!data) {
     return (
-      <Card className="p-8 border-l-4 border-danger-500 bg-danger-50 animate-fade-in">
-        <div className="flex items-start gap-4">
-          <AlertCircle className="w-7 h-7 text-danger-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-bold text-danger-700 text-lg">Error Loading Admin Dashboard</h3>
-            <p className="text-danger-600 mt-2">{error}</p>
-          </div>
-        </div>
+      <Card className="p-8 border-l-4 border-danger-500 bg-danger-500/10">
+        <AlertCircle className="w-6 h-6 text-danger-400 mb-2" />
+        <p className="text-danger-400">Failed to load dashboard</p>
+        <Button onClick={loadDashboardData} className="mt-4">Try Again</Button>
       </Card>
     );
   }
 
-  const iconMap: { [key: string]: any } = {
-    Users,
-    FileText,
-    CheckCircle,
-    Award,
-  };
+  const criticalAlerts = data.recentAlerts.filter(a => a.type === 'error' && !a.resolved);
 
   return (
-    <div className="space-y-10">
-      {/* Header */}
-      <div
-        className={`space-y-4 transition-all duration-700 transform ${
-          isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-10"
-        }`}
-      >
-        <div className="text-4xl font-black text-text-500">
-          Admin Dashboard 📊
+    <div className="space-y-8 pb-12">
+      {/* Header - Global Platform Control */}
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-4xl font-black text-white mb-2">🌐 Platform Control Center</h1>
+          <p className="text-gray-300">System-wide monitoring, alerts, and administration</p>
         </div>
-        <p className="text-gray-300 font-medium">Manage the entire ImpactApp platform</p>
+
+        {/* Platform Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Total Users</p>
+            <p className="text-3xl font-black text-primary-400 mt-2">{data.platformStats.totalUsers}</p>
+            <p className="text-xs text-gray-400 mt-1">Across all schools</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Active Schools</p>
+            <p className="text-3xl font-black text-blue-400 mt-2">{data.platformStats.totalSchools}</p>
+            <p className="text-xs text-gray-400 mt-1">Using platform</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Active Today</p>
+            <p className="text-3xl font-black text-green-400 mt-2">{data.platformStats.activeToday}</p>
+            <p className="text-xs text-gray-400 mt-1">Last 24 hours</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Uptime</p>
+            <p className="text-3xl font-black text-yellow-400 mt-2">{data.platformStats.systemUptime}%</p>
+            <p className="text-xs text-gray-400 mt-1">This month</p>
+          </Card>
+        </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {analyticsData.map((metric, idx) => {
-          const Icon = iconMap[metric.icon] || Users;
-          const colorClass =
-            metric.color === "primary"
-              ? "text-primary-600 bg-primary-50"
-              : metric.color === "secondary"
-                ? "text-secondary-600 bg-secondary-50"
-                : metric.color === "green"
-                  ? "text-green-600 bg-green-50"
-                  : "text-blue-600 bg-blue-50";
+      {/* Critical Alerts */}
+      {criticalAlerts.length > 0 && (
+        <Card className="p-6 border-l-4 border-red-500 bg-red-500/10">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-bold text-red-400 flex items-center gap-2">
+                🚨 System Alerts ({criticalAlerts.length})
+              </p>
+              <div className="space-y-2 mt-3">
+                {criticalAlerts.map(alert => (
+                  <div key={alert.id} className="bg-dark-700 p-3 rounded">
+                    <p className="text-red-300 text-sm font-semibold">{alert.message}</p>
+                    <p className="text-xs text-gray-400 mt-1">{new Date(alert.timestamp).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
-          return (
-            <div key={metric.label} className="animate-fade-in" style={{ animationDelay: `${100 + idx * 100}ms` }}>
-              <Card className="p-6 hover:shadow-lg transition-all">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`w-12 h-12 ${colorClass} rounded-xl flex items-center justify-center`}>
-                  <Icon className="w-6 h-6" />
-                </div>
-                <span className="text-xs font-bold px-2.5 py-1 bg-green-100 text-green-700 rounded-full">
-                  {metric.change}
+      {/* System Health Metrics */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <Activity className="w-6 h-6" />
+          System Health
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {data.systemHealth.map((metric, idx) => (
+            <Card key={idx} className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <h3 className="font-semibold text-white">{metric.name}</h3>
+                <span className={`text-xs px-3 py-1 rounded-full font-bold ${
+                  metric.status === 'healthy' ? 'bg-green-500/20 text-green-400' :
+                  metric.status === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
+                  'bg-red-500/20 text-red-400'
+                }`}>
+                  {metric.status === 'healthy' ? '✓' : metric.status === 'warning' ? '⚠' : '✗'}
                 </span>
               </div>
-              <h4 className="text-gray-300 text-sm font-semibold mb-1">
-                {metric.label}
-              </h4>
-              <p className="text-3xl font-black text-text-500">{metric.value}</p>
-            </Card>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Top Schools/Institutions */}
-      <div className="animate-fade-in" style={{ animationDelay: "500ms" }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-text-500">
-            Top Performing Institutions
-          </h2>
-          <Button variant="light" size="sm" className="gap-2">
-            View All <ArrowRight className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="space-y-4">
-          {schoolStats.map((school, idx) => (
-            <div key={idx} className="animate-fade-in" style={{ animationDelay: `${550 + idx * 100}ms` }}>
-              <Card className="p-6 hover:shadow-lg transition-all">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
-                <div>
-                  <h4 className="font-bold text-text-500 mb-1">{school.name}</h4>
-                  <p className="text-xs text-gray-300 font-semibold">Education Institution</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-300 font-semibold">Students</p>
-                  <p className="text-2xl font-black text-primary-600">
-                    {school.students.toLocaleString()}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-300 font-semibold">Courses</p>
-                  <p className="text-2xl font-black text-secondary-600">{school.courses}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-300 font-semibold">Completion</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-dark-600 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-primary-500 to-secondary-500"
-                        style={{ width: `${school.completion}%` }}
-                      ></div>
-                    </div>
-                    <span className="text-sm font-bold text-text-500">{school.completion}%</span>
-                  </div>
-                </div>
+              <div>
+                <p className="text-3xl font-black text-white">{metric.value}{metric.unit}</p>
+              </div>
+              <div className="w-full bg-dark-700 rounded-full h-1.5 mt-3">
+                <div
+                  className={`h-full rounded-full ${
+                    metric.status === 'healthy' ? 'bg-green-500' :
+                    metric.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${Math.min(metric.value, 100)}%` }}
+                />
               </div>
             </Card>
-            </div>
           ))}
         </div>
       </div>
 
-      {/* System Alerts & Actions */}
-      <div className="grid md:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: "750ms" }}>
-        {/* Alerts */}
-        <div>
-          <h2 className="text-2xl font-bold text-text-500 mb-4">System Alerts</h2>
-          <div className="space-y-3">
-            {progress?.alerts.map((alert) => (
-              <Card
-                key={alert.id}
-                className={`p-4 border-2 ${
-                  alert.severity === "info"
-                    ? "bg-blue-50 border-blue-500/50"
-                    : alert.severity === "warning"
-                      ? "bg-yellow-50 border-yellow-500/50"
-                      : "bg-red-50 border-red-500/50"
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  {alert.severity === "info" && (
-                    <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  )}
-                  {alert.severity === "warning" && (
-                    <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  )}
-                  {alert.severity === "error" && (
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  )}
-                  <div>
-                    <h4 className={`font-bold ${
-                      alert.severity === "info"
-                        ? "text-blue-900"
-                        : alert.severity === "warning"
-                          ? "text-yellow-900"
-                          : "text-red-900"
-                    }`}>
-                      {alert.title}
-                    </h4>
-                    <p className={`text-xs ${
-                      alert.severity === "info"
-                        ? "text-blue-800"
-                        : alert.severity === "warning"
-                          ? "text-yellow-800"
-                          : "text-red-800"
-                    }`}>
-                      {alert.message}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-
-        {/* Admin Actions */}
-        <div>
-          <h2 className="text-2xl font-bold text-text-500 mb-4">Recent Actions</h2>
-          <div className="space-y-3">
-            {progress?.actions.map((action) => (
-              <Card key={action.id} className="p-4 bg-dark-700/50 border-2 border-dark-600">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-bold text-text-500">{action.action}</h4>
-                    <p className="text-xs text-gray-300 mt-1">{action.target}</p>
-                    <p className="text-xs text-gray-400 mt-2">{action.timestamp}</p>
-                  </div>
-                  <span className="text-xs font-bold text-primary-600 px-2 py-1 bg-primary-50 rounded">
-                    {action.user}
-                  </span>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Membership Tiers Management */}
-      <div className="animate-fade-in" style={{ animationDelay: "900ms" }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-text-500">
-            Membership Tiers
+      {/* Top Schools Performance */}
+      {data.topSchools.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Globe className="w-6 h-6" />
+            Top Schools
           </h2>
-          <Button 
-            variant="primary" 
-            size="sm" 
-            className="gap-2"
-            onClick={() => setShowCreateTierModal(true)}
-          >
-            <Plus className="w-4 h-4" />
-            Add Tier
-          </Button>
-        </div>
 
-        {tiersLoading ? (
-          <Card className="p-12 flex flex-col items-center gap-4 justify-center">
-            <Loader className="w-8 h-8 animate-spin text-primary-600" />
-            <p className="text-gray-300">Loading tiers...</p>
-          </Card>
-        ) : tiers.length === 0 ? (
-          <Card className="p-8">
-            <div className="text-center space-y-4">
-              <Crown className="w-12 h-12 text-gray-500 mx-auto opacity-50" />
-              <div>
-                <h3 className="text-lg font-semibold text-gray-300">No membership tiers</h3>
-                <p className="text-sm text-gray-400 mt-1">Create your first tier to manage memberships</p>
-              </div>
-              <Button 
-                variant="primary" 
-                size="sm"
-                onClick={() => setShowCreateTierModal(true)}
-                className="gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Create First Tier
-              </Button>
-            </div>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {tiers.map((tier, idx) => (
-              <div key={tier.id} className="animate-fade-in" style={{ animationDelay: `${950 + idx * 100}ms` }}>
-                <Card className="p-6 relative overflow-hidden hover:shadow-xl transition-all flex flex-col h-full">
-                  <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 opacity-10 rounded-full -mr-10 -mt-10"></div>
-                  <div className="relative z-10 flex-1">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-bold text-text-500">{tier.name}</h3>
-                      {tier.name?.toLowerCase().includes("premium") && (
-                        <Crown className="w-5 h-5 text-yellow-500" />
-                      )}
+          <div className="space-y-3">
+            {data.topSchools.map((school, idx) => (
+              <Card key={idx} className="p-4 hover:border-primary-500 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-white">{school.name}</h3>
+                    <div className="flex gap-4 mt-2 text-xs text-gray-400">
+                      <span>{school.users} users</span>
+                      <span>•</span>
+                      <span>{school.courses} courses</span>
                     </div>
-                    <p className="text-sm text-gray-300 mb-4">{tier.description || "No description"}</p>
-                    
-                    <div className="space-y-2 mb-6 text-xs text-gray-400">
-                      {tier.monthlyFee !== undefined && (
-                        <p>
-                          <span className="font-semibold text-text-500">Monthly: </span>${tier.monthlyFee?.toFixed(2) || "0.00"}
-                        </p>
-                      )}
-                      {tier.maxStudents !== undefined && (
-                        <p>
-                          <span className="font-semibold text-text-500">Max Students: </span>{tier.maxStudents}
-                        </p>
-                      )}
-                    </div>
-
-                    {tier.benefits && tier.benefits.length > 0 && (
-                      <div className="mb-6">
-                        <p className="text-xs font-semibold text-gray-400 mb-2">Benefits:</p>
-                        <ul className="space-y-1">
-                          {tier.benefits.slice(0, 3).map((benefit, i) => (
-                            <li key={i} className="text-xs text-gray-400">✓ {benefit}</li>
-                          ))}
-                          {tier.benefits.length > 3 && (
-                            <li className="text-xs text-gray-400 italic">+ {tier.benefits.length - 3} more</li>
-                          )}
-                        </ul>
-                      </div>
-                    )}
                   </div>
-
-                  {/* Tier Actions */}
-                  <div className="border-t border-dark-600 pt-4 flex gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="flex-1 gap-2"
-                      onClick={() => {
-                        setSelectedTier(tier);
-                        setShowEditTierModal(true);
-                      }}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 gap-2 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/50"
-                      onClick={() => {
-                        setSelectedTier(tier);
-                        setShowDeleteModal(true);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </Button>
-                  </div>
-                </Card>
-              </div>
+                  <Button variant="secondary" size="sm">Manage</Button>
+                </div>
+              </Card>
             ))}
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Platform Administration */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <Settings className="w-6 h-6" />
+          Administration
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <Users className="w-8 h-8 text-blue-400 mb-3" />
+            <h3 className="font-semibold text-white">User Management</h3>
+            <p className="text-xs text-gray-400 mt-2">Manage all platform users</p>
+          </Card>
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <BarChart3 className="w-8 h-8 text-green-400 mb-3" />
+            <h3 className="font-semibold text-white">Platform Analytics</h3>
+            <p className="text-xs text-gray-400 mt-2">Global usage metrics</p>
+          </Card>
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <Database className="w-8 h-8 text-purple-400 mb-3" />
+            <h3 className="font-semibold text-white">System Settings</h3>
+            <p className="text-xs text-gray-400 mt-2">Configure platform</p>
+          </Card>
+        </div>
       </div>
-
-      {/* Create Tier Modal */}
-      <CreateTierModal
-        isOpen={showCreateTierModal}
-        onClose={() => setShowCreateTierModal(false)}
-        onSuccess={() => {
-          setShowCreateTierModal(false);
-          window.location.reload();
-        }}
-      />
-
-      {/* Edit Tier Modal */}
-      <EditTierModal
-        isOpen={showEditTierModal}
-        onClose={() => {
-          setShowEditTierModal(false);
-          setSelectedTier(null);
-        }}
-        tier={selectedTier}
-        onSuccess={() => {
-          setShowEditTierModal(false);
-          window.location.reload();
-        }}
-      />
-
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmModal
-        isOpen={showDeleteModal}
-        onClose={() => {
-          setShowDeleteModal(false);
-          setSelectedTier(null);
-        }}
-        onConfirm={handleDeleteTier}
-        title="Delete Membership Tier"
-        message="This membership tier will be permanently deleted from the system."
-        itemName={selectedTier?.name || ""}
-        isLoading={isDeleting}
-        type="danger"
-      />
     </div>
   );
 }
-

@@ -1,370 +1,261 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
-import { FacilitatorApprovalModal } from "@/components/modals/FacilitatorApprovalModal";
-import { SchoolReportsModal } from "@/components/modals/SchoolReportsModal";
-import { UserManagementModal } from "@/components/modals/UserManagementModal";
+import { useToast } from "@/components/ui/Toast";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
-  Building2,
   Users,
-  TrendingUp,
-  CheckCircle2,
-  AlertCircle,
-  FileText,
-  Loader,
-  Clock,
+  BookOpen,
   BarChart3,
+  Loader,
+  AlertCircle,
+  Settings,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 
-interface DashboardMetrics {
-  totalUsers: number;
+interface SchoolStats {
+  totalStudents: number;
+  totalFacilitators: number;
   totalCourses: number;
-  totalEnrollments: number;
-  pendingApprovals: number;
-  activeFacilitators: number;
+  averageCompletion: number;
+  schoolHealth: number; // 0-100%
 }
 
-interface PendingFacilitator {
+interface PendingApproval {
   id: string;
-  name: string;
-  email: string;
-  qualifications: string[];
-  dateApplied: string;
-  status: "PENDING";
-}
-
-interface SchoolUser {
-  id: string;
-  name: string;
-  email: string;
+  userName: string;
   role: string;
-  status: string;
-  createdAt: string;
-  enrollmentCount: number;
+  registeredAt: string;
+}
+
+interface CourseMetric {
+  title: string;
+  enrollment: number;
+  completion: number;
+}
+
+interface SchoolAdminDashboardData {
+  schoolName: string;
+  stats: SchoolStats;
+  pendingApprovals: PendingApproval[];
+  topCourses: CourseMetric[];
 }
 
 export default function SchoolAdminDashboard() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [pendingFacilitators, setPendingFacilitators] = useState<PendingFacilitator[]>([]);
-  const [schoolUsers, setSchoolUsers] = useState<SchoolUser[]>([]);
+  const [data, setData] = useState<SchoolAdminDashboardData | null>(null);
+  const { success, error: errorToast } = useToast();
 
-  // Modal states
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [showReportsModal, setShowReportsModal] = useState(false);
-  const [showUserManagementModal, setShowUserManagementModal] = useState(false);
-
-  // Load dashboard data on mount
   useEffect(() => {
     loadDashboardData();
   }, []);
 
   const loadDashboardData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      setError(null);
+      const response = await fetch("/api/admin/school/dashboard", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
+        },
+      });
 
-      const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
-      if (!token) {
-        setError("Authentication required");
-        return;
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+          localStorage.removeItem(AUTH_USER_KEY);
+          router.push("/auth/login?error=invalid_token");
+          return;
+        }
+        throw new Error("Failed to load dashboard");
       }
 
-      // Fetch dashboard metrics
-      const metricsRes = await fetch("/api/school-admin/dashboard", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (metricsRes.ok) {
-        const data = await metricsRes.json();
-        setMetrics(data.data);
-      } else if (metricsRes.status === 401) {
-        setError("Session expired. Please log in again.");
-      }
-
-      // Fetch pending facilitators
-      const pendingRes = await fetch("/api/school-admin/facilitators/pending", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (pendingRes.ok) {
-        const data = await pendingRes.json();
-        setPendingFacilitators(data.data || []);
-      }
-
-      // Fetch school users
-      const usersRes = await fetch("/api/school-admin/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (usersRes.ok) {
-        const data = await usersRes.json();
-        setSchoolUsers(data.data || []);
+      const result = await response.json();
+      if (result.success) {
+        setData(result.data);
+        success("Dashboard loaded");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard");
-      console.error("Dashboard load error:", err);
+      console.error("Error loading dashboard:", err);
+      errorToast("Failed to load dashboard");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApproveFacilitator = async (facilitatorId: string) => {
-    try {
-      const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
-      if (!token) return;
-
-      const res = await fetch(`/api/school-admin/facilitators/${facilitatorId}/approve`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        // Reload pending facilitators list
-        await loadDashboardData();
-      }
-    } catch (err) {
-      console.error("Approval error:", err);
-    }
-  };
-
-  const handleRejectFacilitator = async (facilitatorId: string) => {
-    try {
-      const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
-      if (!token) return;
-
-      const res = await fetch(`/api/school-admin/facilitators/${facilitatorId}/reject`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        // Reload pending facilitators list
-        await loadDashboardData();
-      }
-    } catch (err) {
-      console.error("Rejection error:", err);
-    }
-  };
-
-  const handleGenerateReport = async (reportType: string) => {
-    try {
-      const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
-      if (!token) return;
-
-      const res = await fetch(`/api/school-admin/reports?type=${reportType}&format=csv`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${reportType}-report-${new Date().toISOString().split("T")[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }
-    } catch (err) {
-      console.error("Report generation error:", err);
-    }
-  };
-
-  const handleUpdateUserStatus = async (userId: string, status: string) => {
-    try {
-      const token = typeof window !== "undefined" ? localStorage.getItem(AUTH_TOKEN_KEY) : null;
-      if (!token) return;
-
-      const res = await fetch("/api/school-admin/users", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userId, status }),
-      });
-
-      if (res.ok) {
-        // Reload users list
-        await loadDashboardData();
-      }
-    } catch (err) {
-      console.error("User update error:", err);
-    }
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="p-8 flex flex-col items-center gap-4">
-          <Loader className="w-8 h-8 animate-spin text-primary-600" />
-          <p className="text-gray-400">Loading dashboard...</p>
-        </Card>
+      <div className="flex items-center justify-center min-h-96">
+        <Loader className="w-10 h-10 animate-spin text-primary-500" />
       </div>
     );
   }
 
+  if (!data) {
+    return (
+      <Card className="p-8 border-l-4 border-danger-500 bg-danger-500/10">
+        <AlertCircle className="w-6 h-6 text-danger-400 mb-2" />
+        <p className="text-danger-400">Failed to load dashboard</p>
+        <Button onClick={loadDashboardData} className="mt-4">Try Again</Button>
+      </Card>
+    );
+  }
+
+  const healthColor = data.stats.schoolHealth >= 80 ? 'text-green-400' : data.stats.schoolHealth >= 60 ? 'text-yellow-400' : 'text-red-400';
+
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-4xl font-bold text-white">School Admin Dashboard</h1>
-        <p className="text-gray-400">Manage your school, approve educators, and generate reports</p>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-4xl font-black text-white mb-2">🏫 {data.schoolName}</h1>
+          <p className="text-gray-300">Institutional Learning Management</p>
+        </div>
+
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Students</p>
+            <p className="text-2xl font-black text-blue-400 mt-2">{data.stats.totalStudents}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Instructors</p>
+            <p className="text-2xl font-black text-purple-400 mt-2">{data.stats.totalFacilitators}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Courses</p>
+            <p className="text-2xl font-black text-green-400 mt-2">{data.stats.totalCourses}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Completion</p>
+            <p className="text-2xl font-black text-yellow-400 mt-2">{data.stats.averageCompletion}%</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Health</p>
+            <p className={`text-2xl font-black mt-2 ${healthColor}`}>{data.stats.schoolHealth}%</p>
+          </Card>
+        </div>
       </div>
 
-      {/* Error Alert */}
-      {error && (
-        <Card className="p-6 border-l-4 border-danger-500">
-          <div className="flex items-start gap-4">
-            <AlertCircle className="w-6 h-6 text-danger-500 flex-shrink-0 mt-0.5" />
+      {/* Pending User Approvals */}
+      {data.pendingApprovals.length > 0 && (
+        <Card className="p-6 border-l-4 border-blue-500 bg-blue-500/10">
+          <div className="flex items-start justify-between">
             <div>
-              <h3 className="font-bold text-danger-400 text-lg">Error Loading Dashboard</h3>
-              <p className="text-danger-300 mt-2">{error}</p>
-              <Button onClick={loadDashboardData} className="mt-4" variant="secondary">
-                Try Again
-              </Button>
+              <p className="text-blue-400 font-semibold flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Pending User Approvals
+              </p>
+              <p className="text-2xl font-black text-white mt-2">{data.pendingApprovals.length}</p>
+              <p className="text-sm text-gray-300 mt-1">New registrations awaiting approval</p>
             </div>
+            <Button>Review & Approve</Button>
+          </div>
+
+          {/* List */}
+          <div className="mt-4 space-y-2">
+            {data.pendingApprovals.slice(0, 5).map((approval, idx) => (
+              <div key={idx} className="text-xs bg-dark-700 p-2 rounded flex items-center justify-between">
+                <div>
+                  <p className="text-white font-semibold">{approval.userName}</p>
+                  <p className="text-gray-400">{approval.role} • {new Date(approval.registeredAt).toLocaleDateString()}</p>
+                </div>
+                <Button variant="secondary" size="sm">Approve</Button>
+              </div>
+            ))}
+            {data.pendingApprovals.length > 5 && (
+              <p className="text-xs text-gray-400 pt-2">+{data.pendingApprovals.length - 5} more</p>
+            )}
           </div>
         </Card>
       )}
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-6 border-l-4 border-primary-500">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Total Users</p>
-              <p className="text-3xl font-bold text-white">{metrics?.totalUsers || 0}</p>
-            </div>
-            <Users className="w-8 h-8 text-primary-500 opacity-50" />
-          </div>
-        </Card>
+      {/* Users Management */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <Users className="w-6 h-6" />
+          User Management
+        </h2>
 
-        <Card className="p-6 border-l-4 border-success-500">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Active Facilitators</p>
-              <p className="text-3xl font-bold text-white">{metrics?.activeFacilitators || 0}</p>
-            </div>
-            <CheckCircle2 className="w-8 h-8 text-success-500 opacity-50" />
-          </div>
-        </Card>
-
-        <Card className="p-6 border-l-4 border-warning-500">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Pending Approvals</p>
-              <p className="text-3xl font-bold text-white">{pendingFacilitators.length}</p>
-            </div>
-            <Clock className="w-8 h-8 text-warning-500 opacity-50" />
-          </div>
-        </Card>
-
-        <Card className="p-6 border-l-4 border-info-500">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-400 mb-1">Total Courses</p>
-              <p className="text-3xl font-bold text-white">{metrics?.totalCourses || 0}</p>
-            </div>
-            <BarChart3 className="w-8 h-8 text-info-500 opacity-50" />
-          </div>
-        </Card>
-      </div>
-
-      {/* Main Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Facilitator Approvals Card */}
-        <Card className="p-6 space-y-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-bold text-white text-lg">Facilitator Approvals</h3>
-              <p className="text-sm text-gray-400 mt-1">
-                {pendingFacilitators.length} pending {pendingFacilitators.length === 1 ? "request" : "requests"}
-              </p>
-            </div>
-            <Clock className="w-6 h-6 text-warning-500" />
-          </div>
-          <Button
-            onClick={() => setShowApprovalModal(true)}
-            className="w-full"
-            variant={pendingFacilitators.length > 0 ? "primary" : "secondary"}
-          >
-            {pendingFacilitators.length > 0 ? "Review Requests" : "No Pending Requests"}
-          </Button>
-        </Card>
-
-        {/* Reports Card */}
-        <Card className="p-6 space-y-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-bold text-white text-lg">Generate Reports</h3>
-              <p className="text-sm text-gray-400 mt-1">Enrollment, progress, and performance</p>
-            </div>
-            <FileText className="w-6 h-6 text-info-500" />
-          </div>
-          <Button onClick={() => setShowReportsModal(true)} className="w-full" variant="secondary">
-            Create Report
-          </Button>
-        </Card>
-
-        {/* User Management Card */}
-        <Card className="p-6 space-y-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-bold text-white text-lg">User Management</h3>
-              <p className="text-sm text-gray-400 mt-1">{schoolUsers.length} school members</p>
-            </div>
-            <Users className="w-6 h-6 text-primary-500" />
-          </div>
-          <Button onClick={() => setShowUserManagementModal(true)} className="w-full" variant="secondary">
-            Manage Users
-          </Button>
-        </Card>
-      </div>
-
-      {/* Recent Activity */}
-      <Card className="p-6 space-y-4">
-        <h3 className="font-bold text-white text-lg">Quick Stats</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <p className="text-sm text-gray-400">Total Enrollments</p>
-            <p className="text-2xl font-bold text-white mt-1">{metrics?.totalEnrollments || 0}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400">Active Users</p>
-            <p className="text-2xl font-bold text-white mt-1">
-              {schoolUsers.filter((u) => u.status === "ACTIVE").length}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-400">Inactive Users</p>
-            <p className="text-2xl font-bold text-white mt-1">
-              {schoolUsers.filter((u) => u.status === "INACTIVE").length}
-            </p>
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <Users className="w-8 h-8 text-blue-400 mb-3" />
+            <h3 className="font-semibold text-white">View All Users</h3>
+            <p className="text-xs text-gray-400 mt-2">Manage active users</p>
+          </Card>
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <CheckCircle2 className="w-8 h-8 text-green-400 mb-3" />
+            <h3 className="font-semibold text-white">Review Approvals</h3>
+            <p className="text-xs text-gray-400 mt-2">{data.pendingApprovals.length} pending</p>
+          </Card>
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <Settings className="w-8 h-8 text-purple-400 mb-3" />
+            <h3 className="font-semibold text-white">School Settings</h3>
+            <p className="text-xs text-gray-400 mt-2">Configure school</p>
+          </Card>
+        </div>
+      </div>
+
+      {/* Top Courses in School */}
+      {data.topCourses.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <BookOpen className="w-6 h-6" />
+            Top Courses
+          </h2>
+
+          <div className="space-y-3">
+            {data.topCourses.map((course, idx) => (
+              <Card key={idx} className="p-4 hover:border-primary-500 transition-colors">
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-white">{course.title}</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-400">Enrollment</p>
+                      <p className="font-bold text-white">{course.enrollment} students</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Completion</p>
+                      <p className="font-bold text-white">{course.completion}%</p>
+                      <div className="w-full bg-dark-700 rounded-full h-1.5 mt-1">
+                        <div
+                          className="bg-primary-500 h-full rounded-full"
+                          style={{ width: `${course.completion}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
-      </Card>
+      )}
 
-      {/* Modals */}
-      <FacilitatorApprovalModal
-        isOpen={showApprovalModal}
-        pendingFacilitators={pendingFacilitators}
-        onClose={() => setShowApprovalModal(false)}
-        onApprove={handleApproveFacilitator}
-        onReject={handleRejectFacilitator}
-      />
+      {/* Institutional Reports */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <BarChart3 className="w-6 h-6" />
+          Reports
+        </h2>
 
-      <SchoolReportsModal isOpen={showReportsModal} onClose={() => setShowReportsModal(false)} onGenerateReport={handleGenerateReport} />
-
-      <UserManagementModal
-        isOpen={showUserManagementModal}
-        users={schoolUsers}
-        onClose={() => setShowUserManagementModal(false)}
-        onUpdateUser={handleUpdateUserStatus}
-      />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <h3 className="font-semibold text-white mb-2">Student Performance</h3>
+            <p className="text-xs text-gray-400">School-wide learning analytics</p>
+          </Card>
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <h3 className="font-semibold text-white mb-2">Attendance & Engagement</h3>
+            <p className="text-xs text-gray-400">User participation metrics</p>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

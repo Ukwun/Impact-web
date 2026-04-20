@@ -1,320 +1,278 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { useCircleMemberData } from "@/hooks/useRoleDashboards";
+import { useToast } from "@/components/ui/Toast";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   Users,
-  Network,
-  Briefcase,
   MessageSquare,
-  TrendingUp,
-  Share2,
-  Award,
-  MapPin,
-  Calendar,
-  Link as LinkIcon,
-  Plus,
-  Heart,
-  MessageCircle,
   Loader,
   AlertCircle,
+  Zap,
+  Search,
+  Heart,
+  Share2,
 } from "lucide-react";
 
-export default function CircleMemberDashboard() {
-  const [isVisible, setIsVisible] = useState(false);
-  const { data: circleMemberData, loading, error } = useCircleMemberData();
+interface Community {
+  id: string;
+  name: string;
+  members: number;
+  isMember: boolean;
+  focusArea?: string;
+}
 
-  // Animation trigger
+interface Discussion {
+  id: string;
+  communityName: string;
+  title: string;
+  author: string;
+  replies: number;
+  createdAt: string;
+}
+
+interface Member {
+  id: string;
+  name: string;
+  expertise: string[];
+  isMutualsConnection: boolean;
+}
+
+interface CircleMemberDashboardData {
+  joinedCommunities: Community[];
+  recentDiscussions: Discussion[];
+  suggestedMembers: Member[];
+  unreadMessages: number;
+  contributionScore: number;
+  communityCount: {
+    joined: number;
+    suggested: number;
+  };
+}
+
+export default function CircleMemberDashboard() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<CircleMemberDashboardData | null>(null);
+  const { success, error: errorToast } = useToast();
+
   useEffect(() => {
-    setIsVisible(true);
+    loadDashboardData();
   }, []);
 
-  // Use fetched data or provide defaults
-  const profileStats = circleMemberData?.profileStats || {
-    connections: 0,
-    followers: 0,
-    posts: 0,
-    engagementRate: 0,
-    profileViews: 0,
-    achievements: 0,
-  };
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/circle/dashboard", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
+        },
+      });
 
-  const connections = circleMemberData?.connections || [];
-  const posts = circleMemberData?.posts || [];
-  const opportunities = circleMemberData?.opportunities || [];
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+          localStorage.removeItem(AUTH_USER_KEY);
+          router.push("/auth/login?error=invalid_token");
+          return;
+        }
+        throw new Error("Failed to load dashboard");
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setData(result.data);
+        success("Dashboard loaded");
+      }
+    } catch (err) {
+      console.error("Error loading dashboard:", err);
+      errorToast("Failed to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <Card className="p-12 flex flex-col items-center gap-4 animate-fade-in">
-          <Loader className="w-10 h-10 animate-spin text-primary-500" />
-          <p className="text-gray-300 text-lg">Loading your network...</p>
-        </Card>
+        <Loader className="w-10 h-10 animate-spin text-primary-500" />
       </div>
     );
   }
 
-  if (error) {
+  if (!data) {
     return (
-      <Card className="p-8 border-l-4 border-danger-500 bg-danger-50 animate-fade-in">
-        <div className="flex items-start gap-4">
-          <AlertCircle className="w-7 h-7 text-danger-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-bold text-danger-700 text-lg">Error Loading Network</h3>
-            <p className="text-danger-600 mt-2">{error}</p>
-          </div>
-        </div>
+      <Card className="p-8 border-l-4 border-danger-500 bg-danger-500/10">
+        <AlertCircle className="w-6 h-6 text-danger-400 mb-2" />
+        <p className="text-danger-400">Failed to load dashboard</p>
+        <Button onClick={loadDashboardData} className="mt-4">Try Again</Button>
       </Card>
     );
   }
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Header */}
-      <div
-        className={`flex items-start justify-between transition-all duration-700 transform ${
-          isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-10"
-        }`}
-      >
+      {/* Header - Community Focus */}
+      <div className="space-y-6">
         <div>
-          <h1 className="text-5xl font-black text-white mb-2">
-            ImpactCircle Professional Network 📋
-          </h1>
-          <p className="text-lg text-gray-300">Connect, collaborate, and grow with industry leaders</p>
-        </div>
-        <Button variant="primary" size="lg" className="gap-2">
-          <Plus className="w-5 h-5" />
-          Create Post
-        </Button>
-      </div>
-
-      {/* Profile Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        {/* Connections Card */}
-        <div className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-primary-500 to-primary-600 text-white hover:shadow-xl transition-all duration-300 border border-primary-400 border-opacity-50 animate-fade-in" style={{ animationDelay: "100ms" }}>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <Network className="w-6 h-6 opacity-90" />
-              <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Total</span>
-            </div>
-            <p className="text-sm opacity-90 mb-2 font-medium">Connections</p>
-            <p className="text-3xl font-black">{profileStats.connections}</p>
-          </div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
+          <h1 className="text-4xl font-black text-white mb-2">🤝 Community Hub</h1>
+          <p className="text-gray-300">Connect, collaborate, and share knowledge with communities</p>
         </div>
 
-        {/* Followers Card */}
-        <div className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-secondary-500 to-secondary-600 text-white hover:shadow-xl transition-all duration-300 border border-secondary-400 border-opacity-50 animate-fade-in" style={{ animationDelay: "200ms" }}>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <Users className="w-6 h-6 opacity-90" />
-              <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Total</span>
-            </div>
-            <p className="text-sm opacity-90 mb-2 font-medium">Followers</p>
-            <p className="text-3xl font-black">{profileStats.followers}</p>
-          </div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
-        </div>
-
-        {/* Posts Card */}
-        <div className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-green-500 to-green-600 text-white hover:shadow-xl transition-all duration-300 border border-green-400 border-opacity-50 animate-fade-in" style={{ animationDelay: "300ms" }}>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <MessageSquare className="w-6 h-6 opacity-90" />
-              <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Total</span>
-            </div>
-            <p className="text-sm opacity-90 mb-2 font-medium">Posts</p>
-            <p className="text-3xl font-black">{profileStats.posts}</p>
-          </div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
-        </div>
-
-        {/* Engagement Card */}
-        <div className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:shadow-xl transition-all duration-300 border border-blue-400 border-opacity-50 animate-fade-in" style={{ animationDelay: "400ms" }}>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <TrendingUp className="w-6 h-6 opacity-90" />
-              <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Rate</span>
-            </div>
-            <p className="text-sm opacity-90 mb-2 font-medium">Engagement</p>
-            <p className="text-3xl font-black">{profileStats.engagementRate}%</p>
-          </div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
-        </div>
-
-        {/* Profile Views Card */}
-        <div className="group relative overflow-hidden rounded-xl p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white hover:shadow-xl transition-all duration-300 border border-purple-400 border-opacity-50 animate-fade-in" style={{ animationDelay: "500ms" }}>
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-3">
-              <Award className="w-6 h-6 opacity-90" />
-              <span className="text-xs font-bold opacity-80 uppercase tracking-wider">Total</span>
-            </div>
-            <p className="text-sm opacity-90 mb-2 font-medium">Profile Views</p>
-            <p className="text-3xl font-black">{profileStats.profileViews}</p>
-          </div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-150 transition-transform duration-300"></div>
+        {/* Community Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Communities Joined</p>
+            <p className="text-3xl font-black text-primary-400 mt-2">{data.communityCount.joined}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Contribution Score</p>
+            <p className="text-3xl font-black text-green-400 mt-2">{data.contributionScore}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Unread Messages</p>
+            <p className="text-3xl font-black text-blue-400 mt-2">{data.unreadMessages}</p>
+          </Card>
         </div>
       </div>
 
-      {/* Social Feed and Tools */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in" style={{ animationDelay: "600ms" }}>
-        {/* Social Feed */}
-        <div className="lg:col-span-2 space-y-6">
-          <div>
-            <h2 className="text-3xl font-black text-text-500 mb-1">Network Feed</h2>
-            <p className="text-gray-300">See what your network is sharing</p>
+      {/* Unread Messages Notification */}
+      {data.unreadMessages > 0 && (
+        <Card className="p-4 border-l-4 border-blue-500 bg-blue-500/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="w-5 h-5 text-blue-400" />
+              <p className="text-blue-400 font-semibold">You have {data.unreadMessages} new message{data.unreadMessages !== 1 ? 's' : ''}</p>
+            </div>
+            <Button variant="secondary" size="sm">View</Button>
           </div>
+        </Card>
+      )}
 
-          <div className="space-y-4">
-            {posts.map((post, idx) => (
-              <div
-                key={post.id}
-                className="group rounded-xl bg-dark-700/50 border-2 border-dark-600 hover:border-primary-300 hover:shadow-lg transition-all duration-300 p-6 animate-fade-in"
-                style={{ animationDelay: `${650 + idx * 100}ms` }}
-              >
-                <div className="flex items-start justify-between mb-4 pb-4 border-b border-gray-100">
+      {/* Your Communities */}
+      {data.joinedCommunities.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Users className="w-6 h-6" />
+            My Communities ({data.joinedCommunities.length})
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {data.joinedCommunities.map(community => (
+              <Card key={community.id} className="p-5 hover:border-primary-500 transition-all cursor-pointer">
+                <div className="space-y-3">
                   <div>
-                    <p className="font-bold text-lg text-text-500">{post.author}</p>
-                    <p className="text-xs text-gray-500">{post.timestamp}</p>
+                    <h3 className="font-bold text-white text-lg">{community.name}</h3>
+                    {community.focusArea && (
+                      <p className="text-sm text-gray-400 mt-1">{community.focusArea}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs">
+                      <p className="text-gray-400">Members</p>
+                      <p className="font-bold text-white text-lg">{community.members}</p>
+                    </div>
+                    <Button variant="secondary" size="sm">
+                      {community.isMember ? '✓ Joined' : 'Join'}
+                    </Button>
                   </div>
                 </div>
-
-                <p className="text-gray-700 mb-5 leading-relaxed text-base">{post.content}</p>
-
-                <div className="flex items-center gap-8 text-sm text-gray-300">
-                  <button className="flex items-center gap-2 hover:text-red-500 transition-colors font-semibold">
-                    <Heart className="w-5 h-5" />
-                    <span>{post.likes}</span>
-                  </button>
-                  <button className="flex items-center gap-2 hover:text-primary-600 transition-colors font-semibold">
-                    <MessageCircle className="w-5 h-5" />
-                    <span>{post.comments}</span>
-                  </button>
-                  <button className="flex items-center gap-2 hover:text-secondary-600 transition-colors font-semibold">
-                    <Share2 className="w-5 h-5" />
-                    <span>{post.shares}</span>
-                  </button>
-                </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
+      )}
 
-        {/* Tools */}
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-3xl font-black text-text-500 mb-1">Networking Tools</h2>
-            <p className="text-gray-300">Get things done quickly</p>
-          </div>
+      {/* Recent Discussions/Conversations */}
+      {data.recentDiscussions.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <MessageSquare className="w-6 h-6" />
+            Recent Discussions ({data.recentDiscussions.length})
+          </h2>
 
           <div className="space-y-3">
-            <Button variant="primary" size="lg" className="w-full justify-center gap-2">
-              <Network className="w-5 h-5" />
-              Find Connections
-            </Button>
-            <Button variant="secondary" size="lg" className="w-full justify-center gap-2">
-              <Briefcase className="w-5 h-5" />
-              Browse Jobs
-            </Button>
-            <Button variant="outline" size="lg" className="w-full justify-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              Networking Events
-            </Button>
-            <Button variant="outline" size="lg" className="w-full justify-center gap-2">
-              <LinkIcon className="w-5 h-5" />
-              Edit Profile
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Connections */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-black text-text-500 mb-1">Your Network</h2>
-            <p className="text-gray-300">Professional connections and collaborators</p>
-          </div>
-          <Button variant="outline" size="sm">View All</Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {connections.map((conn) => (
-            <div
-              key={conn.id}
-              className="group relative overflow-hidden rounded-2xl bg-dark-700/50 border-2 border-dark-600 hover:border-primary-300 hover:shadow-xl transition-all duration-300"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-secondary-500 opacity-0 group-hover:opacity-5 transition-opacity"></div>
-
-              <div className="relative p-6 space-y-4">
-                <div>
-                  <h3 className="text-xl font-black text-text-500 mb-1">{conn.name}</h3>
-                  <p className="text-sm font-bold text-primary-600">{conn.title}</p>
-                  <p className="text-xs text-gray-300">{conn.company}</p>
-                </div>
-
-                <div className="pt-3 border-t border-gray-100 space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-gray-300">
-                    <MapPin className="w-4 h-4" />
-                    {conn.location}
+            {data.recentDiscussions.map(discussion => (
+              <Card key={discussion.id} className="p-4 hover:border-primary-500 transition-colors cursor-pointer">
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-xs text-gray-400 font-semibold">{discussion.communityName}</p>
+                    <h3 className="font-semibold text-white mt-1">{discussion.title}</h3>
                   </div>
-                  <p className="text-xs text-gray-300">
-                    <span className="font-semibold">{conn.mutualConnections}</span> mutual connections
-                  </p>
+                  
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <span>by {discussion.author}</span>
+                    <span>{discussion.replies} replies</span>
+                  </div>
+
+                  <p className="text-xs text-gray-500">{new Date(discussion.createdAt).toRelativeTime?.() || new Date(discussion.createdAt).toLocaleDateString()}</p>
                 </div>
-
-                <Button
-                  variant={conn.connected ? "outline" : "primary"}
-                  size="sm"
-                  className="w-full"
-                >
-                  {conn.connected ? "✓ Connected" : "Connect"}
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Opportunities */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-black text-text-500 mb-1">Opportunities</h2>
-            <p className="text-gray-300">Jobs, partnerships, and collaborations</p>
+              </Card>
+            ))}
           </div>
-          <Button variant="outline" size="sm">See All</Button>
         </div>
+      )}
 
-        <div className="space-y-3">
-          {opportunities.map((opp) => (
-            <div
-              key={opp.id}
-              className="group rounded-xl bg-dark-700/50 border-l-4 border-l-primary-500 hover:border-l-secondary-500 p-6 hover:shadow-lg transition-all duration-300"
-            >
-              <div className="flex items-start justify-between gap-4 mb-3">
-                <div className="flex-1">
-                  <h3 className="text-lg font-black text-text-500 mb-1">{opp.title}</h3>
-                  <p className="text-sm text-gray-300">{opp.company}</p>
-                </div>
-                <span className="px-3 py-1 bg-primary-100 text-primary-700 text-xs font-bold rounded-full whitespace-nowrap">
-                  {opp.type}
-                </span>
-              </div>
+      {/* Suggested Members to Connect With */}
+      {data.suggestedMembers.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Zap className="w-6 h-6" />
+            Suggested Connections ({data.suggestedMembers.length})
+          </h2>
 
-              <div className="flex items-center justify-between text-sm border-t border-gray-100 pt-3">
-                <div className="flex items-center gap-2 text-gray-300">
-                  <MapPin className="w-4 h-4" />
-                  {opp.location}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {data.suggestedMembers.map(member => (
+              <Card key={member.id} className="p-5 hover:border-primary-500 transition-all cursor-pointer">
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-bold text-white">{member.name}</h3>
+                    {member.expertise.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {member.expertise.slice(0, 2).map((exp, idx) => (
+                          <span key={idx} className="text-xs bg-dark-700 text-gray-300 px-2 py-1 rounded">
+                            {exp}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {member.isMutualsConnection && (
+                    <p className="text-xs text-primary-400">🔗 Mutual connection</p>
+                  )}
+
+                  <Button className="w-full text-sm">+ Connect</Button>
                 </div>
-                <span className="text-xs text-gray-500">{opp.posted}</span>
-              </div>
-            </div>
-          ))}
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Community Actions */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white">Community Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <Search className="w-8 h-8 text-blue-400 mb-3" />
+            <h3 className="font-semibold text-white">Browse Communities</h3>
+            <p className="text-xs text-gray-400 mt-2">Discover new communities</p>
+          </Card>
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <Share2 className="w-8 h-8 text-green-400 mb-3" />
+            <h3 className="font-semibold text-white">Start Discussion</h3>
+            <p className="text-xs text-gray-400 mt-2">Share knowledge & insights</p>
+          </Card>
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <Heart className="w-8 h-8 text-purple-400 mb-3" />
+            <h3 className="font-semibold text-white">My Profile</h3>
+            <p className="text-xs text-gray-400 mt-2">Edit community profile</p>
+          </Card>
         </div>
       </div>
     </div>

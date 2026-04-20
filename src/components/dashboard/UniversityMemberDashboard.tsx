@@ -2,249 +2,276 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useAuth } from "@/hooks/useAuth";
-import { useSocket } from "@/hooks/useSocket";
-import { useUniversityMember } from "@/hooks/useRoleDashboards";
-import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
-import {
-  TrendingUp,
-  BookOpen,
-  Target,
-  Users,
-  Loader,
-  AlertCircle,
-} from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
+import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
-  KPICard,
-  ActionCard,
-  InsightCard,
-} from "@/components/dashboard/cards";
+  Briefcase,
+  Users,
+  Calendar,
+  Loader,
+  AlertCircle,
+  Target,
+  Network,
+  Zap,
+} from "lucide-react";
 
-export default function UniversityMemberDashboard() {
+interface Peer {
+  id: string;
+  name: string;
+  specialization: string;
+  location?: string;
+  isConnected: boolean;
+}
+
+interface Event {
+  id: string;
+  title: string;
+  date: string;
+  attendees: number;
+}
+
+interface Opportunity {
+  id: string;
+  title: string;
+  type: "scholarship" | "career" | "internship";
+  deadline: string;
+}
+
+interface UniMemberDashboardData {
+  name: string;
+  connections: number;
+  recommendations: Peer[];
+  eventInvitations: Event[];
+  opportunities: Opportunity[];
+  network: {
+    total: number;
+    degree2: number;
+  };
+}
+
+export default function UniMemberDashboard() {
   const router = useRouter();
-  const [isVisible, setIsVisible] = useState(false);
-  const { user } = useAuth();
-  const { data: universityData, loading, error } = useUniversityMember();
-  const { isConnected } = useSocket({
-    userId: user?.id,
-    token:
-      typeof window !== "undefined"
-        ? localStorage.getItem(AUTH_TOKEN_KEY) ?? undefined
-        : undefined,
-    enabled: !!user,
-  });
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<UniMemberDashboardData | null>(null);
+  const { success, error: errorToast } = useToast();
 
   useEffect(() => {
-    setIsVisible(true);
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/uni/dashboard", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+          localStorage.removeItem(AUTH_USER_KEY);
+          router.push("/auth/login?error=invalid_token");
+          return;
+        }
+        throw new Error("Failed to load dashboard");
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setData(result.data);
+        success("Dashboard loaded");
+      }
+    } catch (err) {
+      console.error("Error loading dashboard:", err);
+      errorToast("Failed to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <Card className="p-12 flex flex-col items-center gap-4 animate-fade-in">
-          <Loader className="w-10 h-10 animate-spin text-primary-500" />
-          <p className="text-gray-300 text-lg">Loading your venture dashboard...</p>
-        </Card>
+        <Loader className="w-10 h-10 animate-spin text-primary-500" />
       </div>
     );
   }
 
-  if (error) {
+  if (!data) {
     return (
-      <Card className="p-8 border-l-4 border-danger-500 bg-danger-50 animate-fade-in">
-        <div className="flex items-start gap-4">
-          <AlertCircle className="w-7 h-7 text-danger-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-bold text-danger-700 text-lg">
-              Error Loading Venture Dashboard
-            </h3>
-            <p className="text-danger-600 mt-2">{error}</p>
-          </div>
-        </div>
+      <Card className="p-8 border-l-4 border-danger-500 bg-danger-500/10">
+        <AlertCircle className="w-6 h-6 text-danger-400 mb-2" />
+        <p className="text-danger-400">Failed to load dashboard</p>
+        <Button onClick={loadDashboardData} className="mt-4">Try Again</Button>
       </Card>
     );
   }
 
-  if (!universityData?.profile) {
-    return (
-      <Card className="p-8 text-center">
-        <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-bold text-white mb-2">Welcome to ImpactUni</h3>
-        <p className="text-gray-400 mb-6">
-          Explore programs and start your learning journey today
-        </p>
-        <Button variant="primary" size="lg">
-          Browse Programs
-        </Button>
-      </Card>
-    );
-  }
+  const urgentOpportunities = data.opportunities.filter(o => {
+    const daysLeft = Math.floor((new Date(o.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    return daysLeft <= 7;
+  });
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Header Section */}
-      <div
-        className={`space-y-4 transition-all duration-700 transform ${
-          isVisible
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-10"
-        }`}
-      >
+      {/* Header - Networking Focus */}
+      <div className="space-y-6">
         <div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-2">
-            Welcome, {universityData.profile.name} 🎓
-          </h1>
-          <p className="text-base sm:text-lg text-gray-300">
-            Your learning hub at {universityData.profile.institution}
-          </p>
+          <h1 className="text-4xl font-black text-white mb-2">💼 Professional Network</h1>
+          <p className="text-gray-300">Connect with peers, explore opportunities, and grow your network</p>
+        </div>
+
+        {/* Network Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">My Connections</p>
+            <p className="text-3xl font-black text-primary-400 mt-2">{data.connections}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">Direct Network</p>
+            <p className="text-3xl font-black text-blue-400 mt-2">{data.network.total}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-gray-400 text-xs font-semibold">2nd Degree</p>
+            <p className="text-3xl font-black text-green-400 mt-2">{data.network.degree2}</p>
+          </Card>
         </div>
       </div>
 
-      {/* TOP ROW: Learning Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Learning Hours */}
-        <KPICard
-          icon={TrendingUp}
-          label="Learning Hours"
-          value={universityData.stats.totalLearningHours || 0}
-          status={`${universityData.stats.enrolledPrograms} courses`}
-          gradientFrom="from-primary-500"
-          gradientTo="to-primary-600"
-          borderColor="border-primary-400"
-        />
-
-        {/* Completed Programs */}
-        <ActionCard
-          title="Programs Progress"
-          description={`${universityData.stats.completedPrograms} of ${universityData.stats.enrolledPrograms} completed`}
-          icon={Target}
-          primaryAction={{
-            label: "View Progress",
-            onClick: () => router.push("/dashboard/university/programs"),
-          }}
-        />
-
-        {/* Achievements Earned */}
-        <InsightCard
-          title="Achievements"
-          icon={BookOpen}
-          stats={[
-            { label: "Total Achievements", value: universityData.stats.totalAchievements },
-            { label: "Certificates", value: universityData.stats.certificatesEarned },
-            { label: "Avg Progress", value: `${universityData.stats.averageProgress}%` },
-          ]}
-        >
-          <p className="text-xs text-gray-400">
-            Great progress! Keep learning to unlock more achievements.
-          </p>
-        </InsightCard>
-      </div>
-
-      {/* Enrolled Programs Section */}
-      <div className="space-y-3">
-        <h2 className="text-xl font-bold text-white">Your Learning Journey</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {universityData.enrolledPrograms.map((program) => (
-            <Card
-              key={program.id}
-              className="p-6 hover:border-primary-400 transition-colors border border-gray-700"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-bold text-white">{program.title}</h3>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Difficulty: {program.difficulty}
+      {/* Urgent Opportunities */}
+      {urgentOpportunities.length > 0 && (
+        <Card className="p-6 border-l-4 border-orange-500 bg-orange-500/10">
+          <div className="flex items-start gap-3">
+            <Zap className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-orange-400">⏰ Deadline Coming Soon</p>
+              <div className="space-y-1 mt-2">
+                {urgentOpportunities.slice(0, 3).map((opp, idx) => (
+                  <p key={idx} className="text-sm text-gray-300">
+                    <span className="font-semibold">{opp.title}</span> closes {new Date(opp.deadline).toLocaleDateString()}
                   </p>
-                </div>
-                {program.isCompleted && (
-                  <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">
-                    Completed
-                  </span>
-                )}
+                ))}
               </div>
-              <div className="w-full bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-primary-500 h-2 rounded-full transition-all"
-                  style={{ width: `${program.progress}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-400 mt-2">{program.progress}% Complete</p>
-            </Card>
-          ))}
-        </div>
-      </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
-      {/* Recent Achievements Section */}
-      {universityData.recentAchievements && universityData.recentAchievements.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-xl font-bold text-white">Recent Achievements</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {universityData.recentAchievements.slice(0, 3).map((achievement: any) => (
-              <Card
-                key={achievement.id}
-                className="p-6 text-center hover:border-green-400 transition-colors border border-gray-700"
-              >
-                <div className="text-3xl mb-2">🏆</div>
-                <h3 className="font-bold text-white">{achievement.title || "Achievement"}</h3>
-                <p className="text-xs text-gray-400 mt-2">
-                  {achievement.description || "Badge Earned"}
-                </p>
+      {/* Recommended Connections */}
+      {data.recommendations.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Users className="w-6 h-6" />
+            Recommended Connections ({data.recommendations.length})
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {data.recommendations.map(peer => (
+              <Card key={peer.id} className="p-5 hover:border-primary-500 transition-all cursor-pointer">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-bold text-white text-lg">{peer.name}</h3>
+                    <p className="text-sm text-gray-400 mt-1">{peer.specialization}</p>
+                    {peer.location && <p className="text-xs text-gray-400 mt-1">📍 {peer.location}</p>}
+                  </div>
+
+                  {peer.isConnected ? (
+                    <Button variant="secondary" className="w-full text-sm">✓ Connected</Button>
+                  ) : (
+                    <Button className="w-full text-sm">+ Connect</Button>
+                  )}
+                </div>
               </Card>
             ))}
           </div>
         </div>
       )}
 
-      {/* Available Programs To Explore */}
-      <div className="space-y-3">
-        <h2 className="text-xl font-bold text-white">Explore More Programs</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {universityData.availablePrograms.slice(0, 2).map((program) => (
-            <Card
-              key={program.id}
-              className="p-6 hover:border-cyan-400 transition-colors border border-gray-700 cursor-pointer"
-            >
-              <h3 className="font-bold text-white">{program.title}</h3>
-              <p className="text-sm text-gray-400 mt-2">{program.description}</p>
-              <div className="flex items-center justify-between mt-4">
-                <span className="text-xs text-gray-500">
-                  {program.enrollmentCount} enrolled
-                </span>
-                <span className="text-xs bg-cyan-500 text-white px-2 py-1 rounded">
-                  {program.difficulty}
-                </span>
-              </div>
-              <Button
-                variant="primary"
-                size="sm"
-                className="w-full mt-4"
-                onClick={() => console.log("Enroll in", program.title)}
-              >
-                Learn More
-              </Button>
-            </Card>
-          ))}
+      {/* Upcoming University Events */}
+      {data.eventInvitations.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Calendar className="w-6 h-6" />
+            University Events ({data.eventInvitations.length})
+          </h2>
+
+          <div className="space-y-3">
+            {data.eventInvitations.map(event => (
+              <Card key={event.id} className="p-4 hover:border-primary-500 transition-colors">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold text-white">{event.title}</h3>
+                    <div className="flex items-center gap-4 mt-2 text-xs">
+                      <span className="text-gray-400">📅 {new Date(event.date).toLocaleDateString()}</span>
+                      <span className="text-gray-400">👥 {event.attendees} attending</span>
+                    </div>
+                  </div>
+                  <Button variant="secondary" size="sm">RSVP</Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Career & Educational Opportunities */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          <Target className="w-6 h-6" />
+          Opportunities ({data.opportunities.length})
+        </h2>
+
+        <div className="space-y-3">
+          {data.opportunities.map(opp => {
+            const daysLeft = Math.floor((new Date(opp.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+            return (
+              <Card key={opp.id} className="p-4 hover:border-primary-500 transition-colors">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold text-white">{opp.title}</h3>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        opp.type === 'scholarship' ? 'bg-blue-500/20 text-blue-400' :
+                        opp.type === 'career' ? 'bg-purple-500/20 text-purple-400' :
+                        'bg-green-500/20 text-green-400'
+                      }`}>
+                        {opp.type === 'scholarship' ? '🎓' : opp.type === 'career' ? '💼' : '🚀'} {opp.type}
+                      </span>
+                      <span className={`text-xs font-semibold ${
+                        daysLeft <= 3 ? 'text-red-400' : daysLeft <= 7 ? 'text-yellow-400' : 'text-gray-400'
+                      }`}>
+                        {daysLeft} days left
+                      </span>
+                    </div>
+                  </div>
+                  <Button variant="secondary" size="sm">Learn More</Button>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </div>
 
-      {/* Resources & Support Section */}
-      <ActionCard
-        title="Learning Resources"
-        description="Access study materials, mentorship, and community support"
-        icon={Users}
-        primaryAction={{
-          label: "Browse Resources",
-          onClick: () => router.push("/dashboard/resources"),
-        }}
-        secondaryAction={{
-          label: "Community Forum",
-          onClick: () => router.push("/dashboard/community"),
-        }}
-        variant="success"
-      />
+      {/* Quick Actions */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-white">Network Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <Network className="w-8 h-8 text-blue-400 mb-3" />
+            <h3 className="font-semibold text-white">Browse All Peers</h3>
+            <p className="text-xs text-gray-400 mt-2">Discover professionals in your field</p>
+          </Card>
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+            <Briefcase className="w-8 h-8 text-purple-400 mb-3" />
+            <h3 className="font-semibold text-white">My Profile</h3>
+            <p className="text-xs text-gray-400 mt-2">Showcase your expertise</p>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
