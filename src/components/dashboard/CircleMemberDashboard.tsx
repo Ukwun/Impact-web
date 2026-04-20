@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { MessageModal } from "@/components/modals/MessageModal";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   Users,
@@ -58,6 +59,7 @@ export default function CircleMemberDashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CircleMemberDashboardData | null>(null);
   const { success, error: errorToast } = useToast();
+  const [showMessageModal, setShowMessageModal] = useState(false);
 
   useEffect(() => {
     loadDashboardData();

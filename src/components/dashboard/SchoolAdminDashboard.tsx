@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { FacilitatorApprovalModal } from "@/components/modals/FacilitatorApprovalModal";
+import { StudentRosterModal } from "@/components/modals/StudentRosterModal";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   Users,
@@ -50,6 +52,8 @@ export default function SchoolAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<SchoolAdminDashboardData | null>(null);
   const { success, error: errorToast } = useToast();
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showRosterModal, setShowRosterModal] = useState(false);
 
   useEffect(() => {
     loadDashboardData();

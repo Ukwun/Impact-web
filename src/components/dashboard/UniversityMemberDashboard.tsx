@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { CourseDiscoveryModal } from "@/components/modals/CourseDiscoveryModal";
+import { NetworkingModal } from "@/components/modals/NetworkingModal";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   Briefcase,
@@ -51,11 +53,13 @@ interface UniMemberDashboardData {
   };
 }
 
-export default function UniMemberDashboard() {
+export default function UniversityMemberDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<UniMemberDashboardData | null>(null);
   const { success, error: errorToast } = useToast();
+  const [showCourseDiscovery, setShowCourseDiscovery] = useState(false);
+  const [showNetworking, setShowNetworking] = useState(false);
 
   useEffect(() => {
     loadDashboardData();

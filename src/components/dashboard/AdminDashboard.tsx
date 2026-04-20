@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { UserManagementModal } from "@/components/modals/UserManagementModal";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   Globe,
@@ -54,6 +55,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const { success, error: errorToast } = useToast();
+  const [showUserMgmtModal, setShowUserMgmtModal] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
