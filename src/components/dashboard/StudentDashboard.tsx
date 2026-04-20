@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { CourseDiscoveryModal } from "@/components/modals/CourseDiscoveryModal";
+import { AssignmentSubmissionModal } from "@/components/modals/AssignmentSubmissionModal";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   CheckCircle2,
@@ -33,6 +34,7 @@ interface PendingAssignment {
   title: string;
   course: string;
   daysUntilDue: number;
+  dueDate?: string;
   difficulty: "easy" | "medium" | "hard";
 }
 
@@ -52,6 +54,8 @@ export default function StudentDashboard() {
   const [data, setData] = useState<StudentDashboardData | null>(null);
   const { success, error: errorToast } = useToast();
   const [showCourseDiscovery, setShowCourseDiscovery] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<PendingAssignment | null>(null);
+  const [showAssignmentSubmission, setShowAssignmentSubmission] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -221,27 +225,38 @@ export default function StudentDashboard() {
           
           <div className="space-y-3">
             {data.pendingAssignments.map(assignment => (
-              <Card key={assignment.id} className="p-4 hover:border-primary-500 transition-colors cursor-pointer">
+              <Card key={assignment.id} className="p-4 hover:border-primary-500 transition-colors">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <h3 className="font-semibold text-white">{assignment.title}</h3>
                     <p className="text-sm text-gray-400 mt-1">{assignment.course}</p>
                   </div>
                   
-                  <div className="text-right">
-                    <div className={`text-sm font-bold ${
-                      assignment.daysUntilDue <= 1 ? 'text-red-400' :
-                      assignment.daysUntilDue <= 3 ? 'text-yellow-400' : 'text-gray-400'
-                    }`}>
-                      {assignment.daysUntilDue} day{assignment.daysUntilDue !== 1 ? 's' : ''} left
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <div className={`text-sm font-bold ${
+                        assignment.daysUntilDue <= 1 ? 'text-red-400' :
+                        assignment.daysUntilDue <= 3 ? 'text-yellow-400' : 'text-gray-400'
+                      }`}>
+                        {assignment.daysUntilDue} day{assignment.daysUntilDue !== 1 ? 's' : ''} left
+                      </div>
+                      <span className={`inline-block text-xs px-2 py-1 rounded mt-1 ${
+                        assignment.difficulty === 'hard' ? 'bg-red-500/20 text-red-400' :
+                        assignment.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-green-500/20 text-green-400'
+                      }`}>
+                        {assignment.difficulty}
+                      </span>
                     </div>
-                    <span className={`inline-block text-xs px-2 py-1 rounded mt-1 ${
-                      assignment.difficulty === 'hard' ? 'bg-red-500/20 text-red-400' :
-                      assignment.difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-green-500/20 text-green-400'
-                    }`}>
-                      {assignment.difficulty}
-                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedAssignment(assignment);
+                        setShowAssignmentSubmission(true);
+                      }}
+                      className="px-4 py-2 bg-primary-500 text-white font-semibold rounded-lg hover:bg-primary-600 transition whitespace-nowrap"
+                    >
+                      Submit
+                    </button>
                   </div>
                 </div>
               </Card>
@@ -291,6 +306,23 @@ export default function StudentDashboard() {
           loadDashboardData();
         }}
       />
+
+      {/* Assignment Submission Modal */}
+      {selectedAssignment && (
+        <AssignmentSubmissionModal
+          isOpen={showAssignmentSubmission}
+          assignmentId={selectedAssignment.id}
+          assignmentTitle={selectedAssignment.title}
+          dueDate={selectedAssignment.dueDate}
+          onClose={() => {
+            setShowAssignmentSubmission(false);
+            setSelectedAssignment(null);
+          }}
+          onSuccess={() => {
+            loadDashboardData();
+          }}
+        />
+      )}
     </div>
   );
 }

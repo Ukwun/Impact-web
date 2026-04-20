@@ -58,6 +58,17 @@ export async function GET(
             videoUrl: true,
             order: true,
             moduleId: true,
+            lessonMaterials: {
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                url: true,
+                fileSize: true,
+                uploadedAt: true,
+              },
+              orderBy: { uploadedAt: "asc" },
+            },
           },
           orderBy: { order: "asc" },
         },
@@ -148,6 +159,13 @@ export async function GET(
         videoUrl: lesson.videoUrl,
         order: lesson.order,
         moduleId: lesson.moduleId,
+        materials: lesson.lessonMaterials.map((material) => ({
+          id: material.id,
+          title: material.title,
+          type: material.type,
+          url: material.url,
+          fileSize: material.fileSize,
+        })),
         isCompleted: userEnrollment?.lessonProgress.some(
           (lp) => lp.lessonId === lesson.id && lp.isCompleted
         ) || false,
