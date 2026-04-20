@@ -110,16 +110,23 @@ export const CreateCourseModal = ({
     setIsLoading(true);
 
     try {
-      const url = mode === 'edit' && formData.id ? '/api/courses/' + formData.id : '/api/courses';
-      const method = mode === 'edit' ? 'PUT' : 'POST';
+      // Always use the upload endpoint (which handles both creation and file uploads)
+      const endpoint = mode === 'edit' && formData.id ? '/api/courses/upload' : '/api/courses/upload';
 
       // Create FormData to handle file uploads
       const formDataToSend = new FormData();
+      
+      // Add course metadata
       formDataToSend.append('title', formData.title);
       formDataToSend.append('description', formData.description);
       formDataToSend.append('difficulty', formData.difficulty || "BEGINNER");
       formDataToSend.append('duration', String(formData.duration || 240));
       formDataToSend.append('language', 'English');
+
+      // Add course ID if editing
+      if (mode === 'edit' && formData.id) {
+        formDataToSend.append('courseId', formData.id);
+      }
 
       // Add files if they exist
       if (formData.videoFile) {
@@ -132,8 +139,8 @@ export const CreateCourseModal = ({
         formDataToSend.append('wordFile', formData.wordFile);
       }
 
-      const response = await fetch(url, {
-        method,
+      const response = await fetch(endpoint, {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
         },
