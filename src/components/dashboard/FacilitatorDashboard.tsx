@@ -8,6 +8,8 @@ import { useToast } from "@/components/ui/Toast";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import { CreateCourseModal } from "@/components/modals/CreateCourseModal";
 import { GradeSubmissionModal } from "@/components/modals/GradeSubmissionModal";
+import { SchoolReportsModal } from "@/components/modals/SchoolReportsModal";
+import { StudentRosterModal } from "@/components/modals/StudentRosterModal";
 import {
   Users,
   FileText,
@@ -51,6 +53,8 @@ export default function FacilitatorDashboard() {
   const { success, error: errorToast } = useToast();
   const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
   const [showGradeModal, setShowGradeModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showRosterModal, setShowRosterModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<CourseTaught | null>(null);
   const [selectedSubmission, setSelectedSubmission] = useState<PendingSubmission | null>(null);
 
@@ -252,12 +256,12 @@ export default function FacilitatorDashboard() {
             <h3 className="font-semibold text-white">View All Submissions</h3>
             <p className="text-xs text-gray-400 mt-2">Review pending student work</p>
           </Card>
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowAnalyticsModal(true)}>
             <BarChart3 className="w-8 h-8 text-green-400 mb-3" />
             <h3 className="font-semibold text-white">Class Analytics</h3>
             <p className="text-xs text-gray-400 mt-2">View performance metrics</p>
           </Card>
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowRosterModal(true)}>
             <Users className="w-8 h-8 text-purple-400 mb-3" />
             <h3 className="font-semibold text-white">Student Rosters</h3>
             <p className="text-xs text-gray-400 mt-2">Manage course enrollment</p>
@@ -297,6 +301,25 @@ export default function FacilitatorDashboard() {
           }}
         />
       )}
+
+      {/* Class Analytics Modal */}
+      <SchoolReportsModal
+        isOpen={showAnalyticsModal}
+        onClose={() => setShowAnalyticsModal(false)}
+        facilitatorName="Your School"
+      />
+
+      {/* Student Roster Modal */}
+      <StudentRosterModal
+        isOpen={showRosterModal}
+        onClose={() => setShowRosterModal(false)}
+        school={{
+          id: "1",
+          name: "Your School",
+          created_at: new Date().toISOString(),
+          facilitatorId: "current_user",
+        }}
+      />
     </div>
   );
 }
