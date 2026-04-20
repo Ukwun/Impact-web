@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import { CreateCourseModal } from "@/components/modals/CreateCourseModal";
+import { GradeSubmissionModal } from "@/components/modals/GradeSubmissionModal";
 import {
   Users,
   FileText,
@@ -51,6 +52,7 @@ export default function FacilitatorDashboard() {
   const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
   const [showGradeModal, setShowGradeModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<CourseTaught | null>(null);
+  const [selectedSubmission, setSelectedSubmission] = useState<PendingSubmission | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -148,7 +150,15 @@ export default function FacilitatorDashboard() {
               <p className="text-2xl font-black text-white mt-2">{data.pendingSubmissions.length}</p>
               <p className="text-sm text-gray-300 mt-1">Review and grade student work</p>
             </div>
-            <Button onClick={() => setShowGradeModal(true)} className="whitespace-nowrap">
+            <Button 
+              onClick={() => {
+                if (data?.pendingSubmissions.length > 0) {
+                  setSelectedSubmission(data.pendingSubmissions[0]);
+                  setShowGradeModal(true);
+                }
+              }} 
+              className="whitespace-nowrap"
+            >
               Start Grading
             </Button>
           </div>
@@ -264,6 +274,29 @@ export default function FacilitatorDashboard() {
           loadDashboardData();
         }}
       />
+
+      {/* Grade Submission Modal */}
+      {selectedSubmission && (
+        <GradeSubmissionModal
+          isOpen={showGradeModal}
+          submission={{
+            id: selectedSubmission.id,
+            studentName: selectedSubmission.studentName,
+            studentEmail: "student@example.com",
+            assignmentTitle: selectedSubmission.assignmentTitle,
+            submittedAt: selectedSubmission.submittedAt,
+          }}
+          onClose={() => {
+            setShowGradeModal(false);
+            setSelectedSubmission(null);
+          }}
+          onSubmit={async (submissionId: string, grade: number, feedback: string) => {
+            console.log("Grading submission:", submissionId, grade, feedback);
+            success("Grade saved for " + selectedSubmission.studentName);
+            loadDashboardData();
+          }}
+        />
+      )}
     </div>
   );
 }

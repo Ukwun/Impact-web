@@ -17,6 +17,9 @@ interface CourseData {
   duration?: number;
   isPublished?: boolean;
   thumbnail?: string;
+  videoFile?: File;
+  pdfFile?: File;
+  wordFile?: File;
 }
 
 interface CreateCourseModalProps {
@@ -110,19 +113,31 @@ export const CreateCourseModal = ({
       const url = mode === 'edit' && formData.id ? '/api/courses/' + formData.id : '/api/courses';
       const method = mode === 'edit' ? 'PUT' : 'POST';
 
+      // Create FormData to handle file uploads
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('difficulty', formData.difficulty || "BEGINNER");
+      formDataToSend.append('duration', String(formData.duration || 240));
+      formDataToSend.append('language', 'English');
+
+      // Add files if they exist
+      if (formData.videoFile) {
+        formDataToSend.append('videoFile', formData.videoFile);
+      }
+      if (formData.pdfFile) {
+        formDataToSend.append('pdfFile', formData.pdfFile);
+      }
+      if (formData.wordFile) {
+        formDataToSend.append('wordFile', formData.wordFile);
+      }
+
       const response = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem(AUTH_TOKEN_KEY)}`,
         },
-        body: JSON.stringify({
-          title: formData.title,
-          description: formData.description,
-          difficulty: formData.difficulty || "BEGINNER",
-          duration: formData.duration || 240,
-          language: "English",
-        }),
+        body: formDataToSend,
       });
 
       const data = await response.json();
@@ -132,8 +147,8 @@ export const CreateCourseModal = ({
       }
 
       const message = mode === 'edit' 
-        ? `"${formData.title}" has been updated successfully`
-        : `"${formData.title}" has been created successfully`;
+        ? `"${formData.title}" has been updated successfully${formData.videoFile || formData.pdfFile || formData.wordFile ? ' with course materials' : ''}`
+        : `"${formData.title}" has been created successfully${formData.videoFile || formData.pdfFile || formData.wordFile ? ' with course materials' : ''}`;
       
       success(
         mode === 'edit' ? "Course Updated" : "Course Created",
@@ -253,6 +268,82 @@ export const CreateCourseModal = ({
             max="200"
             placeholder="4"
           />
+        </div>
+
+        {/* Course Materials - Video Upload */}
+        <div className="border-t border-dark-500 pt-6">
+          <h3 className="text-lg font-semibold text-white mb-4">📚 Course Materials</h3>
+          
+          <div className="space-y-4">
+            {/* Video Upload */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                📹 Course Video (MP4, WebM)
+              </label>
+              <input
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    setFormData(prev => ({
+                      ...prev,
+                      videoFile: e.target.files![0]
+                    }));
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-dark-600 border-2 border-dark-500 text-gray-100 file:bg-primary-500 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:cursor-pointer hover:border-primary-500 transition-colors"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                {formData.videoFile ? `✓ ${formData.videoFile.name}` : "Upload a video file for course lectures"}
+              </p>
+            </div>
+
+            {/* PDF Upload */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                📄 Course Materials (PDF)
+              </label>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    setFormData(prev => ({
+                      ...prev,
+                      pdfFile: e.target.files![0]
+                    }));
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-dark-600 border-2 border-dark-500 text-gray-100 file:bg-primary-500 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:cursor-pointer hover:border-primary-500 transition-colors"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                {formData.pdfFile ? `✓ ${formData.pdfFile.name}` : "Upload PDF notes, slides, or handouts"}
+              </p>
+            </div>
+
+            {/* Word/Docs Upload */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                📝 Supplementary Materials (DOCX, DOC)
+              </label>
+              <input
+                type="file"
+                accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    setFormData(prev => ({
+                      ...prev,
+                      wordFile: e.target.files![0]
+                    }));
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-dark-600 border-2 border-dark-500 text-gray-100 file:bg-primary-500 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:cursor-pointer hover:border-primary-500 transition-colors"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                {formData.wordFile ? `✓ ${formData.wordFile.name}` : "Upload Word documents, quizzes, or reading materials"}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Info Message */}
