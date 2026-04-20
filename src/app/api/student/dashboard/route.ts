@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
             title: "Build a Todo App",
             course: "Introduction to React",
             daysUntilDue: 2,
+            dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
             difficulty: "medium",
           },
           {
@@ -53,6 +54,7 @@ export async function GET(request: NextRequest) {
             title: "Type System Challenge",
             course: "Advanced TypeScript",
             daysUntilDue: 5,
+            dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
             difficulty: "hard",
           },
         ],
