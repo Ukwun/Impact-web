@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { MentorSessionModal } from "@/components/modals/MentorSessionModal";
+import { MenteeProgressModal } from "@/components/modals/MenteeProgressModal";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   Users,
@@ -44,6 +46,9 @@ export default function MentorDashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<MentorDashboardData | null>(null);
   const { success, error: errorToast } = useToast();
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [selectedMentee, setSelectedMentee] = useState<any>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -198,11 +203,27 @@ export default function MentorDashboard() {
 
                   {/* Actions */}
                   <div className="flex gap-2">
-                    <Button variant="secondary" className="flex-1 text-sm flex items-center justify-center gap-1">
+                    <Button 
+                      variant="secondary" 
+                      className="flex-1 text-sm flex items-center justify-center gap-1"
+                      onClick={() => {
+                        setSelectedMentee(mentee);
+                        setShowSessionModal(true);
+                      }}
+                    >
                       <MessageSquare className="w-3 h-3" />
                       Message
                     </Button>
-                    <Button variant="secondary" className="flex-1 text-sm">View Progress</Button>
+                    <Button 
+                      variant="secondary" 
+                      className="flex-1 text-sm"
+                      onClick={() => {
+                        setSelectedMentee(mentee);
+                        setShowProgressModal(true);
+                      }}
+                    >
+                      View Progress
+                    </Button>
                   </div>
 
                   {/* Next Session Info */}
@@ -235,6 +256,23 @@ export default function MentorDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Modals */}
+      <MentorSessionModal
+        isOpen={showSessionModal}
+        onClose={() => setShowSessionModal(false)}
+        mentee={selectedMentee}
+        onSchedule={(date: string, topic: string) => {
+          console.log("Scheduled session:", date, topic);
+          setShowSessionModal(false);
+          loadDashboardData();
+        }}
+      />
+      <MenteeProgressModal
+        isOpen={showProgressModal}
+        onClose={() => setShowProgressModal(false)}
+        mentee={selectedMentee}
+      />
     </div>
   );
 }

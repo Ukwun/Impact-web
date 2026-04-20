@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
+import { CreateCourseModal } from "@/components/modals/CreateCourseModal";
 import {
   Users,
   FileText,
@@ -49,6 +50,7 @@ export default function FacilitatorDashboard() {
   const { success, error: errorToast } = useToast();
   const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
   const [showGradeModal, setShowGradeModal] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<CourseTaught | null>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -213,7 +215,14 @@ export default function FacilitatorDashboard() {
 
                   {/* Action Button */}
                   {course.pendingSubmissions > 0 && (
-                    <Button variant="secondary" className="w-full text-sm">
+                    <Button 
+                      variant="secondary" 
+                      className="w-full text-sm"
+                      onClick={() => {
+                        setSelectedCourse(course);
+                        setShowGradeModal(true);
+                      }}
+                    >
                       Grade {course.pendingSubmissions} Submission{course.pendingSubmissions !== 1 ? 's' : ''}
                     </Button>
                   )}
@@ -228,7 +237,7 @@ export default function FacilitatorDashboard() {
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-white">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer">
+          <Card className="p-6 hover:border-primary-500 transition-colors cursor-pointer" onClick={() => setShowGradeModal(true)}>
             <FileText className="w-8 h-8 text-blue-400 mb-3" />
             <h3 className="font-semibold text-white">View All Submissions</h3>
             <p className="text-xs text-gray-400 mt-2">Review pending student work</p>
@@ -245,6 +254,16 @@ export default function FacilitatorDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Create Course Modal */}
+      <CreateCourseModal
+        isOpen={showCreateCourseModal}
+        onClose={() => setShowCreateCourseModal(false)}
+        onSuccess={() => {
+          setShowCreateCourseModal(false);
+          loadDashboardData();
+        }}
+      />
     </div>
   );
 }

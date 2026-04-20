@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { CourseDiscoveryModal } from "@/components/modals/CourseDiscoveryModal";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   CheckCircle2,
@@ -50,6 +51,7 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<StudentDashboardData | null>(null);
   const { success, error: errorToast } = useToast();
+  const [showCourseDiscovery, setShowCourseDiscovery] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -162,7 +164,7 @@ export default function StudentDashboard() {
         {data.enrolledCourses.length === 0 ? (
           <Card className="p-8 text-center">
             <p className="text-gray-400">No courses enrolled yet</p>
-            <Button className="mt-4">Browse Available Courses</Button>
+            <Button onClick={() => setShowCourseDiscovery(true)} className="mt-4">Browse Available Courses</Button>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -277,6 +279,18 @@ export default function StudentDashboard() {
           </div>
         </div>
       )}
+
+      {/* Course Discovery Modal */}
+      <CourseDiscoveryModal
+        isOpen={showCourseDiscovery}
+        courses={[]}
+        onClose={() => setShowCourseDiscovery(false)}
+        onEnrollCourse={(courseId: string) => {
+          console.log("Enrolled in course:", courseId);
+          setShowCourseDiscovery(false);
+          loadDashboardData();
+        }}
+      />
     </div>
   );
 }

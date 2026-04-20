@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { ChildProgressDetailModal } from "@/components/modals/ChildProgressDetailModal";
+import { MessageModal } from "@/components/modals/MessageModal";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
-  Child,
+  Users,
   TrendingUp,
   AlertCircle,
   Loader,
@@ -46,6 +48,9 @@ export default function ParentDashboard() {
   const [data, setData] = useState<ParentDashboardData | null>(null);
   const { success, error: errorToast } = useToast();
   const [selectedChild, setSelectedChild] = useState<string | null>(null);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [selectedChildForModal, setSelectedChildForModal] = useState<any>(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -155,7 +160,7 @@ export default function ParentDashboard() {
       {/* Children Cards */}
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Child className="w-6 h-6" />
+          <Users className="w-6 h-6" />
           Your Children ({data.children.length})
         </h2>
 
@@ -220,11 +225,25 @@ export default function ParentDashboard() {
                   {/* Expanded View */}
                   {selectedChild === child.id && (
                     <div className="mt-4 pt-4 border-t border-dark-600 space-y-3">
-                      <Button variant="secondary" className="w-full flex items-center gap-2">
+                      <Button 
+                        variant="secondary" 
+                        className="w-full flex items-center gap-2"
+                        onClick={() => {
+                          setSelectedChildForModal(child);
+                          setShowProgressModal(true);
+                        }}
+                      >
                         <Eye className="w-4 h-4" />
                         View Detailed Progress
                       </Button>
-                      <Button variant="secondary" className="w-full flex items-center gap-2">
+                      <Button 
+                        variant="secondary" 
+                        className="w-full flex items-center gap-2"
+                        onClick={() => {
+                          setSelectedChildForModal(child);
+                          setShowMessageModal(true);
+                        }}
+                      >
                         <MessageSquare className="w-4 h-4" />
                         Message Facilitator
                       </Button>
@@ -251,6 +270,22 @@ export default function ParentDashboard() {
           <li>✓ Track completion rates and help set realistic learning goals</li>
         </ul>
       </Card>
+
+      {/* Modals */}
+      <ChildProgressDetailModal
+        isOpen={showProgressModal}
+        onClose={() => setShowProgressModal(false)}
+        child={selectedChildForModal}
+      />
+      <MessageModal
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        recipientName={selectedChildForModal?.name || ""}
+        onSend={(message: string) => {
+          console.log("Sent message:", message);
+          setShowMessageModal(false);
+        }}
+      />
     </div>
   );
 }
