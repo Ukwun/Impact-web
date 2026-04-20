@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,83 +15,148 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // ✅ MOCK DATA
-    const mockData = {
-      success: true,
-      data: {
-        joinedCommunities: [
-          {
-            id: "c1",
-            name: "Tech Innovators",
-            members: 243,
-            isMember: true,
-            focusArea: "Technology & Innovation",
-          },
-          {
-            id: "c2",
-            name: "Startup Founders",
-            members: 156,
-            isMember: true,
-            focusArea: "Entrepreneurship",
-          },
-          {
-            id: "c3",
-            name: "Design Enthusiasts",
-            members: 89,
-            isMember: true,
-            focusArea: "Design & UX",
-          },
-        ],
-        recentDiscussions: [
-          {
-            id: "d1",
-            communityName: "Tech Innovators",
-            title: "Best practices for AI integration",
-            author: "Sarah Chen",
-            replies: 24,
-            createdAt: "2026-04-20T10:30:00Z",
-          },
-          {
-            id: "d2",
-            communityName: "Startup Founders",
-            title: "Funding strategies for seed stage",
-            author: "Marcus Brown",
-            replies: 18,
-            createdAt: "2026-04-19T14:45:00Z",
-          },
-          {
-            id: "d3",
-            communityName: "Design Enthusiasts",
-            title: "Latest design trends",
-            author: "Alex Johnson",
-            replies: 12,
-            createdAt: "2026-04-19T09:15:00Z",
-          },
-        ],
-        suggestedMembers: [
-          {
-            id: "m1",
-            name: "Jordan Lee",
-            expertise: ["AI", "Machine Learning", "Data Science"],
-            isMutualsConnection: true,
-          },
-          {
-            id: "m2",
-            name: "Casey Morgan",
-            expertise: ["Product Management", "Strategy"],
-            isMutualsConnection: false,
-          },
-        ],
-        unreadMessages: 5,
-        contributionScore: 342,
-        communityCount: {
-          joined: 3,
-          suggested: 12,
+    const userId = payload.userId;
+
+    // Get user info
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar: true,
+        expertise: true,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Get joined communities
+    const joinedCommunities = await prisma.community.findMany({
+      where: {
+        members: {
+          some: { userId },
         },
       },
-    };
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        memberCount: true,
+        focusArea: true,
+      },
+    });
 
-    return NextResponse.json(mockData);
+    // Get recent discussions in joined communities
+    const recentDiscussions = await prisma.discussion.findMany({
+      where: {
+        community: {
+          members: {
+            some: { userId },
+          },
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        author: {
+          select: { name: true },
+        },
+        community: {
+          select: { name: true },
+        },
+        replyCount: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    });
+
+    // Get suggested members (people with similar interests in same communities)
+    const suggestedMembers = await prisma.user.findMany({
+      where: {
+        AND: [
+          { id: { not: userId } },
+          { role: "CIRCLE_MEMBER" },
+          {
+            communityMemberships: {
+              some: {
+                community: {
+                  members: {
+                    some: { userId },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        avatar: true,
+        expertise: true,
+      },
+      take: 6,
+    });
+
+    // Get unread messages
+    const unreadMessages = await prisma.message.count({
+      where: {
+        toUserId: userId,
+        isRead: false,
+      },
+    });
+
+    // Calculate contribution score
+    const discussionScore = await prisma.discussion.count({
+      where: { authorId: userId },
+    }) * 10;
+
+    const replyScore = await prisma.reply.count({
+      where: { authorId: userId },
+    }) * 5;
+
+    const contributionScore = discussionScore + replyScore;
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        name: user.name,
+        avatar: user.avatar,
+        joinedCommunities: joinedCommunities.map((c) => ({
+          id: c.id,
+          name: c.name,
+          members: c.memberCount,
+          isMember: true,
+          focusArea: c.focusArea,
+        })),
+        recentDiscussions: recentDiscussions.map((d) => ({
+          id: d.id,
+          communityName: d.community.name,
+          title: d.title,
+          author: d.author.name,
+          replies: d.replyCount,
+          createdAt: d.createdAt.toISOString(),
+        })),
+        suggestedMembers: suggestedMembers.map((m) => ({
+          id: m.id,
+          name: m.name,
+          avatar: m.avatar,
+          expertise: m.expertise || [],
+          isMutualsConnection: false,
+        })),
+        unreadMessages,
+        contributionScore,
+        communityCount: {
+          joined: joinedCommunities.length,
+          suggested: 0,
+        },
+      },
+    });
   } catch (error) {
     console.error("Error in circle dashboard:", error);
     return NextResponse.json(
