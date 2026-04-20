@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -13,125 +14,113 @@ export async function GET(request: NextRequest) {
     }
 
     const payload = await verifyToken(token);
-    if (!payload || payload.role !== "MENTOR") {
+    if (!payload || payload.role?.toUpperCase() !== "MENTOR") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // ✅ MOCK DATA - No database queries
-    const mockData = {
-      success: true,
-      data: {
-        activeMentees: [
-          {
-            id: "m1",
-            name: "Alex Rivera",
-            focusArea: "Career Development",
-            progression: 65,
-            nextSession: "2026-04-25 10:00 AM",
-          },
-          {
-            id: "m2",
-            name: "Jordan Lee",
-            focusArea: "Technical Skills",
-            progression: 48,
-            nextSession: "2026-04-27 2:00 PM",
-          },
-          {
-            id: "m3",
-            name: "Casey Morgan",
-            focusArea: "Leadership",
-            progression: 82,
-            nextSession: "2026-04-22 3:30 PM",
-          },
-        ],
-        upcomingSessions: [
-          {
-            id: "s1",
-            menteeName: "Casey Morgan",
-            scheduledFor: "2026-04-22T15:30:00Z",
-            topic: "Leadership strategies",
-          },
-          {
-            id: "s2",
-            menteeName: "Alex Rivera",
-            scheduledFor: "2026-04-25T10:00:00Z",
-            topic: "Career transition planning",
-          },
-        ],
-        totalMentees: 8,
-        mentorshipHoursThisMonth: 12,
-      },
-    };
+    const mentorId = payload.userId || payload.sub;
 
-    return NextResponse.json(mockData);
+    // ==== GET REAL DATA FROM DATABASE ====
 
-    // Get sessions count
-    const sessionsCount = await prisma.mentorSession.count({
-      where: {
-        mentorId: mentorId,
+    // Get mentor's mentees (from MentorSession model)
+    const mentorSessions = await prisma.mentorSession.findMany({
+      where: { mentorId },
+      include: {
+        mentee: {
+          include: {
+            enrollments: {
+              select: {
+                completionPercentage: true,
+              },
+            },
+          },
+        },
       },
     });
 
-    // Get completed sessions
-    const completedCount = await prisma.mentorSession.count({
-      where: {
-        mentorId: mentorId,
-        status: "completed",
-      },
+    // Get unique mentees
+    const menteeMap = new Map();
+    mentorSessions.forEach((session) => {
+      if (!menteeMap.has(session.menteeId)) {
+        const avgProgress =
+          session.mentee.enrollments.length > 0
+            ? Math.round(
+                session.mentee.enrollments.reduce((sum, e) => sum + (e.completionPercentage || 0), 0) /
+                  session.mentee.enrollments.length
+              )
+            : 0;
+
+        menteeMap.set(session.menteeId, {
+          id: session.menteeId,
+          name: `${session.mentee.firstName} ${session.mentee.lastName}`,
+          focusArea: session.topic || "General Mentorship",
+          progression: avgProgress,
+          nextSession: session.scheduledDate
+            ? session.scheduledDate.toISOString()
+            : "No session scheduled",
+        });
+      }
     });
+
+    const activeMentees = Array.from(menteeMap.values());
 
     // Get upcoming sessions
-    const upcomingCount = await prisma.mentorSession.count({
+    const upcomingSessions = await prisma.mentorSession.findMany({
       where: {
-        mentorId: mentorId,
-        status: "scheduled",
-        sessionDate: {
-          gte: new Date(),
-        },
+        mentorId,
+        status: { in: ["scheduled", "ongoing"] },
       },
-    });
-
-    // Calculate average mentee progress
-    const mentees = await prisma.user.findMany({
-      where: {
-        mentorId: mentorId,
-        role: "STUDENT",
-      },
-      select: {
-        enrollments: {
+      include: {
+        mentee: {
           select: {
-            completionPercentage: true,
+            firstName: true,
+            lastName: true,
           },
         },
       },
+      orderBy: {
+        scheduledDate: "asc",
+      },
+      take: 5,
     });
 
-    const avgProgress =
-      menteesCount > 0
-        ? Math.round(
-            mentees.reduce((sum, m) => {
-              const avg = m.enrollments.length > 0
-                ? m.enrollments.reduce((s, e) => s + e.completionPercentage, 0) / m.enrollments.length
-                : 0;
-              return sum + avg;
-            }, 0) / menteesCount
-          )
-        : 0;
+    const upcomingFormatted = upcomingSessions.map((session) => ({
+      id: session.id,
+      menteeName: `${session.mentee.firstName} ${session.mentee.lastName}`,
+      scheduledFor: session.scheduledDate?.toISOString() || new Date().toISOString(),
+      topic: session.topic || "Mentoring Session",
+    }));
+
+    // Calculate hours this month
+    const thisMonthStart = new Date();
+    thisMonthStart.setDate(1);
+    thisMonthStart.setHours(0, 0, 0, 0);
+
+    const thisMonthSessions = await prisma.mentorSession.findMany({
+      where: {
+        mentorId,
+        scheduledDate: {
+          gte: thisMonthStart,
+        },
+      },
+    });
+
+    // Estimate 1 hour per session
+    const mentorshipHoursThisMonth = thisMonthSessions.length;
 
     return NextResponse.json({
       success: true,
       data: {
-        totalMentees: menteesCount,
-        totalSessions: sessionsCount,
-        completedSessions: completedCount,
-        upcomingSessions: upcomingCount,
-        averageMenteeProgress: avgProgress,
+        activeMentees,
+        upcomingSessions: upcomingFormatted,
+        totalMentees: activeMentees.length,
+        mentorshipHoursThisMonth,
       },
     });
-  } catch (error: any) {
-    console.error("Dashboard error:", error);
+  } catch (error) {
+    console.error("Error in mentor dashboard:", error);
     return NextResponse.json(
-      { error: "Failed to load dashboard" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
