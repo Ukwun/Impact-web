@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     // Extract and verify token
     const token = authHeader.replace("Bearer ", "");
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload) {
       return NextResponse.json(
         { success: false, error: "Invalid token" },
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || payload.role?.toUpperCase() !== "PARENT") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parentId = payload.userId || payload.sub;
+    const parentId = payload.sub;
     const { childId, childEmail, relationship = "PARENT" } = await request.json();
 
     if (!childId && !childEmail) {
@@ -263,7 +263,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || payload.role?.toUpperCase() !== "PARENT") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
@@ -271,7 +271,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const parentId = payload.userId || payload.sub;
+    const parentId = payload.sub;
     const { childId } = await request.json();
 
     if (!childId) {

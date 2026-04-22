@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { eventId, action } = await request.json();
-    const userId = payload.userId;
+    const userId = payload.sub;
 
     if (action === "register") {
       // Register for event

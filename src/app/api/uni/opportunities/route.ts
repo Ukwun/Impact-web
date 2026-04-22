@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { opportunityId, action } = await request.json();
-    const userId = payload.userId;
+    const userId = payload.sub;
 
     if (action === "apply") {
       // Create application

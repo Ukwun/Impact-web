@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     // Extract and verify token
     const token = authHeader.replace("Bearer ", "");
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload) {
       console.error("❌ Invalid token");
       return NextResponse.json(
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log("🔍 Admin request from user:", payload.userId, "role:", payload.role);
+    console.log("🔍 Admin request from user:", payload.sub, "role:", payload.role);
 
     // Verify admin role from token
     if (payload.role?.toUpperCase() !== "ADMIN") {

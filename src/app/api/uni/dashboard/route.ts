@@ -10,12 +10,12 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.slice(7);
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || payload.role !== "UNI_MEMBER") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const userId = payload.userId;
+    const userId = payload.sub;
 
     // Get user profile
     const user = await prisma.user.findUnique({

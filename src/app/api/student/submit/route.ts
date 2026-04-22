@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,12 +9,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || payload.role !== "STUDENT") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const studentId = payload.userId;
+    const studentId = payload.sub;
     const body = await request.json();
     const { assignmentId, content, fileUrl } = body;
 

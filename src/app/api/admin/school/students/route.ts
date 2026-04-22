@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload) {
       return NextResponse.json(
         { success: false, error: "Invalid token" },

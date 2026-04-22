@@ -9,12 +9,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || payload.role !== "UNI_MEMBER") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const userId = payload.userId;
+    const userId = payload.sub;
 
     // Get all university peers
     const peers = await prisma.user.findMany({
@@ -76,13 +76,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || payload.role !== "UNI_MEMBER") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { peerId, action } = await request.json();
-    const userId = payload.userId;
+    const userId = payload.sub;
 
     if (action === "connect") {
       // Create a connection request

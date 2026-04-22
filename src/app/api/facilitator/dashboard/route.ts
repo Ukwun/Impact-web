@@ -10,12 +10,12 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.slice(7);
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload || payload.role !== "FACILITATOR") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const facilitatorId = payload.userId;
+    const facilitatorId = payload.sub;
 
     // ============================================================================
     // GET ALL COURSES TAUGHT BY THIS FACILITATOR

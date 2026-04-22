@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload) {
       return NextResponse.json(
         { success: false, error: "Invalid token" },
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const schoolAdminId = payload.userId || payload.sub;
+    const schoolAdminId = payload.sub;
 
     // Get all users at this school
     // In a real system, users would have schoolId field - for now get by role
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const payload = await verifyToken(token);
+    const payload = verifyToken(token);
     if (!payload) {
       return NextResponse.json(
         { success: false, error: "Invalid token" },
