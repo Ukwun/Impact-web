@@ -3,20 +3,23 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CreditCard } from "lucide-react";
 
 export default function PaymentsPage() {
   const router = useRouter();
   const [selectedMethod, setSelectedMethod] = useState<
-    "flutterwave" | "bank" | null
+    "stripe" | "flutterwave" | "bank" | null
   >(null);
   const [loading, setLoading] = useState(false);
 
-  const handlePaymentMethodSelect = async (method: "flutterwave" | "bank") => {
+  const handlePaymentMethodSelect = async (method: "stripe" | "flutterwave" | "bank") => {
     setLoading(true);
     try {
       setSelectedMethod(method);
       // Redirect to appropriate payment page
-      if (method === "flutterwave") {
+      if (method === "stripe") {
+        router.push("/payments/stripe");
+      } else if (method === "flutterwave") {
         router.push("/payments/flutterwave");
       } else {
         router.push("/payments/bank-transfer");
@@ -108,6 +111,47 @@ export default function PaymentsPage() {
               className="w-full bg-gray-700 text-white py-3 rounded-lg font-semibold hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Processing..." : "Use Bank Transfer"}
+            </button>
+          </div>
+
+          {/* Stripe Card */}
+          <div className="bg-dark-800 border border-blue-600 rounded-lg p-8 hover:shadow-lg hover:shadow-blue-600/20 transition-all cursor-pointer">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-6 h-6 text-blue-500" />
+                <h2 className="text-2xl font-bold text-white">Stripe</h2>
+              </div>
+              <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded">
+                Global
+              </span>
+            </div>
+            <p className="text-gray-400 mb-6">
+              Pay securely with your debit or credit card (USA & UK supported)
+            </p>
+            <ul className="space-y-2 mb-8 text-gray-300 text-sm">
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                Visa, Mastercard, Amex, Discover
+              </li>
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                Works worldwide (USD, GBP)
+              </li>
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                Instant confirmation
+              </li>
+              <li className="flex items-center">
+                <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                Bank-level security
+              </li>
+            </ul>
+            <button
+              onClick={() => handlePaymentMethodSelect("stripe")}
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Processing..." : "Pay with Stripe"}
             </button>
           </div>
         </div>
