@@ -25,8 +25,8 @@
   DATABASE_URL = "postgresql://impactweb_db_user:BSuROsJMrhsUa4PlOAao7VKWIShiiyOc@dpg-d7hkc66gvqtc738o11ig-a.oregon-postgres.render.com/impactweb_db"
   # CRITICAL: JWT secret for authentication
   JWT_SECRET = "your_super_secret_jwt_key_min_32_characters_required_here_123456"
-  # API base URL for client-side requests
-  NEXT_PUBLIC_API_BASE_URL = "https://impactweb.netlify.app/api"
+  # API base URL for client-side requests (point to Render backend, not Netlify)
+  NEXT_PUBLIC_API_BASE_URL = "https://impactweb-backend.onrender.com/api"
 
 # Redirect all non-matching routes to Next.js
 # Main entry point - CRITICAL: Must always revalidate to prevent stale app shells
