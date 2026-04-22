@@ -206,7 +206,7 @@ export default function FacilitatorAnalyticsPage() {
       ) : error ? (
         <Card className="p-6 border-l-4 border-red-500 bg-dark-700/50">
           <div className="flex items-start gap-4">
-            <Alert className="w-6 h-6 text-red-600 mt-1 flex-shrink-0" />
+            <AlertCircle className="w-6 h-6 text-red-600 mt-1 flex-shrink-0" />
             <div>
               <h3 className="font-bold text-red-400">Error Loading Analytics</h3>
               <p className="text-red-300 text-sm mt-1">{error}</p>

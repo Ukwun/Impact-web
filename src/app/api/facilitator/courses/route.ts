@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
@@ -9,12 +9,12 @@ export async function GET(request: NextRequest) {
   }
 
   const token = authHeader.slice(7);
-  const payload = await verifyToken(token);
+  const payload = verifyToken(token);
   if (!payload || payload.role !== 'FACILITATOR') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const userId = payload.userId;
+  const userId = payload.sub;
 
   try {
     // Get all courses created by this facilitator
@@ -65,12 +65,12 @@ export async function POST(request: NextRequest) {
   }
 
   const token = authHeader.slice(7);
-  const payload = await verifyToken(token);
+  const payload = verifyToken(token);
   if (!payload || payload.role !== 'FACILITATOR') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const userId = payload.userId;
+  const userId = payload.sub;
 
   try {
     const { title, description, category, level, capacity, lessons } = await request.json();

@@ -5,15 +5,23 @@
 
 import Stripe from 'stripe';
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+let stripe: Stripe | null = null;
 
-if (!stripeSecretKey) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+/**
+ * Get Stripe instance (lazy initialization)
+ */
+function getStripe(): Stripe {
+  if (!stripe) {
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeSecretKey) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+    }
+    stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2023-10-16',
+    });
+  }
+  return stripe;
 }
-
-export const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2023-10-16',
-});
 
 /**
  * Create a payment checkout session for course enrollment
@@ -31,7 +39,7 @@ export async function createCheckoutSession(options: {
   cancelUrl: string;
 }): Promise<{ sessionId: string; url: string }> {
   try {
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
       line_items: [
@@ -85,7 +93,7 @@ export async function createCheckoutSession(options: {
  */
 export async function getCheckoutSession(sessionId: string) {
   try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await getStripe().checkout.sessions.retrieve(sessionId);
     return session;
   } catch (error) {
     console.error('Error retrieving checkout session:', error);
@@ -131,7 +139,7 @@ export function verifyWebhookSignature(
   }
 
   try {
-    const event = stripe.webhooks.constructEvent(
+    const event = getStripe().webhooks.constructEvent(
       body,
       signature,
       webhookSecret
@@ -153,7 +161,7 @@ export async function refundPayment(
   amountToRefund?: number
 ) {
   try {
-    const refund = await stripe.refunds.create({
+    const refund = await getStripe().refunds.create({
       payment_intent: paymentIntentId,
       amount: amountToRefund, // undefined means full refund
     });
@@ -176,7 +184,7 @@ export async function refundPayment(
  */
 export async function getPaymentIntentDetails(paymentIntentId: string) {
   try {
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
     return {
       id: paymentIntent.id,
       amount: paymentIntent.amount,
