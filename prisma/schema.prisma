@@ -59,6 +59,7 @@ model User {
   enrollments           Enrollment[]
   quizAttempts          QuizAttempt[]
   assignments           AssignmentSubmission[]
+  activitySubmissions   ActivitySubmission[] @relation("ActivitySubmissionsCreated")
   eventRegistrations    EventRegistration[]
   grades                Grade[]
   certificates          Certificate[]
@@ -68,6 +69,8 @@ model User {
   menteeOf              MentorSession[] @relation("Mentee")
   createdCourses        Course[] @relation("CreatedBy")
   createdEvents         Event[] @relation("CreatedBy")
+  liveSessions          LiveSession[] @relation("LiveSessionsFacilitator")
+  liveSessionAttendance LiveSessionAttendance[] @relation("LiveSessionAttendance")
   payments              Payment[]
   leaderboard           LeaderboardEntry?
   messagesSent          Message[] @relation("MessagesSent")
@@ -223,6 +226,8 @@ model Course {
   lessons               Lesson[]
   quizzes               Quiz[]
   assignments           Assignment[]
+  activities            Activity[]
+  liveSessions          LiveSession[]
   
   // Enrollment tracking
   enrollments           Enrollment[]
@@ -256,8 +261,19 @@ model Module {
   description           String?
   order                 Int
   
+  // Learning layer configuration
+  learningLayers        String[]    @default(["LEARN", "APPLY", "ENGAGE_LIVE", "SHOW_PROGRESS"])
+  ageGroup              String?     // e.g., "7-11", "12-14", "15-18", "18+"
+  subjectStrand         String?     // e.g., "Financial Literacy", "Entrepreneurship"
+  competencies          String[]    @default([])  // Learning competencies
+  estimatedWeeks        Int         @default(1)
+  
+  // Relations
   lessons               Lesson[]
   quizzes               Quiz[]
+  activities            Activity[]
+  liveSessions          LiveSession[]
+  moduleProgress        ModuleProgress[]
   
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -282,9 +298,17 @@ model Lesson {
   duration              Int         // in minutes
   order                 Int
   
+  // Learning layer & pedagogy
+  learningLayer         String      @default("LEARN") // LEARN, APPLY, ENGAGE_LIVE, SHOW_PROGRESS
+  instructions          String?
+  learningObjectives    String[]    @default([])
+  facilitatorNotes      String?
+  prerequisites         String[]    @default([])
+  
   materials             LessonMaterial[]
   notes                 LessonNote[]
   progress              LessonProgress[]
+  activities            Activity[]
   
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -343,6 +367,166 @@ model LessonNote {
   updatedAt             DateTime    @updatedAt
 
   @@index([lessonId])
+  @@index([enrollmentId])
+}
+
+// ============================================================================
+// CLASSROOM LEARNING - ACTIVITY LAYER (APPLY)
+// ============================================================================
+
+model Activity {
+  id                    String      @id @default(cuid())
+  courseId              String
+  course                Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  moduleId              String?
+  module                Module?     @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  
+  lessonId              String?
+  lesson                Lesson?     @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  
+  title                 String
+  description           String?
+  instructions          String?     // Rich text
+  activityType          String      @default("WORKSHEET") // WORKSHEET, TASK, REFLECTION, MINI_CHALLENGE, JOURNAL
+  dueDate               DateTime?
+  maxPoints             Int         @default(100)
+  rubric                String?     // JSON rubric criteria
+  attachments           String[]    @default([])
+  order                 Int         @default(0)
+  isPublished           Boolean     @default(true)
+  
+  submissions           ActivitySubmission[]
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([lessonId])
+}
+
+model ActivitySubmission {
+  id                    String      @id @default(cuid())
+  activityId            String
+  activity              Activity    @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  
+  userId                String
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade, name: "ActivitySubmissionsCreated")
+  
+  enrollmentId          String?
+  enrollment            Enrollment? @relation(fields: [enrollmentId], references: [id], onDelete: SetNull, name: "ActivitySubmissions")
+  
+  content               String?     // Text response or notes
+  attachments           String[]    @default([])
+  
+  isSubmitted           Boolean     @default(false)
+  submittedAt           DateTime?
+  
+  score                 Int?
+  feedback              String?
+  gradedBy              String?
+  gradedAt              DateTime?
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@unique([activityId, userId])
+  @@index([activityId])
+  @@index([userId])
+  @@index([enrollmentId])
+}
+
+// ============================================================================
+// CLASSROOM LEARNING - LIVE SESSION LAYER (ENGAGE_LIVE)
+// ============================================================================
+
+model LiveSession {
+  id                    String      @id @default(cuid())
+  courseId              String
+  course                Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  moduleId              String?
+  module                Module?     @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  
+  title                 String
+  description           String?
+  facilitatorId         String
+  facilitator           User        @relation(fields: [facilitatorId], references: [id], onDelete: Restrict, name: "LiveSessionsFacilitator")
+  
+  startTime             DateTime
+  endTime               DateTime
+  maxParticipants       Int?
+  
+  // Session metadata
+  meetingUrl            String?
+  recordingUrl          String?
+  status                String      @default("SCHEDULED") // SCHEDULED, LIVE, COMPLETED, CANCELLED
+  sessionType           String      @default("CLASSROOM") // CLASSROOM, BREAKOUT, Q_AND_A, SIMULATION, CLINIC
+  
+  // Interactive features
+  breakoutGroups        Int         @default(0)
+  hasPolls              Boolean     @default(false)
+  hasQandA              Boolean     @default(false)
+  hasScreenShare        Boolean     @default(true)
+  
+  // Attendance tracking
+  attendance            LiveSessionAttendance[]
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([courseId])
+  @@index([facilitatorId])
+}
+
+model LiveSessionAttendance {
+  id                    String      @id @default(cuid())
+  sessionId             String
+  session               LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  userId                String
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade, name: "LiveSessionAttendance")
+  
+  joinedAt              DateTime?
+  leftAt                DateTime?
+  attendanceMinutes     Int         @default(0)
+  attended              Boolean     @default(false)
+  
+  createdAt             DateTime    @default(now())
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([userId])
+}
+
+// ============================================================================
+// MODULE & LEARNING PROGRESS TRACKING (SHOW_PROGRESS)
+// ============================================================================
+
+model ModuleProgress {
+  id                    String      @id @default(cuid())
+  moduleId              String
+  module                Module      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  
+  enrollmentId          String
+  enrollment            Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade, name: "ModuleProgress")
+  
+  // Layer completion tracking
+  learnLayerCompleted   Boolean     @default(false)
+  applyLayerCompleted   Boolean     @default(false)
+  engageLiveLayerCompleted Boolean  @default(false)
+  showProgressCompleted Boolean     @default(false)
+  
+  // Overall progress
+  progressPercentage    Float       @default(0)
+  completedAt           DateTime?
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@unique([moduleId, enrollmentId])
+  @@index([moduleId])
   @@index([enrollmentId])
 }
 
@@ -549,6 +733,8 @@ model Enrollment {
   lessonNotes           LessonNote[]
   quizAttempts          QuizAttempt[]
   assignmentSubmissions AssignmentSubmission[]
+  activitySubmissions   ActivitySubmission[] @relation("ActivitySubmissions")
+  moduleProgress        ModuleProgress[]     @relation("ModuleProgress")
   payment               Payment?
   
   enrolledAt            DateTime    @default(now())
