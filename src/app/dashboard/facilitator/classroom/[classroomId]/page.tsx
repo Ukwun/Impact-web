@@ -9,6 +9,7 @@ import ClassroomFormModal from '@/components/facilitator/ClassroomFormModal';
 import ModuleBuilder from '@/components/facilitator/ModuleBuilder';
 import LessonEditor from '@/components/facilitator/LessonEditor';
 import ActivityCreator from '@/components/facilitator/ActivityCreator';
+import LiveClassroomOpsPanel from '@/components/facilitator/LiveClassroomOpsPanel';
 
 interface Classroom {
   id: string;
@@ -56,7 +57,7 @@ interface Activity {
   maxPoints: number;
 }
 
-type Tab = 'modules' | 'lessons' | 'activities';
+type Tab = 'modules' | 'lessons' | 'activities' | 'live';
 
 export default function ClassroomEditorPage() {
   const router = useRouter();
@@ -276,6 +277,7 @@ export default function ClassroomEditorPage() {
                     { id: 'modules', label: 'Modules', icon: '📚' },
                     { id: 'lessons', label: 'Lessons', icon: '📖' },
                     { id: 'activities', label: 'Activities', icon: '✏️' },
+                    { id: 'live', label: 'Live Classroom', icon: '🎙️' },
                   ] as const
                 ).map((tab) => (
                   <button
@@ -322,6 +324,10 @@ export default function ClassroomEditorPage() {
                     activities={classroom.modules.flatMap((m) => m.activities)}
                     onActivityCreated={() => setRefreshTrigger((prev) => prev + 1)}
                   />
+                )}
+
+                {activeTab === 'live' && (
+                  <LiveClassroomOpsPanel classroomId={classroom.id} />
                 )}
               </div>
             </div>
