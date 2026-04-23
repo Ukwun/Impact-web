@@ -5,7 +5,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { authMiddleware } from "@/lib/auth-service";
-import { getWeeklyRhythmData } from "@/lib/rhythm-db";
 
 export async function GET(request: NextRequest) {
   try {
@@ -228,16 +227,32 @@ export async function GET(request: NextRequest) {
           streakDays: 12,
           completedSessionsThisWeek: 2,
           totalSessionsThisWeek: 8,
-          adaptations: [
+          adaptations: [],
+          insights: [
             {
-              timestamp: new Date().toISOString(),
-              if (authResult.user.role === "STUDENT" && authResult.user.userId !== studentId) {
-              reason: "You complete tasks faster on Tuesdays",
-              impact: "+10 minutes moved to Friday assessment",
+              category: "Performance",
+              title: "Peak learning hours",
+              description: "You perform best between 5:00 PM and 6:00 PM on weekdays.",
+              actionable: true,
+              suggestedAction: "Schedule challenging tasks during this window",
+            },
+            {
+              category: "Progress",
+              title: "Consistent completion streak",
+              description: "You've completed tasks 12 days in a row. Keep it up!",
+              actionable: false,
             },
           ],
-          insights: [
+        },
+      },
+    };
 
-              const payload = await getWeeklyRhythmData(studentId, weekOffset);
-              return NextResponse.json(payload);
-              description: "You perform best between 5:00 PM and 6:00 PM on weekdays.",
+    return NextResponse.json(rhythmData);
+  } catch (error) {
+    console.error("Weekly Rhythm API Error:", error);
+    return NextResponse.json(
+      { success: false, error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
