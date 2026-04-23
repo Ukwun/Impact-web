@@ -427,6 +427,8 @@ export const schoolAdminMenuConfig: RoleMenuConfig = {
         { id: 'lessons', label: 'Lessons', href: '/dashboard/admin/curriculum/lessons' },
         { id: 'activities', label: 'Activities', href: '/dashboard/admin/curriculum/activities' },
         { id: 'review-queue', label: 'Review Queue', href: '/dashboard/admin/curriculum/review-queue' },
+        { id: 'replay-review', label: 'Replay Review', href: '/dashboard/admin/replay-review' },
+        { id: 'safeguarding', label: 'Safeguarding', href: '/dashboard/admin/safeguarding' },
       ],
     },
     {
@@ -843,6 +845,8 @@ export const platformAdminMenuConfig: RoleMenuConfig = {
       subItems: [
         { id: 'tickets', label: 'Support Tickets', href: '/dashboard/operations/tickets' },
         { id: 'alerts', label: 'Alerts', href: '/dashboard/operations/alerts' },
+        { id: 'replay-review', label: 'Replay Review', href: '/dashboard/admin/replay-review' },
+        { id: 'safeguarding', label: 'Safeguarding', href: '/dashboard/admin/safeguarding' },
         { id: 'announcements', label: 'Announcements', href: '/dashboard/operations/announcements' },
       ],
     },

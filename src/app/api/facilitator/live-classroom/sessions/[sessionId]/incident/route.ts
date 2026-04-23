@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { roleMiddleware } from "@/lib/auth-service";
 import type { UserRole } from "@/lib/auth-service";
 import { parseOpsEnvelope } from "@/lib/live-classroom-framework";
+import {
+  createSafeguardingEscalationAlert,
+  queueLiveSessionLifecycleNotifications,
+} from "@/lib/live-session-lifecycle";
 
 const FACILITATOR_ROLES: UserRole[] = ["FACILITATOR", "ADMIN", "SCHOOL_ADMIN"];
 type SessionParams = { params: Promise<{ sessionId: string }> };
@@ -62,6 +66,23 @@ export async function POST(request: NextRequest, { params }: SessionParams) {
       facilitatorNotes: metadata.facilitatorNotes
         ? `${metadata.facilitatorNotes}\n\n[Safeguarding ${incident.severity}] ${incident.note}`
         : `[Safeguarding ${incident.severity}] ${incident.note}`,
+    },
+  });
+
+  await createSafeguardingEscalationAlert({
+    sessionId,
+    note: incident.note,
+    severity: incident.severity,
+    actorUserId: auth.user.userId,
+  });
+
+  await queueLiveSessionLifecycleNotifications({
+    sessionId,
+    eventType: "SAFEGUARDING_ESCALATED",
+    actorUserId: auth.user.userId,
+    includeParents: incident.severity === "HIGH",
+    extraMetadata: {
+      incidentSeverity: incident.severity,
     },
   });
 

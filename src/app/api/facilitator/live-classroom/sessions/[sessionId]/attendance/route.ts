@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { roleMiddleware } from "@/lib/auth-service";
 import type { UserRole } from "@/lib/auth-service";
+import { queueLiveSessionLifecycleNotifications } from "@/lib/live-session-lifecycle";
 
 const FACILITATOR_ROLES: UserRole[] = ["FACILITATOR", "ADMIN", "SCHOOL_ADMIN"];
 type SessionParams = { params: Promise<{ sessionId: string }> };
@@ -59,6 +60,17 @@ export async function POST(request: NextRequest, { params }: SessionParams) {
       })
     )
   );
+
+  await queueLiveSessionLifecycleNotifications({
+    sessionId,
+    eventType: "ATTENDANCE_RECORDED",
+    actorUserId: auth.user.userId,
+    includeParents: false,
+    extraMetadata: {
+      attendanceRecords: records.length,
+      attendedCount: records.filter((record: { attended?: boolean }) => Boolean(record.attended)).length,
+    },
+  });
 
   return NextResponse.json({
     success: true,

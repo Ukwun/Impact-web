@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { roleMiddleware } from "@/lib/auth-service";
 import type { UserRole } from "@/lib/auth-service";
 import { parseOpsEnvelope } from "@/lib/live-classroom-framework";
+import {
+  createReplayReviewAlert,
+  queueLiveSessionLifecycleNotifications,
+} from "@/lib/live-session-lifecycle";
 
 const FACILITATOR_ROLES: UserRole[] = ["FACILITATOR", "ADMIN", "SCHOOL_ADMIN"];
 type SessionParams = { params: Promise<{ sessionId: string }> };
@@ -65,6 +69,23 @@ export async function POST(request: NextRequest, { params }: SessionParams) {
       },
     });
   }
+
+  await createReplayReviewAlert({
+    sessionId,
+    recordingUrl: String(body.recordingUrl),
+    actorUserId: auth.user.userId,
+    replayLibraryUrl: body.replayLibraryUrl,
+  });
+
+  await queueLiveSessionLifecycleNotifications({
+    sessionId,
+    eventType: "REPLAY_PUBLISHED",
+    actorUserId: auth.user.userId,
+    includeParents: true,
+    extraMetadata: {
+      recordingUrl: String(body.recordingUrl),
+    },
+  });
 
   return NextResponse.json({
     success: true,

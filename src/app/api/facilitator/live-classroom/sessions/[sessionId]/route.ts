@@ -7,6 +7,7 @@ import {
   LIVE_SESSION_SEQUENCE,
   parseOpsEnvelope,
 } from "@/lib/live-classroom-framework";
+import { queueLiveSessionLifecycleNotifications } from "@/lib/live-session-lifecycle";
 
 const FACILITATOR_ROLES: UserRole[] = ["FACILITATOR", "ADMIN", "SCHOOL_ADMIN"];
 
@@ -228,6 +229,15 @@ export async function PATCH(request: NextRequest, { params }: SessionParams) {
       ...(body.hasQandA !== undefined ? { hasQandA: Boolean(body.hasQandA) } : {}),
     },
   });
+
+  if (body.status === "LIVE") {
+    await queueLiveSessionLifecycleNotifications({
+      sessionId,
+      eventType: "SESSION_STARTING",
+      actorUserId: auth.user.userId,
+      includeParents: true,
+    });
+  }
 
   if (metadata) {
     await prisma.contentMetadata.update({

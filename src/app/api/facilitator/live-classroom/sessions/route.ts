@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { roleMiddleware } from "@/lib/auth-service";
 import type { UserRole } from "@/lib/auth-service";
 import { defaultOpsEnvelope, LIVE_SESSION_SEQUENCE } from "@/lib/live-classroom-framework";
+import { queueLiveSessionLifecycleNotifications } from "@/lib/live-session-lifecycle";
 
 const FACILITATOR_ROLES: UserRole[] = ["FACILITATOR", "ADMIN", "SCHOOL_ADMIN"];
 
@@ -136,6 +137,19 @@ export async function POST(request: NextRequest) {
       learningObjectives: body.learningObjectives || LIVE_SESSION_SEQUENCE.map((item) => item.label),
       isPublished: true,
       publishedAt: new Date(),
+    },
+  });
+
+  await queueLiveSessionLifecycleNotifications({
+    sessionId: session.id,
+    eventType: "SESSION_SCHEDULED",
+    actorUserId: auth.user.userId,
+    includeParents: true,
+    extraMetadata: {
+      scheduleWindow: {
+        startTime: session.startTime.toISOString(),
+        endTime: session.endTime.toISOString(),
+      },
     },
   });
 

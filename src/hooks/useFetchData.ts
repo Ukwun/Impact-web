@@ -150,6 +150,34 @@ export function useAdminAlerts(severity: string = "all") {
   };
 }
 
+export function useAdminReplayReviewQueue(includeResolved: boolean = false) {
+  const url = `/api/admin/live-classroom/replay-review?includeResolved=${includeResolved}`;
+  const { data, loading, error, refetch } = useFetch(url, {
+    ttl: 60 * 1000,
+  });
+
+  return {
+    replayQueue: data,
+    loading,
+    error,
+    refetch,
+  };
+}
+
+export function useAdminSafeguardingDashboard(includeResolved: boolean = false) {
+  const url = `/api/admin/live-classroom/safeguarding?includeResolved=${includeResolved}`;
+  const { data, loading, error, refetch } = useFetch(url, {
+    ttl: 60 * 1000,
+  });
+
+  return {
+    safeguardingDashboard: data,
+    loading,
+    error,
+    refetch,
+  };
+}
+
 /**
  * Hook for university programs
  */
