@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { FacilitatorApprovalModal } from "@/components/modals/FacilitatorApprovalModal";
 import { StudentRosterModal } from "@/components/modals/StudentRosterModal";
+import { SchoolSubscriptionDashboard } from "@/components/SchoolSubscriptionDashboard";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   Users,
@@ -259,6 +260,17 @@ export default function SchoolAdminDashboard() {
             <p className="text-xs text-gray-400">User participation metrics</p>
           </Card>
         </div>
+      </div>
+
+      {/* 💳 Subscription & Licensing Management */}
+      <div className="space-y-6 pt-8 border-t border-gray-700">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2 mb-2">
+            💳 Subscription & Licensing
+          </h2>
+          <p className="text-gray-400">Manage your school's ImpactEdu subscription, users, and billing</p>
+        </div>
+        <SchoolSubscriptionDashboard userId={data?.schoolName} />
       </div>
 
       {/* Modals */}

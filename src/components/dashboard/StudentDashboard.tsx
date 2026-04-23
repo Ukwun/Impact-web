@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { CourseDiscoveryModal } from "@/components/modals/CourseDiscoveryModal";
 import { AssignmentSubmissionModal } from "@/components/modals/AssignmentSubmissionModal";
+import { CurriculumProgressDashboard } from "@/components/CurriculumProgressDashboard";
 import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "@/lib/authStorage";
 import {
   CheckCircle2,
@@ -294,6 +295,15 @@ export default function StudentDashboard() {
           </div>
         </div>
       )}
+
+      {/* 🎓 Your Learning Journey - Curriculum Framework */}
+      <div className="space-y-4 pt-8 border-t border-gray-700">
+        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+          🎓 Your Learning Journey
+        </h2>
+        <p className="text-gray-400">Explore our 4-level curriculum framework designed for your age and growth</p>
+        <CurriculumProgressDashboard compact={false} />
+      </div>
 
       {/* Course Discovery Modal */}
       <CourseDiscoveryModal

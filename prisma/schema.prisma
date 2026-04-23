@@ -75,6 +75,13 @@ model User {
   leaderboard           LeaderboardEntry?
   messagesSent          Message[] @relation("MessagesSent")
   messagesReceived      Message[] @relation("MessagesReceived")
+  subscriptions         Subscription[]  // User's subscriptions (as subscriber)
+  
+  // Curriculum authoring
+  authoredVersions      CurriculumVersion[] @relation("VersionAuthor")
+  reviewedVersions      CurriculumVersion[] @relation("VersionReviewer")
+  approvalRequests      ApprovalRequest[]   @relation("ApprovalRequester")
+  approvalReviews       ApprovalRequest[]   @relation("ApprovalReviewer")
   
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -274,6 +281,7 @@ model Module {
   activities            Activity[]
   liveSessions          LiveSession[]
   moduleProgress        ModuleProgress[]
+  weeklySchedules       WeeklyLearningSchedule[] @relation("WeeklyScheduleModule")
   
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -289,6 +297,10 @@ model Lesson {
   
   moduleId              String?
   module                Module?     @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  
+  // Curriculum framework relation (optional)
+  curriculumModuleId    String?
+  curriculumModule      CurriculumModule? @relation("CurriculumLesson", fields: [curriculumModuleId], references: [id], onDelete: SetNull)
   
   title                 String
   description           String?
@@ -315,6 +327,7 @@ model Lesson {
 
   @@index([courseId])
   @@index([moduleId])
+  @@index([curriculumModuleId])
 }
 
 model LessonMaterial {
@@ -1141,4 +1154,391 @@ model Message {
   @@index([recipientId])
   @@index([isRead])
   @@index([createdAt])
+}
+
+// ============================================================================
+// CURRICULUM FRAMEWORK (NEW - CRITICAL)
+// ============================================================================
+// Four-level curriculum structure aligning with age groups and pedagogical shifts
+
+enum CurriculumLevel {
+  PRIMARY              // Ages 7-11: Habit formation from awareness to healthy daily habits
+  JUNIOR_SECONDARY     // Ages 12-14: Practical application from understanding to real-world practice
+  SENIOR_SECONDARY     // Ages 15-18: Enterprise readiness from ideas to planning and pitching
+  IMPACTUNI            // Ages 18+: Execution and capital awareness for venture building
+}
+
+model CurriculumFramework {
+  id                    String            @id @default(cuid())
+  level                 CurriculumLevel   @unique
+  name                  String
+  
+  // Pedagog ical shift description
+  description           String?
+  signatureShift        String            // e.g., "From awareness to healthy daily financial habits"
+  primaryOutcome        String            // Primary skill outcome
+  
+  // Age range
+  minAge                Int
+  maxAge                Int
+  
+  // Framework configuration
+  durationWeeks         Int               // Total curriculum duration in weeks
+  learningObjectives    String[]          @default([])
+  competencyAreas       String[]          @default([])
+  assessmentMethods     String[]          @default([])
+  
+  // Content structure
+  modules               CurriculumModule[]
+  
+  // Metadata
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([level])
+}
+
+model CurriculumModule {
+  id                    String            @id @default(cuid())
+  frameworkId           String
+  framework             CurriculumFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  
+  title                 String
+  description           String?
+  order                 Int
+  
+  // Content strands
+  subjectStrand         String            // e.g., "Financial Literacy", "Digital Skills", "Entrepreneurship"
+  competencies          String[]          @default([])
+  
+  // Module structure
+  learningObjectives    String[]          @default([])
+  estimatedWeeks        Int               @default(2)
+
+  // School scoping (SCHOOL_ADMIN can only manage their school's modules)
+  schoolId              String?           // null = platform-wide (ADMIN only)
+  
+  // Publication state
+  publishStatus         PublishStatus     @default(DRAFT)
+  
+  // Relations
+  lessons               Lesson[] @relation("CurriculumLesson")
+  versions              CurriculumVersion[] @relation("ModuleVersions")
+  
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@unique([frameworkId, order])
+  @@index([frameworkId])
+  @@index([schoolId])
+  @@index([publishStatus])
+}
+
+// ============================================================================
+// ENHANCED CONTENT METADATA (NEW - IMPORTANT)
+// ============================================================================
+// Comprehensive CMS field structure for all content
+
+model ContentMetadata {
+  id                    String            @id @default(cuid())
+  
+  // Resource linking (polymorphic - works with Course, Lesson, Activity, etc.)
+  resourceType          String            // "COURSE", "MODULE", "LESSON", "ACTIVITY", "ASSESSMENT", "LIVE_SESSION"
+  resourceId            String
+  
+  // Basic metadata
+  title                 String
+  shortDescription      String?
+  longDescription       String?           @db.Text
+  thumbnail             String?
+  
+  // Educational metadata
+  curriculumLevel       CurriculumLevel?
+  ageGroup              String?           // e.g., "7-11", "12-14", "15-18", "18+"
+  subjectStrand         String?           // e.g., "Financial Literacy"
+  competencies          String[]          @default([])
+  
+  // Content structure
+  termOrCycle           String?           // Which term/cycle (e.g., "Q1", "Semester 1")
+  moduleNumber          Int?
+  lessonNumber          Int?
+  
+  // Content details
+  learningObjectives    String[]          @default([])
+  contentType           String            // "VIDEO", "ARTICLE", "INTERACTIVE", "QUIZ", "PROJECT", etc.
+  
+  // Learning layers
+  learnComponentUrl     String?
+  applyComponentUrl     String?
+  engageLiveComponentUrl String?
+  progressComponentUrl  String?
+  
+  // Facilitator & Learner resources
+  facilitatorNotes      String?           @db.Text
+  learnerInstructions   String?           @db.Text
+  downloadableResources String[]          @default([])  // URLs to PDFs, worksheets, etc.
+  
+  // Assessment & Recognition
+  quizItems             Int?              // Number of quiz items
+  assignmentType        String?           // "TEXT", "UPLOAD", "LINK", "REFLECTION"
+  badgeTrigger          String?           // Condition to earn badge
+  certificateRule       String?           // Condition to earn certificate
+  
+  // Prerequisites & Dependencies
+  prerequisiteIds       String[]          @default([])   // IDs of prerequisite content
+  
+  // Completion & Tracking
+  completionRule        String?           // How to determine completion
+  estimatedDurationMin  Int?              // Duration in minutes
+  
+  // SEO & Publishing
+  slug                  String?
+  isPublished           Boolean           @default(false)
+  publishedAt           DateTime?
+  
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([resourceType, resourceId])
+  @@index([curriculumLevel])
+  @@index([isPublished])
+  @@index([ageGroup])
+}
+
+// ============================================================================
+// SUBSCRIPTION & LICENSING MODEL (NEW - IMPORTANT)
+// ============================================================================
+// Support for Individual, School, and Institutional subscriptions
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum SubscriptionTierType {
+  INDIVIDUAL_BASIC
+  INDIVIDUAL_PREMIUM
+  SCHOOL_STARTER
+  SCHOOL_GROWTH
+  SCHOOL_ENTERPRISE
+  INSTITUTIONAL_PARTNER
+  UNIVERSITY_CAMPUS
+}
+
+model SubscriptionPlan {
+  id                    String              @id @default(cuid())
+  tierType              SubscriptionTierType @unique
+  name                  String
+  description           String?
+  
+  // Pricing
+  monthlyPrice          Float?
+  annualPrice           Float?
+  currency              String              @default("USD")
+  
+  // Features
+  maxUsers              Int?                // null = unlimited
+  maxCourses            Int?
+  maxLiveSessions       Int?
+  canAccessAnalytics    Boolean             @default(false)
+  canManageFacilitators Boolean             @default(false)
+  canExportReports      Boolean             @default(false)
+  canIntegrateSIS       Boolean             @default(false)  // Student Information System
+  customBranding        Boolean             @default(false)
+  dedicatedSupport      Boolean             @default(false)
+  
+  // Relations
+  subscriptions         Subscription[]
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([tierType])
+}
+
+model Subscription {
+  id                    String              @id @default(cuid())
+  planId                String
+  plan                  SubscriptionPlan    @relation(fields: [planId], references: [id])
+  
+  // Subscriber information
+  subscriberId          String
+  subscriber            User                @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  
+  // Subscription metadata
+  status                SubscriptionStatus  @default(ACTIVE)
+  startDate             DateTime
+  renewalDate           DateTime
+  cancelledAt           DateTime?
+  
+  // For school/institutional subscriptions
+  schoolName            String?
+  schoolAdminIds        String[]            @default([])  // IDs of school admins
+  studentCohorts        String[]            @default([])  // IDs of student groups
+  
+  // Billing
+  autoRenew             Boolean             @default(true)
+  paymentMethodId       String?
+  
+  // Tracking
+  activeUsers           Int                 @default(0)
+  lastBillingDate       DateTime?
+  nextBillingDate       DateTime?
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([subscriberId])
+  @@index([planId])
+  @@index([status])
+  @@index([renewalDate])
+}
+
+// ============================================================================
+// WEEKLY LEARNING RHYTHM (NEW - IMPORTANT)
+// ============================================================================
+// Structured weekly cadence: Learn, Practice, Live, Assess, Reinforce
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model WeeklyLearningSchedule {
+  id                    String            @id @default(cuid())
+  moduleId              String
+  module                Module            @relation("WeeklyScheduleModule", fields: [moduleId], references: [id], onDelete: Cascade)
+  
+  weekNumber            Int               // Which week in the module (1-based)
+  
+  // Monday - Learn
+  mondayLessonId        String?
+  mondayLessonTitle     String?
+  mondayLessonUrl       String?
+
+  // Tuesday - Apply/Practice
+  tuesdayActivityIds    String[]          @default([])
+  tuesdayActivities     String?           // JSON array of activity data
+  
+  // Wednesday/Thursday - Live Engagement
+  liveSessionId         String?
+  liveSessionTitle      String?
+  liveSessionDateTime   DateTime?
+  liveSessionFacilitatorId String?
+  
+  // Friday - Assess
+  fridayAssessmentIds   String[]          @default([])
+  fridayQuizId          String?
+  fridayAssignmentId    String?
+  
+  // Weekend - Reinforce
+  weekendActivityIds    String[]          @default([])
+  weekendReplayUrl      String?
+  weekendChallengeTitle String?
+  familyEngagementPrompt String?
+  
+  // Student tracking
+  studentProgress       String?           // JSON encoded progress data
+  
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@unique([moduleId, weekNumber])
+  @@index([moduleId])
+}
+
+// ============================================================================
+// CURRICULUM VERSIONING & APPROVAL WORKFLOW
+// ============================================================================
+
+enum PublishStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CurriculumEntityType {
+  FRAMEWORK
+  MODULE
+  LESSON
+  ACTIVITY
+}
+
+model CurriculumVersion {
+  id                    String              @id @default(cuid())
+  
+  // What entity this version belongs to
+  entityType            CurriculumEntityType
+  entityId              String              // FK to CurriculumFramework, CurriculumModule, Lesson, Activity
+  
+  // Linked module (for module-type versions)
+  moduleId              String?
+  module                CurriculumModule?   @relation("ModuleVersions", fields: [moduleId], references: [id], onDelete: SetNull)
+  
+  versionNumber         Int
+  status                PublishStatus       @default(DRAFT)
+  
+  // Snapshot of content at this version
+  content               Json
+  
+  // Change tracking
+  changeNotes           String?
+  
+  // Author
+  authorId              String
+  author                User                @relation("VersionAuthor", fields: [authorId], references: [id])
+  
+  // Reviewer (set when approved/rejected)
+  reviewerId            String?
+  reviewer              User?               @relation("VersionReviewer", fields: [reviewerId], references: [id])
+  reviewedAt            DateTime?
+  reviewerComment       String?
+  
+  publishedAt           DateTime?
+  
+  // Approval request
+  approvalRequest       ApprovalRequest?
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@unique([entityType, entityId, versionNumber])
+  @@index([entityType, entityId])
+  @@index([status])
+  @@index([authorId])
+}
+
+model ApprovalRequest {
+  id                    String              @id @default(cuid())
+  
+  versionId             String              @unique
+  version               CurriculumVersion   @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  
+  requestedById         String
+  requestedBy           User                @relation("ApprovalRequester", fields: [requestedById], references: [id])
+  
+  reviewedById          String?
+  reviewedBy            User?               @relation("ApprovalReviewer", fields: [reviewedById], references: [id])
+  
+  status                PublishStatus       @default(PENDING_REVIEW)
+  requestNotes          String?
+  reviewNotes           String?
+  
+  requestedAt           DateTime            @default(now())
+  reviewedAt            DateTime?
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([status])
+  @@index([requestedById])
 }

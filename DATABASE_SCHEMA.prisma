@@ -1,0 +1,854 @@
+/**
+ * Database Schema & Prisma Models
+ * Complete data models for ImpactApp Platform
+ * Add these to your schema.prisma file
+ */
+
+// ========================================================================
+// USER & AUTHENTICATION MODELS
+// ========================================================================
+
+model User {
+  id                String          @id @default(cuid())
+  email             String          @unique
+  password          String
+  firstName         String
+  lastName          String
+  avatar            String?
+  bio               String?
+  role              UserRole        @default(STUDENT)
+  school            School?         @relation("SchoolUsers", fields: [schoolId], references: [id])
+  schoolId          String?
+  isActive          Boolean         @default(true)
+  emailVerified     DateTime?
+  lastLogin         DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  studentProfile    StudentProfile?
+  parentProfile     ParentProfile?
+  facilitatorProfile FacilitatorProfile?
+  adminProfile      AdminProfile?
+  enrollments       Enrollment[]
+  submissions       Assignment[]
+  projects          StudentProject[]
+  achievements      Achievement[]
+  messages          Message[]
+  notifications     Notification[]
+  
+  @@index([schoolId])
+  @@index([role])
+}
+
+enum UserRole {
+  STUDENT
+  FACILITATOR
+  PARENT
+  ADMIN
+  SUPER_ADMIN
+  SCHOOL_ADMIN
+}
+
+// ========================================================================
+// SCHOOL & ORGANIZATION MODELS
+// ========================================================================
+
+model School {
+  id                String          @id @default(cuid())
+  name              String
+  code              String          @unique
+  address           String?
+  city              String?
+  country           String?
+  timezone          String          @default("UTC")
+  logoUrl           String?
+  website           String?
+  principalEmail    String?
+  totalStudents     Int             @default(0)
+  totalFacilitators Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  users             User[]          @relation("SchoolUsers")
+  courses           Course[]
+  analytics         SchoolAnalytics?
+  settings          SchoolSettings?
+  
+  @@index([code])
+}
+
+model SchoolSettings {
+  id                String          @id @default(cuid())
+  school            School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  schoolId          String          @unique
+  maxStudentsPerCourse Int          @default(50)
+  maxCoursesPerStudent Int          @default(10)
+  academicYearStart DateTime
+  academicYearEnd   DateTime
+  timezone          String          @default("UTC")
+  language          String          @default("en")
+  updatedAt         DateTime        @updatedAt
+}
+
+// ========================================================================
+// STUDENT PROFILE MODELS
+// ========================================================================
+
+model StudentProfile {
+  id                String          @id @default(cuid())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String          @unique
+  gradeLevel        String          // "9th Grade", "10th Grade", etc
+  parentIds         String[]        // Array of parent user IDs
+  totalHoursLearned Float           @default(0)
+  currentStreak     Int             @default(0)
+  bestStreak        Int             @default(0)
+  totalPoints       Int             @default(0)
+  level             String          @default("Beginner")
+  overallProgress   Float           @default(0)
+  averageGPA        Float           @default(0)
+  lastActive        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  enrollments       Enrollment[]
+  leaderboardEntry  LeaderboardEntry?
+  weeklyRhythm      WeeklyRhythm?
+  studySessions     StudySession[]
+  
+  @@index([userId])
+}
+
+model ParentProfile {
+  id                String          @id @default(cuid())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String          @unique
+  childrenIds       String[]        // Array of student user IDs
+  phone             String?
+  relationship      String[]        // ["Mother", "Father", "Guardian", etc]
+  notifications     Boolean         @default(true)
+  weeklyReports     Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([userId])
+}
+
+// ========================================================================
+// FACILITATOR & ADMIN MODELS
+// ========================================================================
+
+model FacilitatorProfile {
+  id                String          @id @default(cuid())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String          @unique
+  department        String?
+  expertise         String[]        // Array of expertise areas
+  bio               String?
+  website           String?
+  courses           Course[]
+  totalStudents     Int             @default(0)
+  averageRating     Float           @default(0)
+  responseTime      Int             @default(0) // minutes
+  liveClassesToday  Int             @default(0)
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([userId])
+}
+
+model AdminProfile {
+  id                String          @id @default(cuid())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String          @unique
+  adminLevel        AdminLevel      @default(SCHOOL_ADMIN)
+  department        String?
+  permissions       String[]
+  lastAction        String?
+  lastActionDate    DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([userId])
+}
+
+enum AdminLevel {
+  SCHOOL_ADMIN
+  ADMIN
+  SUPER_ADMIN
+}
+
+// ========================================================================
+// COURSE & LEARNING MODELS
+// ========================================================================
+
+model Course {
+  id                String          @id @default(cuid())
+  title             String
+  slug              String          @unique
+  description       String          @db.Text
+  categoryId        String
+  facilitator       FacilitatorProfile @relation(fields: [facilitatorId], references: [id])
+  facilitatorId     String
+  school            School          @relation(fields: [schoolId], references: [id])
+  schoolId          String
+  thumbnail         String?
+  difficulty        CourseDifficulty @default(INTERMEDIATE)
+  duration          Int             // weeks
+  totalModules      Int             @default(0)
+  status            CourseStatus    @default(PLANNING)
+  startDate         DateTime
+  endDate           DateTime
+  maxStudents       Int             @default(50)
+  currentEnrollment Int             @default(0)
+  averageRating     Float           @default(0)
+  reviews           Int             @default(0)
+  isPublished       Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  modules           Module[]
+  enrollments       Enrollment[]
+  assignments       Assignment[]
+  announcements     Announcement[]
+  
+  @@index([schoolId])
+  @@index([facilitatorId])
+  @@index([slug])
+}
+
+enum CourseDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum CourseStatus {
+  PLANNING
+  ONGOING
+  COMPLETED
+  ON_HOLD
+}
+
+model Module {
+  id                String          @id @default(cuid())
+  course            Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId          String
+  title             String
+  description       String?         @db.Text
+  order             Int
+  type              ModuleType
+  duration          Int             // minutes
+  status            ModuleStatus    @default(NOT_STARTED)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  lessons           Lesson[]
+  resources         Resource[]
+  
+  @@index([courseId])
+}
+
+enum ModuleType {
+  VIDEO
+  READING
+  EXERCISE
+  PROJECT
+  QUIZ
+}
+
+enum ModuleStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Lesson {
+  id                String          @id @default(cuid())
+  module            Module          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId          String
+  title             String
+  content           String          @db.Text
+  duration          Int
+  order             Int
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([moduleId])
+}
+
+model Resource {
+  id                String          @id @default(cuid())
+  module            Module          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId          String
+  title             String
+  type              ResourceType
+  url               String
+  duration          Int?
+  fileSize          String?
+  description       String?
+  createdAt         DateTime        @default(now())
+  
+  @@index([moduleId])
+}
+
+enum ResourceType {
+  VIDEO
+  PDF
+  CODE
+  LINK
+  INTERACTIVE
+}
+
+// ========================================================================
+// ENROLLMENT & PROGRESS MODELS
+// ========================================================================
+
+model Enrollment {
+  id                String          @id @default(cuid())
+  student           StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId         String
+  course            Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId          String
+  enrolledDate      DateTime        @default(now())
+  progress          Float           @default(0)
+  status            EnrollmentStatus @default(ACTIVE)
+  completionDate    DateTime?
+  grade             Float?
+  feedback          String?         @db.Text
+  updatedAt         DateTime        @updatedAt
+  
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  DROPPED
+  PAUSED
+}
+
+model CourseProgress {
+  id                String          @id @default(cuid())
+  enrollment        Enrollment      @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  enrollmentId      String          @unique
+  modulesCompleted  Int             @default(0)
+  totalModules      Int
+  averageScore      Float           @default(0)
+  lastAccessDate    DateTime?
+  timeSpent         Int             @default(0) // minutes
+  updatedAt         DateTime        @updatedAt
+}
+
+// ========================================================================
+// ASSIGNMENT & SUBMISSION MODELS
+// ========================================================================
+
+model Assignment {
+  id                String          @id @default(cuid())
+  course            Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId          String
+  title             String
+  description       String          @db.Text
+  type              AssignmentType  @default(HOMEWORK)
+  dueDate           DateTime
+  maxPoints         Int             @default(100)
+  rubric            RubricItem[]
+  status            AssignmentStatus @default(OPEN)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  // Relations
+  submissions       Submission[]
+  
+  @@index([courseId])
+  @@index([dueDate])
+}
+
+enum AssignmentType {
+  HOMEWORK
+  PROJECT
+  EXAM
+  QUIZ
+  DISCUSSION
+}
+
+enum AssignmentStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  GRADED
+}
+
+model Submission {
+  id                String          @id @default(cuid())
+  assignment        Assignment      @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentId      String
+  student           User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId         String
+  content           String?         @db.Text
+  files             String[]        // Array of file URLs
+  submittedAt       DateTime        @default(now())
+  grade             Float?
+  feedback          String?         @db.Text
+  gradedAt          DateTime?
+  status            SubmissionStatus @default(SUBMITTED)
+  
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  LATE
+  GRADED
+}
+
+model RubricItem {
+  id                String          @id @default(cuid())
+  assignment        Assignment      @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentId      String
+  criteria          String
+  maxPoints         Int
+  description       String?         @db.Text
+  
+  @@index([assignmentId])
+}
+
+// ========================================================================
+// ACHIEVEMENT & GAMIFICATION MODELS
+// ========================================================================
+
+model Achievement {
+  id                String          @id @default(cuid())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  title             String
+  description       String
+  icon              String
+  category          AchievementCategory
+  points            Int             @default(0)
+  earnedDate        DateTime        @default(now())
+  metadata          Json?
+  
+  @@index([userId])
+  @@index([earnedDate])
+}
+
+enum AchievementCategory {
+  SKILLS
+  KNOWLEDGE
+  EFFORT
+  SOCIAL
+  MILESTONE
+}
+
+model LeaderboardEntry {
+  id                String          @id @default(cuid())
+  student           StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId         String          @unique
+  position          Int
+  points            Int
+  activityScore     Float
+  weekEndDate       DateTime
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([position])
+  @@index([weekEndDate])
+}
+
+// ========================================================================
+// PROJECT & PORTFOLIO MODELS
+// ========================================================================
+
+model StudentProject {
+  id                String          @id @default(cuid())
+  title             String
+  description       String          @db.Text
+  descriptionFull   String?         @db.Text
+  owner             User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId           String
+  courseId          String?
+  category          String
+  difficulty        ProjectDifficulty
+  status            ProjectStatus   @default(PLANNING)
+  startDate         DateTime        @default(now())
+  dueDate           DateTime?
+  completionDate    DateTime?
+  thumbnail         String?
+  files             ProjectFile[]
+  collaborators     ProjectCollaborator[]
+  feedback          ProjectFeedback?
+  likes             Int             @default(0)
+  views             Int             @default(0)
+  visibility        ProjectVisibility @default(COURSE_ONLY)
+  isFeatured        Boolean         @default(false)
+  grade             Float?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([ownerId])
+  @@index([status])
+  @@index([isFeatured])
+}
+
+enum ProjectDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_DEVELOPMENT
+  REVIEW
+  SHOWCASED
+  ARCHIVED
+}
+
+enum ProjectVisibility {
+  PRIVATE
+  COURSE_ONLY
+  PUBLIC
+}
+
+model ProjectFile {
+  id                String          @id @default(cuid())
+  project           StudentProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId         String
+  type              ProjectFileType
+  title             String
+  url               String
+  fileSize          String?
+  uploadedDate      DateTime        @default(now())
+  description       String?
+  
+  @@index([projectId])
+}
+
+enum ProjectFileType {
+  VIDEO
+  IMAGE
+  DOCUMENT
+  CODE
+  INTERACTIVE
+  PRESENTATION
+}
+
+model ProjectCollaborator {
+  id                String          @id @default(cuid())
+  project           StudentProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId         String
+  name              String
+  role              String
+  email             String?
+  
+  @@index([projectId])
+}
+
+model ProjectFeedback {
+  id                String          @id @default(cuid())
+  project           StudentProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId         String          @unique
+  overallGrade      Float?
+  instructorComments String?         @db.Text
+  rubricScores      RubricScore[]
+  peerReviews       PeerReview[]
+  suggestedImprovements String[]
+  createdAt         DateTime        @default(now())
+}
+
+model RubricScore {
+  id                String          @id @default(cuid())
+  feedback          ProjectFeedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  feedbackId        String
+  criteria          String
+  maxPoints         Int
+  earnedPoints      Int
+  feedback          String?         @db.Text
+  
+  @@index([feedbackId])
+}
+
+model PeerReview {
+  id                String          @id @default(cuid())
+  feedback          ProjectFeedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  feedbackId        String
+  reviewerEmail     String
+  rating            Int
+  comment           String          @db.Text
+  date              DateTime        @default(now())
+  helpful           Int             @default(0)
+  
+  @@index([feedbackId])
+}
+
+// ========================================================================
+// WEEKLY RHYTHM MODELS
+// ========================================================================
+
+model WeeklyRhythm {
+  id                String          @id @default(cuid())
+  student           StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId         String          @unique
+  templateId        String
+  weekStartDate     DateTime
+  weekEndDate       DateTime
+  schedule          DaySchedule[]
+  streakDays        Int             @default(0)
+  completedSessions Int             @default(0)
+  totalSessions     Int             @default(0)
+  adaptations       Adaptation[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([studentId])
+}
+
+model DaySchedule {
+  id                String          @id @default(cuid())
+  rhythm            WeeklyRhythm    @relation(fields: [rhythmId], references: [id], onDelete: Cascade)
+  rhythmId          String
+  dayOfWeek         String          // MON, TUE, WED, etc
+  date              DateTime
+  focusArea         String
+  suggestedDuration Int
+  completionRate    Float           @default(0)
+  status            DayStatus       @default(PLANNED)
+  sessions          LearningSession[]
+  
+  @@index([rhythmId])
+}
+
+enum DayStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+model LearningSession {
+  id                String          @id @default(cuid())
+  day               DaySchedule     @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  dayId             String
+  sessionType       SessionType
+  title             String
+  duration          Int
+  objectives        String[]
+  resources         SessionResource[]
+  status            SessionStatus   @default(NOT_STARTED)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  notes             String?         @db.Text
+  
+  @@index([dayId])
+}
+
+enum SessionType {
+  CONCEPT_STUDY
+  PRACTICE
+  PROJECT_WORK
+  DISCUSSION
+  REVIEW
+}
+
+enum SessionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model SessionResource {
+  id                String          @id @default(cuid())
+  session           LearningSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId         String
+  type              SessionResourceType
+  title             String
+  duration          Int?
+  url               String
+  
+  @@index([sessionId])
+}
+
+enum SessionResourceType {
+  VIDEO
+  ARTICLE
+  INTERACTIVE
+  ASSIGNMENT
+  DISCUSSION
+}
+
+model Adaptation {
+  id                String          @id @default(cuid())
+  rhythm            WeeklyRhythm    @relation(fields: [rhythmId], references: [id], onDelete: Cascade)
+  rhythmId          String
+  type              AdaptationType
+  reason            String
+  impact            String
+  timestamp         DateTime        @default(now())
+  
+  @@index([rhythmId])
+}
+
+enum AdaptationType {
+  PACE_ADJUSTMENT
+  TOPIC_SWAP
+  DURATION_CHANGE
+  TIME_SHIFT
+}
+
+model StudySession {
+  id                String          @id @default(cuid())
+  student           StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId         String
+  date              DateTime
+  courseId          String
+  duration          Int
+  modifier          StudyModifier
+  createdAt         DateTime        @default(now())
+  
+  @@index([studentId])
+  @@index([date])
+}
+
+enum StudyModifier {
+  FOCUSED
+  CASUAL
+  GROUP_STUDY
+  TUTORING
+}
+
+// ========================================================================
+// NOTIFICATION & MESSAGING MODELS
+// ========================================================================
+
+model Notification {
+  id                String          @id @default(cuid())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  type              NotificationType
+  title             String
+  message           String
+  read              Boolean         @default(false)
+  actionUrl         String?
+  metadata          Json?
+  createdAt         DateTime        @default(now())
+  
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  ASSIGNMENT
+  GRADE
+  ACHIEVEMENT
+  ATTENDANCE
+  MESSAGE
+  ANNOUNCEMENT
+  ALERT
+}
+
+model Message {
+  id                String          @id @default(cuid())
+  sender            User            @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId          String
+  recipientId       String
+  childId           String?         // For parent-teacher messages
+  subject           String?
+  content           String          @db.Text
+  attachments       String[]
+  isRead            Boolean         @default(false)
+  readAt            DateTime?
+  createdAt         DateTime        @default(now())
+  
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([createdAt])
+}
+
+model Announcement {
+  id                String          @id @default(cuid())
+  course            Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId          String
+  title             String
+  content           String          @db.Text
+  priority          AnnouncementPriority @default(NORMAL)
+  isPinned          Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([courseId])
+  @@index([createdAt])
+}
+
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+// ========================================================================
+// ANALYTICS & ALERTS MODELS
+// ========================================================================
+
+model SchoolAnalytics {
+  id                String          @id @default(cuid())
+  school            School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  schoolId          String          @unique
+  period            String
+  totalStudents     Int
+  activeStudents    Int
+  courseMetrics     Json
+  performanceMetrics Json
+  engagementMetrics Json
+  updatedAt         DateTime        @updatedAt
+}
+
+model AlertNotification {
+  id                String          @id @default(cuid())
+  type              AlertType
+  severity          AlertSeverity
+  title             String
+  message           String
+  affectedCount     Int
+  dismissed         Boolean         @default(false)
+  actionUrl         String?
+  createdAt         DateTime        @default(now())
+  
+  @@index([type])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+enum AlertType {
+  STUDENT_AT_RISK
+  LOW_ATTENDANCE
+  COURSE_DELAY
+  QUALITY_ISSUE
+  SYSTEM
+}
+
+enum AlertSeverity {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+// ========================================================================
+// INDEXES FOR PERFORMANCE
+// ========================================================================
+
+// These indexes should be created for optimal query performance

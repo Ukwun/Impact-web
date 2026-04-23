@@ -26,6 +26,21 @@ interface Enrollment {
   enrolledAt: string;
 }
 
+const WEEKLY_RHYTHM = [
+  { day: 'Monday', stage: 'Learn', detail: 'New lesson content is released and module materials unlock.' },
+  { day: 'Tuesday', stage: 'Practice', detail: 'Worksheets and reflection tasks are submitted.' },
+  { day: 'Wednesday/Thursday', stage: 'Live', detail: 'Facilitator-led live class and guided practice.' },
+  { day: 'Friday', stage: 'Assess', detail: 'Quiz or rubric challenge updates your progress score.' },
+  { day: 'Weekend', stage: 'Reinforce', detail: 'Replay sessions, project extension, and community challenge.' },
+];
+
+const CURRICULUM_LEVELS = [
+  { level: 'Primary', age: '7-11', outcome: 'Habit formation', shift: 'Awareness to daily habits' },
+  { level: 'Junior Secondary', age: '12-14', outcome: 'Practical application', shift: 'Understanding to budgeting and practice' },
+  { level: 'Senior Secondary', age: '15-18', outcome: 'Enterprise readiness', shift: 'Ideas to planning and pitching' },
+  { level: 'ImpactUni', age: '18+', outcome: 'Execution & capital awareness', shift: 'Readiness to venture building' },
+];
+
 export default function LearningJourneyPage() {
   const { progress, loading, error } = useUserProgress();
   const [activeEnrollments, setActiveEnrollments] = useState<Enrollment[]>([]);
@@ -171,6 +186,63 @@ export default function LearningJourneyPage() {
               </div>
             </div>
           )}
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">Four Learning Layers</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="bg-blue-500/10 border border-blue-500/40 rounded-xl p-4">
+                <p className="text-blue-300 text-xs font-semibold uppercase">Learn</p>
+                <p className="text-white font-bold mt-2">Concept Building</p>
+                <p className="text-gray-300 text-sm mt-2">Videos, explainers, story cards, and guided notes.</p>
+              </div>
+              <div className="bg-purple-500/10 border border-purple-500/40 rounded-xl p-4">
+                <p className="text-purple-300 text-xs font-semibold uppercase">Apply</p>
+                <p className="text-white font-bold mt-2">Task Execution</p>
+                <p className="text-gray-300 text-sm mt-2">Worksheets, journals, mini assignments, and practical tasks.</p>
+              </div>
+              <div className="bg-orange-500/10 border border-orange-500/40 rounded-xl p-4">
+                <p className="text-orange-300 text-xs font-semibold uppercase">Engage Live</p>
+                <p className="text-white font-bold mt-2">Facilitated Interaction</p>
+                <p className="text-gray-300 text-sm mt-2">Live classes, Q&A, breakout sessions, and simulations.</p>
+              </div>
+              <div className="bg-green-500/10 border border-green-500/40 rounded-xl p-4">
+                <p className="text-green-300 text-xs font-semibold uppercase">Show Progress</p>
+                <p className="text-white font-bold mt-2">Visible Growth</p>
+                <p className="text-gray-300 text-sm mt-2">Badges, attendance, scores, certificates, and showcase evidence.</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">Weekly Classroom Rhythm</h2>
+            <div className="space-y-3">
+              {WEEKLY_RHYTHM.map((row) => (
+                <div key={row.day} className="bg-dark-500 border border-dark-400 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-primary-300 font-semibold">{row.day}</p>
+                    <p className="text-white font-bold">{row.stage}</p>
+                  </div>
+                  <p className="text-gray-300 text-sm lg:max-w-2xl">{row.detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-4">Four-Level Curriculum Framework</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {CURRICULUM_LEVELS.map((item) => (
+                <div key={item.level} className="bg-dark-500 border border-dark-400 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-white font-bold">{item.level}</p>
+                    <span className="text-xs px-2 py-1 rounded bg-primary-500/20 text-primary-300">Age {item.age}</span>
+                  </div>
+                  <p className="text-sm text-gray-300">Outcome: <span className="text-white font-semibold">{item.outcome}</span></p>
+                  <p className="text-sm text-gray-400 mt-2">Shift: {item.shift}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </>
       ) : (
         <div className="bg-dark-500 border border-dark-400 rounded-2xl p-12 text-center">
@@ -186,7 +258,7 @@ export default function LearningJourneyPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <Link
           href="/dashboard/assignments"
           className="bg-dark-500 border border-dark-400 hover:border-primary-500 rounded-2xl p-6 transition-all hover:shadow-lg hover:shadow-primary-600/20"
@@ -206,12 +278,21 @@ export default function LearningJourneyPage() {
         </Link>
 
         <Link
-          href="/achievements/badges"
+          href="/dashboard/achievements"
           className="bg-dark-500 border border-dark-400 hover:border-primary-500 rounded-2xl p-6 transition-all hover:shadow-lg hover:shadow-primary-600/20"
         >
           <h3 className="text-xl font-bold text-white mb-2">Achievements</h3>
           <p className="text-gray-400 text-sm">Earn badges and certificates</p>
           <span className="inline-block mt-4 text-primary-400 font-semibold text-sm">View all →</span>
+        </Link>
+
+        <Link
+          href="/dashboard/learning-architecture"
+          className="bg-dark-500 border border-dark-400 hover:border-primary-500 rounded-2xl p-6 transition-all hover:shadow-lg hover:shadow-primary-600/20"
+        >
+          <h3 className="text-xl font-bold text-white mb-2">Learning Architecture</h3>
+          <p className="text-gray-400 text-sm">See levels, layers, subscriptions, and weekly learning rhythm.</p>
+          <span className="inline-block mt-4 text-primary-400 font-semibold text-sm">Open blueprint →</span>
         </Link>
       </div>
     </div>

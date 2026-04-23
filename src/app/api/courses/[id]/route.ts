@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { CourseService, ProgressService } from "@/lib/database-service";
 import { getUserFromToken, verifyToken } from "@/lib/auth";
+import { addCorsHeaders, handleCorsOptions } from "@/lib/cors";
 import { z } from "zod";
+
+export const dynamic = 'force-dynamic';
 
 // Validation schema for updating course
 const UpdateCourseSchema = z.object({
@@ -15,6 +19,11 @@ const UpdateCourseSchema = z.object({
   isPublished: z.boolean().optional(),
 });
 
+export async function OPTIONS(req: NextRequest) {
+  const corsResponse = handleCorsOptions(req);
+  return corsResponse || new NextResponse(null, { status: 204 });
+}
+
 // Helper to get auth user from token
 function getAuthUser(req: NextRequest): any {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -27,7 +36,7 @@ function getAuthUser(req: NextRequest): any {
  * Get course details including lessons and user's enrollment status
  * 
  * Response:
- * - 200: { success: true, course: {...}, isEnrolled: boolean, lessons: [...] }
+ * - 200: { success: true, course: {...}, isEnrolled: boolean, lessons: [...], progress: {...} }
  * - 404: Course not found
  * - 500: Server error
  */

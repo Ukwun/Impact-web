@@ -24,6 +24,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node -r tsconfig-paths/register --project tsconfig.seed.json prisma/seed.ts",
     "db:reset": "prisma migrate reset",
+    "db:test": "ts-node -r tsconfig-paths/register --project tsconfig.seed.json prisma/test-integration.ts",
     "load-test": "npx k6 run load-test.js",
     "postinstall": "prisma generate"
   },
@@ -72,6 +73,7 @@
     "zustand": "^4.4.0"
   },
   "devDependencies": {
+    "prisma": "^5.20.0",
     "@netlify/plugin-nextjs": "^5.15.9",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -89,7 +91,6 @@
     "jest-environment-jsdom": "^30.2.0",
     "k6": "^0.0.0",
     "prettier": "^3.1.0",
-    "prisma": "^5.20.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2"
   }

@@ -416,6 +416,19 @@ export const schoolAdminMenuConfig: RoleMenuConfig = {
       ],
     },
     {
+      id: 'curriculum',
+      label: 'Curriculum',
+      icon: BookOpen,
+      href: '/dashboard/admin/curriculum/modules',
+      subItems: [
+        { id: 'frameworks', label: 'Frameworks', href: '/dashboard/admin/curriculum/frameworks' },
+        { id: 'modules', label: 'Modules', href: '/dashboard/admin/curriculum/modules' },
+        { id: 'lessons', label: 'Lessons', href: '/dashboard/admin/curriculum/lessons' },
+        { id: 'activities', label: 'Activities', href: '/dashboard/admin/curriculum/activities' },
+        { id: 'review-queue', label: 'Review Queue', href: '/dashboard/admin/curriculum/review-queue' },
+      ],
+    },
+    {
       id: 'communication',
       label: 'Communication',
       icon: MessageSquare,
@@ -440,8 +453,8 @@ export const schoolAdminMenuConfig: RoleMenuConfig = {
     { id: 'home', label: 'Home', icon: LayoutDashboard, href: '/dashboard' },
     { id: 'school', label: 'School', icon: Building2, href: '/dashboard/school-overview' },
     { id: 'students', label: 'Students', icon: GraduationCap, href: '/dashboard/students' },
+    { id: 'curriculum', label: 'Curriculum', icon: BookOpen, href: '/dashboard/admin/curriculum/modules' },
     { id: 'reports', label: 'Reports', icon: BarChart3, href: '/dashboard/reports' },
-    { id: 'profile', label: 'Profile', icon: Settings, href: '/dashboard/profile' },
   ],
   backgroundGradient: 'from-blue-600 via-indigo-500 to-purple-500',
   accentColor: 'from-blue-500 to-indigo-500',
@@ -805,8 +818,20 @@ export const platformAdminMenuConfig: RoleMenuConfig = {
       href: '/dashboard/content',
       subItems: [
         { id: 'courses', label: 'Courses', href: '/dashboard/content/courses' },
-        { id: 'curriculum', label: 'Curriculum', href: '/dashboard/content/curriculum' },
         { id: 'resources', label: 'Resources', href: '/dashboard/content/resources' },
+      ],
+    },
+    {
+      id: 'curriculum',
+      label: 'Curriculum',
+      icon: ClipboardList,
+      href: '/dashboard/admin/curriculum/frameworks',
+      subItems: [
+        { id: 'frameworks', label: 'Frameworks', href: '/dashboard/admin/curriculum/frameworks' },
+        { id: 'modules', label: 'Modules', href: '/dashboard/admin/curriculum/modules' },
+        { id: 'lessons', label: 'Lessons', href: '/dashboard/admin/curriculum/lessons' },
+        { id: 'activities', label: 'Activities', href: '/dashboard/admin/curriculum/activities' },
+        { id: 'review-queue', label: 'Review Queue', href: '/dashboard/admin/curriculum/review-queue' },
       ],
     },
     {

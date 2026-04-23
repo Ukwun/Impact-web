@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { useToast } from "@/components/ui/Toast";
 import { AUTH_TOKEN_KEY } from "@/lib/authStorage";
 import {
   Search,
@@ -62,11 +64,14 @@ interface Course {
 }
 
 export default function LearnPage() {
+  const router = useRouter();
+  const { success, error: errorToast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [difficulty, setDifficulty] = useState("all");
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pendingCourseId, setPendingCourseId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -145,6 +150,48 @@ export default function LearnPage() {
 
   const enrolledCourses = filteredCourses.filter(c => c.enrolled);
   const availableCourses = filteredCourses.filter(c => !c.enrolled);
+
+  const handleContinue = (courseId: string) => {
+    router.push(`/dashboard/courses/${courseId}`);
+  };
+
+  const handleEnroll = async (courseId: string) => {
+    try {
+      setPendingCourseId(courseId);
+      const token = localStorage.getItem(AUTH_TOKEN_KEY);
+      const response = await fetch(`/api/courses/${courseId}/enroll`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.error || "Failed to enroll in course");
+      }
+
+      setCourses((prev) =>
+        prev.map((course) =>
+          course.id === courseId
+            ? {
+                ...course,
+                enrolled: true,
+                progress: 0,
+              }
+            : course
+        )
+      );
+
+      success("Enrollment successful", "You can now start this course.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Enrollment failed";
+      errorToast("Enrollment failed", message);
+    } finally {
+      setPendingCourseId(null);
+    }
+  };
 
   const getDifficultyColor = (
     difficulty: "beginner" | "intermediate" | "advanced"
@@ -242,8 +289,17 @@ export default function LearnPage() {
           variant={course.enrolled ? "outline" : "primary"}
           size="sm"
           className="w-full justify-center"
+          disabled={pendingCourseId === course.id}
+          onClick={() =>
+            course.enrolled ? handleContinue(course.id) : handleEnroll(course.id)
+          }
         >
-          {course.enrolled ? (
+          {pendingCourseId === course.id ? (
+            <>
+              <Loader className="w-4 h-4 mr-1.5 animate-spin" />
+              Working...
+            </>
+          ) : course.enrolled ? (
             <>
               Continue
               <ArrowRight className="w-4 h-4 ml-1.5" />
