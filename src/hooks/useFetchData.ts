@@ -178,6 +178,34 @@ export function useAdminSafeguardingDashboard(includeResolved: boolean = false) 
   };
 }
 
+export function useAdminMessagingQueue(includeResolved: boolean = false) {
+  const url = `/api/admin/live-classroom/messaging-queue?includeResolved=${includeResolved}`;
+  const { data, loading, error, refetch } = useFetch(url, {
+    ttl: 45 * 1000,
+  });
+
+  return {
+    messagingQueue: data,
+    loading,
+    error,
+    refetch,
+  };
+}
+
+export function useSafeguardingOfficers() {
+  const url = `/api/admin/live-classroom/safeguarding/officers`;
+  const { data, loading, error, refetch } = useFetch(url, {
+    ttl: 5 * 60 * 1000,
+  });
+
+  return {
+    officers: data,
+    loading,
+    error,
+    refetch,
+  };
+}
+
 /**
  * Hook for university programs
  */
