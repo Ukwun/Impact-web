@@ -4,104 +4,79 @@ import { useAuth } from '@/hooks/useAuth';
 import { AUTH_TOKEN_KEY } from '@/lib/authStorage';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Users, BarChart3, TrendingUp, Loader, AlertCircle } from 'lucide-react';
-import CourseFormModal from '@/components/CourseFormModal';
+import { BookOpen, Users, BarChart3, TrendingUp, Loader, AlertCircle, Plus, Eye, Trash2, Edit } from 'lucide-react';
+import ClassroomFormModal from '@/components/facilitator/ClassroomFormModal';
 
-interface Course {
+interface Classroom {
   id: string;
   title: string;
   description: string;
   difficulty: string;
-  duration: number;
-  enrollmentCount: number;
-  isPublished: boolean;
-  thumbnail?: string;
+  language: string;
+  ageGroup: string;
+  subjectStrand: string;
+  enrollmentCount?: number;
+  completedCount?: number;
+  averageProgress?: number;
+  modules?: any[];
+  isPublished?: boolean;
   createdAt: string;
 }
 
 export default function FacilitatorDashboard() {
   const router = useRouter();
   const { user } = useAuth();
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [stats, setStats] = useState({
-    totalCourses: 0,
+    totalClassrooms: 0,
     totalStudents: 0,
     avgCompletion: 0,
-    avgRating: 4.5,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Fetch facilitator's courses from the API
-  const fetchFacilitatorCourses = async () => {
+  // Fetch facilitator's classrooms
+  const fetchClassrooms = async () => {
     try {
       setLoading(true);
       setError(null);
       const token = localStorage.getItem(AUTH_TOKEN_KEY);
-      
-      // Fetch all courses (filtering for created by user happens server-side via auth context)
-      const response = await fetch('/api/facilitator/content', {
+
+      const response = await fetch('/api/facilitator/classroom', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-        // Fallback: fetch from courses endpoint if facilitator endpoint not available
-        const coursesResponse = await fetch('/api/courses', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        throw new Error('Failed to fetch classrooms');
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setClassrooms(data.data);
+
+        // Calculate aggregated stats
+        const totalStudents = data.data.reduce((sum: number, c: any) => sum + (c.enrollmentCount || 0), 0);
+        const avgCompletion = data.data.length > 0
+          ? Math.round(
+              data.data.reduce((sum: number, c: any) => sum + (c.averageProgress || 0), 0) / data.data.length
+            )
+          : 0;
+
+        setStats({
+          totalClassrooms: data.data.length,
+          totalStudents,
+          avgCompletion,
         });
-        
-        if (!coursesResponse.ok) throw new Error('Failed to fetch courses');
-        const data = await coursesResponse.json();
-        
-        if (data.success && data.data.courses) {
-          setCourses(data.data.courses);
-          
-          // Calculate aggregated stats
-          const totalStudents = data.data.courses.reduce((sum: number, c: any) => sum + (c.enrollmentCount || 0), 0);
-          const avgCompletion = data.data.courses.length > 0
-            ? Math.round(
-                data.data.courses.reduce((sum: number, c: any) => sum + (c.completionPercentage || 0), 0) /
-                data.data.courses.length
-              )
-            : 0;
-
-          setStats({
-            totalCourses: data.data.courses.length,
-            totalStudents,
-            avgCompletion,
-            avgRating: 4.5,
-          });
-        }
-      } else {
-        const data = await response.json();
-        if (data.data && data.data.courses) {
-          setCourses(data.data.courses);
-          
-          const totalStudents = data.data.courses.reduce((sum: number, c: any) => sum + (c.enrollmentCount || 0), 0);
-          const avgCompletion = data.data.courses.length > 0
-            ? Math.round(
-                data.data.courses.reduce((sum: number, c: any) => sum + (c.completionPercentage || 0), 0) /
-                data.data.courses.length
-              )
-            : 0;
-
-          setStats({
-            totalCourses: data.data.courses.length,
-            totalStudents,
-            avgCompletion,
-            avgRating: 4.5,
-          });
-        }
       }
     } catch (err) {
-      console.error('Error fetching courses:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load courses');
+      console.error('Error fetching classrooms:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load classrooms');
     } finally {
       setLoading(false);
     }
@@ -109,221 +84,198 @@ export default function FacilitatorDashboard() {
 
   useEffect(() => {
     if (user?.id) {
-      fetchFacilitatorCourses();
+      fetchClassrooms();
     }
-  }, [user?.id]);
+  }, [user?.id, refreshTrigger]);
 
   const statConfig = [
-    { icon: BookOpen, label: 'Courses Teaching', value: stats.totalCourses.toString(), color: 'primary' },
-    { icon: Users, label: 'Total Students', value: stats.totalStudents.toString(), color: 'secondary' },
-    { icon: BarChart3, label: 'Avg Completion', value: `${stats.avgCompletion}%`, color: 'green' },
-    { icon: TrendingUp, label: 'Avg Rating', value: `${stats.avgRating.toFixed(1)}/5`, color: 'blue' },
+    { icon: BookOpen, label: 'Classrooms', value: stats.totalClassrooms.toString(), color: 'blue' },
+    { icon: Users, label: 'Students Enrolled', value: stats.totalStudents.toString(), color: 'green' },
+    { icon: BarChart3, label: 'Avg Completion', value: `${stats.avgCompletion}%`, color: 'purple' },
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-black text-white mb-2">
-          Welcome back, Facilitator {user?.firstName}! 👨‍🏫
-        </h1>
-        <p className="text-gray-400">
-          Manage your courses, track student progress, and create impact
-        </p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statConfig.map((stat, idx) => {
-          const Icon = stat.icon;
-          const colorMap: Record<string, string> = {
-            primary: 'from-primary-500 to-primary-600',
-            secondary: 'from-secondary-500 to-secondary-600',
-            green: 'from-green-500 to-green-600',
-            blue: 'from-blue-500 to-blue-600',
-          };
-
-          return (
-            <div
-              key={idx}
-              className="bg-gradient-to-br from-dark-500 to-dark-600 rounded-2xl p-6 border-2 border-dark-400 hover:border-primary-500 transition-all duration-300"
-            >
-              <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${colorMap[stat.color]} flex items-center justify-center mb-4`}>
-                <Icon className="text-white" size={24} />
-              </div>
-              <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-              <p className="text-3xl font-black text-white">{stat.value}</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="bg-danger-500/20 border border-danger-500/50 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-danger-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="font-semibold text-danger-300">Failed to load courses</p>
-            <p className="text-sm text-danger-200">{error}</p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-950">
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className="text-4xl font-bold text-white mb-2">
+            Welcome, {user?.firstName} 👋
+          </h1>
+          <p className="text-gray-400">
+            Create and manage learning classrooms for your students
+          </p>
         </div>
-      )}
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* My Courses */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black text-white">My Courses</h2>
-            <button
-              onClick={() => {
-                setEditingCourse(null);
-                setShowCreateModal(true);
-              }}
-              className="text-primary-400 hover:text-primary-300 font-semibold text-sm"
-            >
-              + Create Course
-            </button>
-          </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          {statConfig.map((stat, idx) => {
+            const Icon = stat.icon;
+            const colorMap: Record<string, string> = {
+              blue: 'from-blue-500 to-blue-600',
+              green: 'from-green-500 to-green-600',
+              purple: 'from-purple-500 to-purple-600',
+              orange: 'from-orange-500 to-orange-600',
+            };
 
-          {loading ? (
-            <div className="text-center py-12">
-              <Loader className="w-8 h-8 animate-spin text-primary-500 mx-auto mb-2" />
-              <p className="text-gray-400">Loading your courses...</p>
+            return (
+              <div
+                key={idx}
+                className={`bg-gradient-to-br ${colorMap[stat.color]} rounded-lg p-6 text-white`}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-blue-100 text-sm font-medium">{stat.label}</p>
+                    <p className="text-4xl font-bold mt-2">{stat.value}</p>
+                  </div>
+                  <Icon className="w-12 h-12 opacity-30" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-10 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-red-300">Failed to load classrooms</p>
+              <p className="text-sm text-red-200">{error}</p>
             </div>
-          ) : courses.length === 0 ? (
-            <div className="bg-dark-500 border-2 border-dark-400 rounded-lg p-12 text-center">
-              <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-300 mb-4">No courses yet. Create your first course to get started!</p>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <div className="space-y-8">
+          {/* Classrooms */}
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <BookOpen className="w-6 h-6 text-blue-400" />
+                My Classrooms
+              </h2>
               <button
                 onClick={() => {
-                  setEditingCourse(null);
+                  setEditingClassroom(null);
                   setShowCreateModal(true);
                 }}
-                className="text-primary-400 hover:text-primary-300 font-semibold"
+                className="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-medium hover:from-primary-700 hover:to-primary-800 transition flex items-center gap-2"
               >
-                Create First Course →
+                <Plus className="w-5 h-5" />
+                Create Classroom
               </button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {courses.map((course) => (
-                <div
-                  key={course.id}
-                  className="bg-gradient-to-r from-dark-500 to-dark-600 rounded-lg p-6 border-2 border-dark-400 hover:border-primary-500 transition-all duration-300"
+
+            {loading ? (
+              <div className="text-center py-16">
+                <Loader className="w-8 h-8 animate-spin text-primary-500 mx-auto mb-3" />
+                <p className="text-gray-400">Loading your classrooms...</p>
+              </div>
+            ) : classrooms.length === 0 ? (
+              <div className="border-2 border-dashed border-gray-700 rounded-lg p-12 text-center bg-gray-900/50">
+                <BookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-300 text-lg mb-6 font-medium">No classrooms yet</p>
+                <p className="text-gray-400 mb-8">Start creating your first classroom to engage students with the 4-layer learning model</p>
+                <button
+                  onClick={() => {
+                    setEditingClassroom(null);
+                    setShowCreateModal(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-white">{course.title}</h3>
-                        {course.isPublished && (
-                          <span className="px-2 py-1 bg-green-500/20 text-green-300 text-xs font-semibold rounded">
-                            Published
-                          </span>
-                        )}
+                  <Plus className="w-5 h-5" />
+                  Create Your First Classroom
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {classrooms.map((classroom) => (
+                  <div
+                    key={classroom.id}
+                    className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-700 hover:border-primary-500 transition-all hover:shadow-lg group overflow-hidden"
+                  >
+                    {/* Card Header */}
+                    <div className="h-24 bg-gradient-to-r from-primary-600 to-primary-700 relative overflow-hidden">
+                      <div className="absolute inset-0 opacity-20 group-hover:opacity-30 transition">
+                        <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')]" />
                       </div>
-                      <p className="text-sm text-gray-400">{course.enrollmentCount || 0} students enrolled</p>
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="px-6 py-6 -mt-8 relative">
+                      <div className="bg-gray-800 rounded-lg p-4 mb-4 border border-gray-700">
+                        <h3 className="font-bold text-white text-lg mb-2 line-clamp-2">{classroom.title}</h3>
+                        <p className="text-sm text-gray-400 line-clamp-2">{classroom.description}</p>
+                      </div>
+
+                      {/* Metadata */}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-400">Students Enrolled:</span>
+                          <span className="text-white font-semibold">{classroom.enrollmentCount || 0}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-400">Modules:</span>
+                          <span className="text-white font-semibold">{classroom.modules?.length || 0}</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-3">
+                          <div
+                            className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all"
+                            style={{ width: `${classroom.averageProgress || 0}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">{classroom.averageProgress || 0}% completion</p>
+                      </div>
+
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded font-medium">
+                          {classroom.ageGroup} years
+                        </span>
+                        <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded font-medium">
+                          {classroom.difficulty}
+                        </span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => router.push(`/dashboard/facilitator/classroom/${classroom.id}`)}
+                          className="flex-1 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition font-medium text-sm flex items-center justify-center gap-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => router.push(`/dashboard/facilitator/classroom/${classroom.id}?preview=true`)}
+                          className="flex-1 px-3 py-2 bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 transition font-medium text-sm flex items-center justify-center gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <p className="text-sm text-gray-300 mb-4 line-clamp-2">{course.description}</p>
-
-                  <div className="flex items-center gap-2 mb-4 text-xs text-gray-400">
-                    <span className="px-2 py-1 bg-dark-400 rounded">{course.difficulty}</span>
-                    <span className="px-2 py-1 bg-dark-400 rounded">{course.duration} min</span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => {
-                        setEditingCourse(course);
-                        setShowCreateModal(true);
-                      }}
-                      className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded font-semibold text-sm transition-colors"
-                    >
-                      Edit Course
-                    </button>
-                    <button
-                      onClick={() => router.push(`/dashboard/facilitator/analytics?courseId=${course.id}`)}
-                      className="flex-1 px-4 py-2 bg-dark-400 hover:bg-dark-300 text-white rounded font-semibold text-sm transition-colors"
-                    >
-                      View Analytics
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Quick Access */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-black text-white mb-6">Quick Actions</h2>
-
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                setEditingCourse(null);
-                setShowCreateModal(true);
-              }}
-              className="w-full px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-lg font-bold transition-all duration-300 flex items-center gap-3 justify-center"
-            >
-              <BookOpen size={20} />
-              Create Course
-            </button>
-
-            <button
-              onClick={() => router.push('/dashboard/facilitator/analytics')}
-              className="w-full px-6 py-4 bg-gradient-to-r from-secondary-600 to-secondary-700 hover:from-secondary-700 hover:to-secondary-800 text-white rounded-lg font-bold transition-all duration-300 flex items-center gap-3 justify-center"
-            >
-              <BarChart3 size={20} />
-              View Analytics
-            </button>
-
-            <button
-              onClick={() => router.push('/dashboard/facilitator/content')}
-              className="w-full px-6 py-4 bg-dark-500 hover:bg-dark-400 text-white rounded-lg font-bold transition-all duration-300 border-2 border-dark-400 flex items-center gap-3 justify-center"
-            >
-              <Users size={20} />
-              Manage Content
-            </button>
-          </div>
-
-          {/* Recent Submissions */}
-          <div className="mt-8 bg-gradient-to-br from-dark-500 to-dark-600 rounded-lg p-6 border-2 border-dark-400">
-            <h3 className="font-bold text-white mb-4">Recent Submissions</h3>
-            <div className="space-y-3">
-              <div className="py-2 border-b border-dark-400">
-                <p className="text-sm font-semibold text-white">Assignment: Pitch Deck</p>
-                <p className="text-xs text-gray-400">5 submissions pending review</p>
+                ))}
               </div>
-              <div className="py-2 border-b border-dark-400">
-                <p className="text-sm font-semibold text-white">Quiz: Module 4</p>
-                <p className="text-xs text-gray-400">42 students completed</p>
-              </div>
-              <div className="py-2">
-                <p className="text-sm font-semibold text-white">Project: Business Plan</p>
-                <p className="text-xs text-gray-400">8 submissions reviewed</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Course Form Modal */}
-      <CourseFormModal
+      {/* Classroom Form Modal */}
+      <ClassroomFormModal
         isOpen={showCreateModal}
         onClose={() => {
           setShowCreateModal(false);
-          setEditingCourse(null);
+          setEditingClassroom(null);
         }}
-        initialData={editingCourse || undefined}
-        mode={editingCourse ? 'edit' : 'create'}
+        editingClassroom={editingClassroom || undefined}
         onSuccess={() => {
           setShowCreateModal(false);
-          setEditingCourse(null);
-          // Refresh courses list
-          fetchFacilitatorCourses();
+          setEditingClassroom(null);
+          setRefreshTrigger((prev) => prev + 1);
         }}
       />
     </div>
