@@ -107,6 +107,7 @@ export const studentMenuConfig: RoleMenuConfig = {
       href: '/dashboard/projects',
       subItems: [
         { id: 'my-projects', label: 'My Projects', href: '/dashboard/projects' },
+        { id: 'venture-lab', label: 'Venture Lab', href: '/dashboard/venture', description: 'Business plans, projections, simulations, and capstone pitch work' },
         { id: 'challenges', label: 'Challenges', href: '/dashboard/challenges' },
         { id: 'activities', label: 'Upcoming Activities', href: '/dashboard/activities' },
       ],

@@ -23,6 +23,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "ts-node -r tsconfig-paths/register --project tsconfig.seed.json prisma/seed.ts",
+    "db:seed:venture": "ts-node -r tsconfig-paths/register --project tsconfig.seed.json prisma/seed-senior-impactuni.ts",
     "db:reset": "prisma migrate reset",
     "db:test": "ts-node -r tsconfig-paths/register --project tsconfig.seed.json prisma/test-integration.ts",
     "load-test": "npx k6 run load-test.js",
