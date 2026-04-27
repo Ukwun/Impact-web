@@ -14,6 +14,8 @@ interface Course {
   title: string;
   description: string;
   category?: string;
+  difficulty?: string;
+  duration?: number;
   level?: string;
   estimatedHours?: number;
   maxStudents?: number;
@@ -32,6 +34,17 @@ export const EditCourseModal = ({
   course,
   onSuccess,
 }: EditCourseModalProps) => {
+  const mapDifficultyToLevel = (difficulty?: string) => {
+    switch ((difficulty || "").toUpperCase()) {
+      case "INTERMEDIATE":
+        return "Intermediate";
+      case "ADVANCED":
+        return "Advanced";
+      default:
+        return "Beginner";
+    }
+  };
+
   const [isLoading, setIsLoading] = useState(false);
   const { success, error } = useToast();
   const [formData, setFormData] = useState({
@@ -39,8 +52,7 @@ export const EditCourseModal = ({
     description: "",
     category: "Technology",
     level: "Beginner",
-    duration: "4",
-    maxStudents: "30",
+    estimatedHours: "4",
   });
 
   // Populate form when course changes
@@ -50,9 +62,11 @@ export const EditCourseModal = ({
         title: course.title || "",
         description: course.description || "",
         category: course.category || "Technology",
-        level: course.level || "Beginner",
-        duration: course.estimatedHours?.toString() || "4",
-        maxStudents: course.maxStudents?.toString() || "30",
+        level: course.level || mapDifficultyToLevel(course.difficulty),
+        estimatedHours: (
+          course.estimatedHours ||
+          (typeof course.duration === 'number' ? Math.ceil(course.duration / 60) : 4)
+        ).toString(),
       });
     }
   }, [course, isOpen]);
@@ -98,9 +112,8 @@ export const EditCourseModal = ({
           title: formData.title,
           description: formData.description,
           category: formData.category,
-          level: formData.level,
-          estimatedHours: parseInt(formData.duration),
-          maxStudents: parseInt(formData.maxStudents),
+          difficulty: formData.level.toUpperCase(),
+          duration: parseInt(formData.estimatedHours || "4", 10) * 60,
         }),
       });
 
@@ -211,33 +224,19 @@ export const EditCourseModal = ({
           </Select>
         </div>
 
-        {/* Duration & Max Students */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Estimated Duration */}
+        <div>
           <div>
             <label className="block text-sm font-semibold text-gray-300 mb-2">
-              Duration (weeks)
+              Estimated Duration (hours)
             </label>
             <Input
               type="number"
-              name="duration"
-              value={formData.duration}
+              name="estimatedHours"
+              value={formData.estimatedHours}
               onChange={handleInputChange}
               min="1"
-              max="52"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-300 mb-2">
-              Max Students
-            </label>
-            <Input
-              type="number"
-              name="maxStudents"
-              value={formData.maxStudents}
-              onChange={handleInputChange}
-              min="1"
-              max="500"
+              max="200"
             />
           </div>
         </div>

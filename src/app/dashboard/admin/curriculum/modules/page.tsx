@@ -241,13 +241,18 @@ export default function AdminModulesPage() {
 
   useEffect(() => {
     fetchFrameworks();
-    fetch('/api/auth/me')
-      .then(r => r.json())
-      .then(d => {
-        setUserRole(d?.data?.role ?? null);
-        setUserSchoolId(d?.data?.schoolId ?? null);
+    const authToken = typeof window !== 'undefined' ? (localStorage.getItem('auth_token') || localStorage.getItem('token')) : null;
+    if (authToken) {
+      fetch('/api/user/profile', {
+        headers: { Authorization: `Bearer ${authToken}` },
       })
-      .catch(() => null);
+        .then(r => r.json())
+        .then(d => {
+          setUserRole(d?.data?.role ?? null);
+          setUserSchoolId(d?.data?.schoolId ?? null);
+        })
+        .catch(() => null);
+    }
   }, [fetchFrameworks]);
 
   useEffect(() => {

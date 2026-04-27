@@ -26,6 +26,33 @@ interface CurriculumFramework {
   estimatedDuration?: string;
 }
 
+const levelExperienceMeta: Record<string, { progress: number; stage: string; cadence: string; experience: string }> = {
+  PRIMARY: {
+    progress: 18,
+    stage: 'Foundation Stage',
+    cadence: '1 live class weekly',
+    experience: 'Habit-building money routines, playful challenges, and guided family reflection.',
+  },
+  JUNIOR_SECONDARY: {
+    progress: 42,
+    stage: 'Application Stage',
+    cadence: '1 live class weekly',
+    experience: 'Budget practice, mini-enterprise tasks, and decision-making projects tied to everyday life.',
+  },
+  SENIOR_SECONDARY: {
+    progress: 71,
+    stage: 'Enterprise Readiness',
+    cadence: '75-minute live class + venture lab',
+    experience: 'Business plan building, projection worksheets, investor simulations, and demo-day rehearsal.',
+  },
+  IMPACTUNI: {
+    progress: 88,
+    stage: 'Execution and Capital Readiness',
+    cadence: '90-minute masterclass + biweekly studio',
+    experience: 'Founder studio, career capital dashboards, funding pathways, and capstone pitch reviews.',
+  },
+};
+
 interface CurriculumProgressDashboardProps {
   userId?: string;
   compact?: boolean;
@@ -126,6 +153,7 @@ export function CurriculumProgressDashboard({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         {curriculumLevels.map((level, index) => {
           const framework = frameworks.find(f => f.level === level.key);
+          const experienceMeta = levelExperienceMeta[level.key];
 
           if (!framework) return null;
 
@@ -159,13 +187,16 @@ export function CurriculumProgressDashboard({
                 <p className="text-gray-700">
                   <span className="font-semibold">{framework.totalLessons}</span> Lessons
                 </p>
+                <p className="text-gray-500">{experienceMeta.stage}</p>
               </div>
 
-              {/* Progress Bar (Example: would be filled based on user progress) */}
+              <p className="text-[11px] text-gray-500 mb-2">{experienceMeta.cadence}</p>
+
+              {/* Deterministic programme readiness state */}
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-blue-600 h-2 rounded-full transition-all"
-                  style={{ width: `${Math.random() * 100}%` }}
+                  style={{ width: `${experienceMeta.progress}%` }}
                 ></div>
               </div>
             </div>
@@ -190,6 +221,20 @@ export function CurriculumProgressDashboard({
                   <p className="text-sm text-blue-800 mt-1">
                     {frameworks.find(f => f.level === selectedLevel)?.primaryOutcome}
                   </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-gray-500">Stage</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">{levelExperienceMeta[selectedLevel].stage}</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-gray-500">Cadence</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">{levelExperienceMeta[selectedLevel].cadence}</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-gray-500">Learner Experience</p>
+                    <p className="text-sm font-semibold text-gray-900 mt-1">{levelExperienceMeta[selectedLevel].experience}</p>
+                  </div>
                 </div>
               </div>
 

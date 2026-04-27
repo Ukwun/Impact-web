@@ -315,16 +315,51 @@ class ApiClient {
     return this.client.delete(`/instructor/courses/${courseId}`);
   }
 
-  async addLesson(courseId: string, lessonData: any) {
-    return this.client.post(`/instructor/courses/${courseId}/lessons`, lessonData);
+  async addLesson(classroomId: string, lessonData: any, moduleId?: string) {
+    const resolvedModuleId = moduleId || lessonData?.moduleId;
+    if (!resolvedModuleId) {
+      throw new Error("moduleId is required to add a lesson");
+    }
+
+    return this.client.post(
+      `/facilitator/classroom/${classroomId}/modules/${resolvedModuleId}/lessons`,
+      lessonData
+    );
   }
 
-  async uploadLessonMedia(courseId: string, lessonId: string, file: File) {
-    const formData = new FormData();
-    formData.append("file", file);
-    return this.client.post(`/instructor/courses/${courseId}/lessons/${lessonId}/media`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+  async uploadLessonMedia(_courseId: string, lessonId: string, file: File) {
+    const presignRes = await this.client.post('/files', {
+      filename: file.name,
+      contentType: file.type || 'application/octet-stream',
+      category: file.type.startsWith('video/') ? 'video' : 'document',
     });
+
+    const { presignedUrl, s3Key, bucket } = presignRes.data || {};
+    if (!presignedUrl || !s3Key) {
+      throw new Error('Failed to generate upload URL for lesson media');
+    }
+
+    const uploadRes = await fetch(presignedUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+      },
+      body: file,
+    });
+
+    if (!uploadRes.ok) {
+      throw new Error('Failed to upload lesson media file');
+    }
+
+    const fileUrl = bucket
+      ? `https://${bucket}.s3.amazonaws.com/${s3Key}`
+      : s3Key;
+
+    const updatePayload = file.type.startsWith('video/')
+      ? { videoUrl: fileUrl }
+      : { content: fileUrl };
+
+    return this.client.put(`/lessons/${lessonId}`, updatePayload);
   }
 
   async getInstructorDashboard() {

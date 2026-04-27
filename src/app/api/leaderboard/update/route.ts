@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/leaderboard/stats
+ * GET /api/leaderboard/update
  * Get leaderboard statistics
  */
 export async function GET(request: NextRequest) {

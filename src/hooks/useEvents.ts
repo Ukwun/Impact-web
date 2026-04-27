@@ -164,9 +164,16 @@ export function useEventRegistration(eventId: string) {
       setLoading(true);
       setError(null);
 
+      const token = typeof window !== 'undefined'
+        ? (localStorage.getItem('auth_token') || localStorage.getItem('token'))
+        : null;
+
       const response = await fetch(`/api/events/${eventId}/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
       });
 
       if (!response.ok) {
@@ -186,15 +193,19 @@ export function useEventRegistration(eventId: string) {
     }
   }, [eventId]);
 
-  const unregister = useCallback(async (registrationId: string) => {
+  const unregister = useCallback(async (_registrationId: string) => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
-        `/api/events/${eventId}/registrations/${registrationId}`,
-        { method: 'DELETE' }
-      );
+      const token = typeof window !== 'undefined'
+        ? (localStorage.getItem('auth_token') || localStorage.getItem('token'))
+        : null;
+
+      const response = await fetch(`/api/events/${eventId}/register`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
 
       if (!response.ok) {
         throw new Error('Failed to cancel registration');
@@ -214,11 +225,22 @@ export function useEventRegistration(eventId: string) {
   const checkRegistration = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/events/${eventId}/registration`);
+      const token = typeof window !== 'undefined'
+        ? (localStorage.getItem('auth_token') || localStorage.getItem('token'))
+        : null;
+      const response = await fetch('/api/events/my-registrations', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (response.ok) {
         const data = await response.json();
-        setRegistration(data.data);
-        setIsRegistered(true);
+        const registrationMatch = (data.data || []).find((reg: any) => reg.eventId === eventId);
+        if (registrationMatch) {
+          setRegistration(registrationMatch);
+          setIsRegistered(true);
+        } else {
+          setRegistration(null);
+          setIsRegistered(false);
+        }
       }
     } catch (err) {
       console.error('Error checking registration:', err);

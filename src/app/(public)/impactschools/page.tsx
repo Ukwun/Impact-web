@@ -86,7 +86,7 @@ export default function ImpactSchoolsPage() {
               {[
                 { phase: "Primary (Grades 1-6)", topics: ["Money basics", "Saving & spending", "Needs vs wants", "Simple entrepreneurship"] },
                 { phase: "Junior Secondary (Grades 7-9)", topics: ["Banking systems", "Investment basics", "Business fundamentals", "Financial planning"] },
-                { phase: "Senior Secondary (Grades 10-12)", topics: ["Capital markets", "Entrepreneurship planning", "Wealth creation", "Economic participation"] },
+                { phase: "Senior Secondary (Grades 10-12)", topics: ["Business design and customer understanding", "Startup cost, pricing, and margin logic", "Cash flow and projection worksheets", "Investor simulation and pitch readiness"] },
               ].map((level, i) => (
                 <div key={i} className="rounded-2xl bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-2 border-blue-500/30 p-8">
                   <h3 className="text-2xl font-black text-blue-400 mb-4">{level.phase}</h3>
@@ -98,6 +98,11 @@ export default function ImpactSchoolsPage() {
                       </li>
                     ))}
                   </ul>
+                  {level.phase === "Senior Secondary (Grades 10-12)" && (
+                    <p className="mt-5 text-sm text-blue-100/80">
+                      Learners attend one 75-minute live class each week, plus a monthly venture lab and quarterly pitch day with rubric-based feedback.
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

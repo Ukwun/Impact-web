@@ -107,10 +107,15 @@ export default function AdminActivitiesPage() {
 
   useEffect(() => {
     fetch('/api/admin/curriculum/lessons?limit=100').then(r => r.json()).then(d => setLessons(d.data ?? [])).catch(() => null);
-    fetch('/api/auth/me').then(r => r.json()).then(d => {
-      setUserRole(d?.data?.role ?? null);
-      setUserSchoolId(d?.data?.schoolId ?? null);
-    }).catch(() => null);
+    const authToken = typeof window !== 'undefined' ? (localStorage.getItem('auth_token') || localStorage.getItem('token')) : null;
+    if (authToken) {
+      fetch('/api/user/profile', {
+        headers: { Authorization: `Bearer ${authToken}` },
+      }).then(r => r.json()).then(d => {
+        setUserRole(d?.data?.role ?? null);
+        setUserSchoolId(d?.data?.schoolId ?? null);
+      }).catch(() => null);
+    }
   }, []);
 
   useEffect(() => { fetchActivities(); }, [fetchActivities]);

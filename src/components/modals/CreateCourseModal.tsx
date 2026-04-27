@@ -37,6 +37,17 @@ export const CreateCourseModal = ({
   initialData,
   mode = 'create',
 }: CreateCourseModalProps) => {
+  const mapDifficultyToLevel = (difficulty?: string) => {
+    switch ((difficulty || "").toUpperCase()) {
+      case "INTERMEDIATE":
+        return "Intermediate";
+      case "ADVANCED":
+        return "Advanced";
+      default:
+        return "Beginner";
+    }
+  };
+
   const [isLoading, setIsLoading] = useState(false);
   const { success, error } = useToast();
   const [formData, setFormData] = useState<CourseData & { category: string; level: string; estimatedHours: string }>({
@@ -57,8 +68,8 @@ export const CreateCourseModal = ({
         title: initialData.title,
         description: initialData.description,
         category: "Technology",
-        level: initialData.difficulty || "Beginner",
-        difficulty: initialData.difficulty || "BEGINNER",
+        level: mapDifficultyToLevel(initialData.difficulty),
+        difficulty: (initialData.difficulty || "BEGINNER").toUpperCase(),
         duration: initialData.duration || 240,
         estimatedHours: String(initialData.duration ? Math.ceil(initialData.duration / 60) : 4),
         isPublished: initialData.isPublished,

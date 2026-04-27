@@ -26,7 +26,7 @@ export default function ImpactUniPage() {
             </h1>
             
             <p className="text-xl text-gray-300 leading-relaxed">
-              University-based venture and wealth development programme. Transform ideas into viable ventures while building financial mastery and investment readiness.
+              A university and early-career execution programme that moves learners from knowledge to execution, employability, venture building, and capital awareness.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -53,15 +53,15 @@ export default function ImpactUniPage() {
             <div className="space-y-4">
               <h2 className="text-4xl font-black text-white">What is ImpactUni?</h2>
               <p className="text-xl text-gray-300 leading-relaxed">
-                ImpactUni is a specialized programme for university students and recent graduates (builders) who are transitioning from education to economic participation. We provide startup labs, financial mastery training, and investment readiness preparation—equipping you to launch ventures and participate in capital ecosystems.
+                ImpactUni is built for university students, recent graduates, and early-career builders who need more than inspiration. Learners build career capital, validate ventures or innovation projects, create execution plans and financial models, and learn how to present credibly to employers, partners, institutions, and investors.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
-                { icon: Rocket, title: "Startup Labs", desc: "Hands-on incubation programme to develop, test, and launch your business ideas." },
-                { icon: TrendingUp, title: "Financial Mastery", desc: "Deep dive into personal finance, business finance, and investment principles." },
-                { icon: Network, title: "Investor Readiness", desc: "Prepare to pitch to investors and access capital for your ventures." },
+                { icon: Rocket, title: "Founder Studio", desc: "Turn a problem, idea, or civic opportunity into a validated venture or execution-ready project." },
+                { icon: TrendingUp, title: "Career and Financial Capital", desc: "Build mature personal finance habits, professional positioning, and execution discipline." },
+                { icon: Network, title: "Capital Readiness", desc: "Understand grants, debt, equity, bootstrapping, and how to present opportunity credibly." },
               ].map((item, i) => (
                 <div key={i} className="rounded-2xl bg-dark-700 border-2 border-purple-500/30 p-8">
                   <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-purple-500/20 mb-6">
@@ -80,24 +80,29 @@ export default function ImpactUniPage() {
       <section className="py-24 bg-dark-900">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-4xl font-black text-white mb-12">Programme Components</h2>
+            <h2 className="text-4xl font-black text-white mb-12">Term Structure</h2>
             
             <div className="space-y-6">
               {[
                 {
-                  phase: "Phase 1: Foundation (3 months)",
-                  desc: "Build financial fundamentals and business acumen",
-                  items: ["Personal finance mastery", "Entrepreneurship essentials", "Business planning", "Team building"]
+                  phase: "Term 1: Personal and Professional Capital",
+                  desc: "Strengthen financial maturity, productivity, and professional positioning.",
+                  items: ["Budgeting and debt awareness", "Income planning", "Digital professionalism", "Career positioning"]
                 },
                 {
-                  phase: "Phase 2: Venture Development (6 months)",
-                  desc: "Develop and validate your business idea",
-                  items: ["Startup lab access", "Mentorship from entrepreneurs", "Market research & validation", "MVP development"]
+                  phase: "Term 2: Venture and Project Execution",
+                  desc: "Validate a problem and build a practical execution roadmap.",
+                  items: ["Problem validation", "Product or service design", "Market research", "Partnerships and operations"]
                 },
                 {
-                  phase: "Phase 3: Investor Readiness (3 months)",
-                  desc: "Prepare for capital access and fundraising",
-                  items: ["Pitch development", "Investment pitch practice", "Network with investors", "Capital access pathways"]
+                  phase: "Term 3: Capital and Institutional Readiness",
+                  desc: "Build financial models, investor materials, and formal presentation confidence.",
+                  items: ["Financial modelling", "Fundraising basics", "Grants, debt, equity", "Formal presentations"]
+                },
+                {
+                  phase: "Term 4: Applied Studio",
+                  desc: "Apply learning inside live projects, challenge labs, and showcase moments.",
+                  items: ["Startup studio", "Consulting challenge", "Civic innovation lab", "Capstone showcase"]
                 },
               ].map((component, i) => (
                 <div key={i} className="rounded-2xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-2 border-purple-500/30 p-8">
@@ -113,6 +118,13 @@ export default function ImpactUniPage() {
                   </ul>
                 </div>
               ))}
+
+              <div className="rounded-2xl border border-purple-500/30 bg-dark-800 p-6">
+                <h3 className="text-xl font-black text-white">Live Delivery Format</h3>
+                <p className="text-gray-300 mt-3">
+                  One 90-minute masterclass runs every week, with one studio or clinic every two weeks, monthly mentor office hours, and quarterly showcase or challenge events.
+                </p>
+              </div>
             </div>
           </div>
         </div>

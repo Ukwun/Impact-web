@@ -58,8 +58,23 @@ export default function FacilitatorContentPage() {
     if (!window.confirm("Are you sure you want to delete this item?")) return;
 
     try {
-      const token = localStorage.getItem("auth_token");
-      const response = await fetch(`/api/${type}/${id}`, {
+      const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
+
+      const endpointByType: Record<string, string> = {
+        courses: `/api/courses/${id}`,
+        lessons: `/api/lessons/${id}`,
+      };
+
+      if (type === 'modules') {
+        throw new Error('Module deletion is not yet supported from this view. Open the classroom editor to remove modules.');
+      }
+
+      const endpoint = endpointByType[type];
+      if (!endpoint) {
+        throw new Error(`Unsupported content type: ${type}`);
+      }
+
+      const response = await fetch(endpoint, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -69,9 +84,13 @@ export default function FacilitatorContentPage() {
       if (response.ok) {
         // Refresh content using the hook's refetch
         await refetch();
+      } else {
+        const responseData = await response.json().catch(() => ({}));
+        throw new Error(responseData?.error || 'Failed to delete content');
       }
     } catch (err) {
       console.error("Error deleting content:", err);
+      alert(err instanceof Error ? err.message : 'Failed to delete content');
     }
   };
 

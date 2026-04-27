@@ -11,7 +11,7 @@ export const mockCurriculumFrameworks = {
   success: true,
   count: 4,
   data: [
-{
+    {
       id: "cf-primary-001",
       level: "PRIMARY",
       name: "Primary School Foundations",
@@ -181,8 +181,8 @@ export const mockCurriculumFrameworks = {
       id: "cf-senior-001",
       level: "SENIOR_SECONDARY",
       name: "Senior Secondary: Enterprise Readiness",
-      signatureShift: "From ideas to planning, pitching, and investment awareness",
-      primaryOutcome: "Develop comprehensive entrepreneurship skills, create real business plans, and understand venture funding",
+      signatureShift: "From ideas to enterprise readiness, financial confidence, and confident venture presentation",
+      primaryOutcome: "Write viable business plans, build simple projections, and pitch with financial clarity",
       minAge: 15,
       maxAge: 18,
       moduleCount: 8,
@@ -191,74 +191,74 @@ export const mockCurriculumFrameworks = {
       modules: [
         {
           id: "mod-senior-01",
-          title: "Venture Planning",
+          title: "Opportunity Discovery and Business Design",
           lessons: [
-            { id: "lesson-201", title: "Business Model Canvas" },
-            { id: "lesson-202", title: "Value Proposition" },
-            { id: "lesson-203", title: "Revenue Models" }
+            { id: "lesson-201", title: "Opportunity Identification and Local Market Problems" },
+            { id: "lesson-202", title: "Value Proposition and Customer Profiles" },
+            { id: "lesson-203", title: "Business Model Basics and Operations Flow" }
           ]
         },
         {
           id: "mod-senior-02",
-          title: "Market Validation",
+          title: "Business Plan Builder",
           lessons: [
-            { id: "lesson-204", title: "User Research Methods" },
-            { id: "lesson-205", title: "Competitive Analysis" },
-            { id: "lesson-206", title: "Market Sizing" }
+            { id: "lesson-204", title: "Writing the Executive Summary" },
+            { id: "lesson-205", title: "Market Understanding and Customer Segments" },
+            { id: "lesson-206", title: "Operations, Delivery, and Milestones" }
           ]
         },
         {
           id: "mod-senior-03",
-          title: "Financial Projections",
+          title: "Startup Cost and Pricing Decisions",
           lessons: [
-            { id: "lesson-207", title: "Pro Forma Financials" },
-            { id: "lesson-208", title: "Cash Flow Forecasting" },
-            { id: "lesson-209", title: "Break-even Analysis" }
+            { id: "lesson-207", title: "Startup Cost Planning" },
+            { id: "lesson-208", title: "Pricing, Margin, and Break-even Logic" },
+            { id: "lesson-209", title: "Record Keeping for Young Ventures" }
           ]
         },
         {
           id: "mod-senior-04",
-          title: "Pitch Preparation",
+          title: "Cash Flow and Projection Worksheet",
           lessons: [
-            { id: "lesson-210", title: "Elevator Pitches" },
-            { id: "lesson-211", title: "Presentation Skills" },
-            { id: "lesson-212", title: "Investor Communication" }
+            { id: "lesson-210", title: "Simple Revenue and Expense Projections" },
+            { id: "lesson-211", title: "Cash Flow Basics" },
+            { id: "lesson-212", title: "Performance Tracking and Adjustments" }
           ]
         },
         {
           id: "mod-senior-05",
-          title: "Funding & Capital",
+          title: "Leadership, Governance, and Team Influence",
           lessons: [
-            { id: "lesson-213", title: "Bootstrapping" },
-            { id: "lesson-214", title: "Angel Investing" },
-            { id: "lesson-215", title: "Venture Capital" }
+            { id: "lesson-213", title: "Decision Making and Role Clarity" },
+            { id: "lesson-214", title: "Ethics, Governance, and Accountability" },
+            { id: "lesson-215", title: "Influence, Teamwork, and Stakeholder Trust" }
           ]
         },
         {
           id: "mod-senior-06",
-          title: "Legal & Compliance",
+          title: "Investment Simulation Lab",
           lessons: [
-            { id: "lesson-216", title: "Business Structure" },
-            { id: "lesson-217", title: "Business Registration" },
-            { id: "lesson-218", title: "Contracts & Agreements" }
+            { id: "lesson-216", title: "Types of Capital and Risk Profiles" },
+            { id: "lesson-217", title: "Return Scenarios and Investor Decisions" },
+            { id: "lesson-218", title: "Negotiating Trade-offs in Simulated Deals" }
           ]
         },
         {
           id: "mod-senior-07",
-          title: "Team Building",
+          title: "Pitch Deck and Demo Day Preparation",
           lessons: [
-            { id: "lesson-219", title: "Co-founder Dynamics" },
-            { id: "lesson-220", title: "Building Your Advisory Board" },
-            { id: "lesson-221", title: "Equity & Compensation" }
+            { id: "lesson-219", title: "Pitch Deck Structure and Story Flow" },
+            { id: "lesson-220", title: "Presentation Skills and Q&A Handling" },
+            { id: "lesson-221", title: "Peer Pitch Review and Revision" }
           ]
         },
         {
           id: "mod-senior-08",
-          title: "Scaling & Growth",
+          title: "Quarterly Showcase and Venture Lab",
           lessons: [
-            { id: "lesson-222", title: "Growth Strategies" },
-            { id: "lesson-223", title: "Marketing & Sales" },
-            { id: "lesson-224", title: "Pivoting & Iteration" }
+            { id: "lesson-222", title: "Monthly Venture Lab Sprint" },
+            { id: "lesson-223", title: "Structured Feedback Rubrics" },
+            { id: "lesson-224", title: "Virtual Demo Day Presentation" }
           ]
         }
       ]
@@ -267,8 +267,8 @@ export const mockCurriculumFrameworks = {
       id: "cf-impactuni-001",
       level: "IMPACTUNI",
       name: "Impact University: Execution & Capital",
-      signatureShift: "From readiness to venture building, employment, and capital access",
-      primaryOutcome: "Build ventures, secure funding, navigate early-stage challenges, and prepare for employment or entrepreneurship",
+      signatureShift: "From knowledge to execution, employability, venture building, and capital awareness",
+      primaryOutcome: "Build execution plans, financial models, and institutional credibility for work or venture pathways",
       minAge: 18,
       maxAge: 100,
       moduleCount: 8,
@@ -277,74 +277,74 @@ export const mockCurriculumFrameworks = {
       modules: [
         {
           id: "mod-uni-01",
-          title: "Venture Building Bootcamp",
+          title: "Personal Finance and Career Capital",
           lessons: [
-            { id: "lesson-301", title: "MVP Development" },
-            { id: "lesson-302", title: "Go-to-Market Strategy" },
-            { id: "lesson-303", title: "Customer Acquisition" }
+            { id: "lesson-301", title: "Budgeting, Debt Awareness, and Income Planning" },
+            { id: "lesson-302", title: "Productivity Systems and Digital Professionalism" },
+            { id: "lesson-303", title: "Career Positioning and Professional Signalling" }
           ]
         },
         {
           id: "mod-uni-02",
-          title: "Fundraising Masterclass",
+          title: "Founder Studio: Venture Validation",
           lessons: [
-            { id: "lesson-304", title: "Investor Pitching" },
-            { id: "lesson-305", title: "Term Sheet Negotiation" },
-            { id: "lesson-306", title: "Due Diligence Process" }
+            { id: "lesson-304", title: "Problem Validation and User Discovery" },
+            { id: "lesson-305", title: "Product or Service Design" },
+            { id: "lesson-306", title: "Market Research and Opportunity Testing" }
           ]
         },
         {
           id: "mod-uni-03",
-          title: "Financial Management",
+          title: "Execution Roadmap and Partnerships",
           lessons: [
-            { id: "lesson-307", title: "Cap Table Management" },
-            { id: "lesson-308", title: "GAAP vs Accrual Accounting" },
-            { id: "lesson-309", title: "Financial Reporting for Investors" }
+            { id: "lesson-307", title: "Operations and Delivery Planning" },
+            { id: "lesson-308", title: "Partnership Strategy and Stakeholder Mapping" },
+            { id: "lesson-309", title: "Execution Roadmap and Milestone Review" }
           ]
         },
         {
           id: "mod-uni-04",
-          title: "Core Competencies",
+          title: "Financial Modelling and Opportunity Readiness",
           lessons: [
-            { id: "lesson-310", title: "Leadership Skills" },
-            { id: "lesson-311", title: "Strategic Planning" },
-            { id: "lesson-312", title: "Organizational Development" }
+            { id: "lesson-310", title: "Basic Financial Models for Projects and Ventures" },
+            { id: "lesson-311", title: "Unit Economics and Scenario Planning" },
+            { id: "lesson-312", title: "Decision Dashboards for Execution" }
           ]
         },
         {
           id: "mod-uni-05",
-          title: "Career Navigation",
+          title: "Capital Pathways and Funding Logic",
           lessons: [
-            { id: "lesson-313", title: "Job Search Strategies" },
-            { id: "lesson-314", title: "Salary Negotiation" },
-            { id: "lesson-315", title: "Building Your Personal Brand" }
+            { id: "lesson-313", title: "Grants, Debt, Equity, and Bootstrapping" },
+            { id: "lesson-314", title: "Funding Readiness and Investor Materials" },
+            { id: "lesson-315", title: "Formal Presentations to Institutions and Investors" }
           ]
         },
         {
           id: "mod-uni-06",
-          title: "Advanced Financing",
+          title: "Leadership, Governance, and Public Purpose",
           lessons: [
-            { id: "lesson-316", title: "Debt Financing" },
-            { id: "lesson-317", title: "Strategic Partnerships" },
-            { id: "lesson-318", title: "M&A Fundamentals" }
+            { id: "lesson-316", title: "Leading Teams and Execution Meetings" },
+            { id: "lesson-317", title: "Governance, Reporting, and Accountability" },
+            { id: "lesson-318", title: "Public Purpose and Institutional Trust" }
           ]
         },
         {
           id: "mod-uni-07",
-          title: "Impact & Social Enterprise",
+          title: "Applied Studio and Innovation Challenge",
           lessons: [
-            { id: "lesson-319", title: "Social Impact Investing" },
-            { id: "lesson-320", title: "B-Corp & Social Enterprise" },
-            { id: "lesson-321", title: "Measuring Impact" }
+            { id: "lesson-319", title: "Startup Studio or Consulting Challenge" },
+            { id: "lesson-320", title: "Civic Innovation Lab" },
+            { id: "lesson-321", title: "Internship-linked Project Execution" }
           ]
         },
         {
           id: "mod-uni-08",
-          title: "Legacy & Mentorship",
+          title: "Capstone Showcase and Investment Committee Simulation",
           lessons: [
-            { id: "lesson-322", title: "Mentoring Others" },
-            { id: "lesson-323", title: "Giving Back" },
-            { id: "lesson-324", title: "Building Your Network" }
+            { id: "lesson-322", title: "Investment Committee Simulation" },
+            { id: "lesson-323", title: "Capstone Pitch Rehearsal" },
+            { id: "lesson-324", title: "Quarterly Showcase and Review" }
           ]
         }
       ]

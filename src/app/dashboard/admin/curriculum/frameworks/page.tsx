@@ -69,8 +69,12 @@ export default function AdminFrameworksPage() {
 
   useEffect(() => {
     fetchFrameworks();
-    // Get role from JWT payload via the /api/auth/me or similar; use cookie parse as fallback
-    fetch('/api/auth/me').then(r => r.json()).then(d => setUserRole(d?.data?.role ?? null)).catch(() => null);
+    const authToken = typeof window !== 'undefined' ? (localStorage.getItem('auth_token') || localStorage.getItem('token')) : null;
+    if (authToken) {
+      fetch('/api/user/profile', {
+        headers: { Authorization: `Bearer ${authToken}` },
+      }).then(r => r.json()).then(d => setUserRole(d?.data?.role ?? null)).catch(() => null);
+    }
   }, [fetchFrameworks]);
 
   const startEdit = (fw: Framework) => {

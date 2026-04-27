@@ -112,7 +112,7 @@ class LeaderboardService {
    */
   async getLeaderboardStats(): Promise<{ success: boolean; error?: string; data?: any }> {
     try {
-      const response = await fetch(`${this.baseUrl}/stats`);
+      const response = await fetch(`${this.baseUrl}/update`);
 
       if (!response.ok) {
         return {
@@ -158,9 +158,9 @@ class LeaderboardService {
    */
   async recalculateRankings(token: string): Promise<{ success: boolean; error?: string }> {
     try {
-      // This would be a separate API endpoint for recalculating ranks
-      const response = await fetch(`${this.baseUrl}/recalculate`, {
-        method: "POST",
+      // Rankings are calculated dynamically on read; fetch to force a fresh server-side read.
+      const response = await fetch(`${this.baseUrl}?limit=1`, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
