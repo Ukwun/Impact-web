@@ -4,6 +4,7 @@ import { authenticateUser } from "@/lib/auth";
 import { getFirestore } from "@/lib/firebase-admin";
 import { logActivity } from "@/lib/firestore-utils";
 import { prisma } from "@/lib/prisma";
+import { consumeAdminInviteCode } from "@/lib/adminInviteCodes";
 
 const PRIVILEGED_ROLES = new Set(["ADMIN", "FACILITATOR", "SCHOOL_ADMIN"]);
 const VALID_ACTIONS = new Set(["APPROVE", "REJECT"]);
@@ -39,6 +40,7 @@ export async function PATCH(
     const body = await req.json();
     const action = String(body.action || "").toUpperCase();
     const note = String(body.note || "").trim();
+    const invitationCode = String(body.invitationCode || "").trim().toUpperCase();
     const setVerified = body.setVerified !== false;
     const reviewerMetadata = {
       reviewerUserId: actor.id,
@@ -105,6 +107,28 @@ export async function PATCH(
           { status: 403 }
         );
       }
+
+      if (action === "APPROVE") {
+        if (!invitationCode) {
+          return NextResponse.json(
+            { success: false, error: "invitationCode is required to approve ADMIN request" },
+            { status: 400 }
+          );
+        }
+
+        const consumeResult = await consumeAdminInviteCode({
+          inviteCode: invitationCode,
+          claimantUserId: userId,
+          claimantEmail: String(userData.email || ""),
+        });
+
+        if (!consumeResult.success) {
+          return NextResponse.json(
+            { success: false, error: consumeResult.reason },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     if (String(userData.approvalStatus || "").toUpperCase() !== "PENDING_ROLE_APPROVAL") {
@@ -169,7 +193,7 @@ export async function PATCH(
       console.error("Failed to sync role decision to PostgreSQL:", error);
     }
 
-    await logActivity(payload.sub, {
+    await logActivity(actor.id, {
       type: approved ? "role_request_approved" : "role_request_rejected",
       description: `${approved ? "Approved" : "Rejected"} ${requestedRole} role request for ${userData.email || userId}`,
       targetUserId: userId,
