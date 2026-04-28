@@ -23,7 +23,6 @@ export async function GET(request: NextRequest) {
         tierType: true,
         name: true,
         monthlyPrice: true,
-        features: true,
         maxUsers: true,
         canAccessAnalytics: true,
         canManageFacilitators: true,

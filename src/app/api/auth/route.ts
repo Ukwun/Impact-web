@@ -257,7 +257,6 @@ async function handleVerify(request: NextRequest) {
       message: "Token is valid",
       data: {
         user: authResult.user,
-        expiresAt: authResult.expiresAt,
       },
     });
   } catch (error) {
