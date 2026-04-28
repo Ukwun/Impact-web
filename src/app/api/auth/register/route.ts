@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
       ? DEFAULT_SIGNUP_ROLE
       : normalizedRequestedRole;
     const isPrivilegedRoleRequest = requestedRole !== role;
+    const isAdminRoleRequest = requestedRole === "ADMIN" && isPrivilegedRoleRequest;
     const approvalStatus = isPrivilegedRoleRequest ? 'PENDING_ROLE_APPROVAL' : 'APPROVED';
     const phone = body.phone || '';
     const state = body.state || '';
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
       supportingNote: body.supportingNote || '',
     };
 
-    if (isPrivilegedRoleRequest) {
+    if (isAdminRoleRequest) {
       const institutionalEmail = String(roleRequestEvidence.institutionalEmail).trim().toLowerCase();
       const staffIdNumber = String(roleRequestEvidence.staffIdNumber).trim();
       const invitationReference = String(roleRequestEvidence.invitationReference).trim();
@@ -244,7 +245,7 @@ export async function POST(req: NextRequest) {
         // Don't fail the registration if PostgreSQL fails, user is in Firestore
       }
 
-      if (isPrivilegedRoleRequest) {
+      if (isAdminRoleRequest) {
         const ownerEmails = getOwnerEmails();
         if (ownerEmails.length > 0) {
           const appBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api").replace("/api", "");
