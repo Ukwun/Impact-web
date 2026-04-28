@@ -60,6 +60,13 @@ export async function POST(req: NextRequest) {
     const approvalStatus = isPrivilegedRoleRequest ? 'PENDING_ROLE_APPROVAL' : 'APPROVED';
     const phone = body.phone || '';
     const state = body.state || '';
+    const roleRequestEvidence = {
+      institutionalEmail: body.institutionalEmail || '',
+      staffIdNumber: body.staffIdNumber || '',
+      invitationReference: body.invitationReference || '',
+      phoneVerified: Boolean(body.phoneVerified),
+      supportingNote: body.supportingNote || '',
+    };
 
     console.log(`?? Register Request - Email: ${email}, Role from form: "${body.role}", Normalized to: "${role}"`);
 
@@ -105,6 +112,16 @@ export async function POST(req: NextRequest) {
         displayName: fullName,
       });
 
+      const roleRequest = isPrivilegedRoleRequest
+        ? {
+            requestedRole,
+            status: approvalStatus,
+            requestedAt: new Date().toISOString(),
+            requestedBy: userRecord.uid,
+            evidence: roleRequestEvidence,
+          }
+        : null;
+
       console.log("User created: " + userRecord.uid);
 
       try {
@@ -118,6 +135,16 @@ export async function POST(req: NextRequest) {
           role: role,
           requestedRole: requestedRole,
           approvalStatus: approvalStatus,
+          roleRequest,
+          roleApprovalHistory: isPrivilegedRoleRequest
+            ? [{
+                action: 'REQUESTED',
+                requestedRole,
+                performedBy: userRecord.uid,
+                performedAt: new Date().toISOString(),
+                note: 'Privileged role requested during signup',
+              }]
+            : [],
           phone: phone,
           state: state,
           createdAt: new Date().toISOString(),
