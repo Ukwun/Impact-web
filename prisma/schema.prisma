@@ -71,6 +71,7 @@ model User {
   createdEvents         Event[] @relation("CreatedBy")
   liveSessions          LiveSession[] @relation("LiveSessionsFacilitator")
   liveSessionAttendance LiveSessionAttendance[] @relation("LiveSessionAttendance")
+  liveSessionQuestions  LiveSessionQuestion[] @relation("LiveSessionQuestions")
   payments              Payment[]
   leaderboard           LeaderboardEntry?
   messagesSent          Message[] @relation("MessagesSent")
@@ -485,6 +486,10 @@ model LiveSession {
   
   // Attendance tracking
   attendance            LiveSessionAttendance[]
+  polls                 LiveSessionPoll[]
+  questions             LiveSessionQuestion[]
+  breakoutRooms         LiveSessionBreakoutRoom[]
+  engagementEvents      LiveSessionEngagement[]
   
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
@@ -511,6 +516,103 @@ model LiveSessionAttendance {
   @@unique([sessionId, userId])
   @@index([sessionId])
   @@index([userId])
+}
+
+// ============================================================================
+// LIVE SESSION INTERACTIVE FEATURES
+// ============================================================================
+
+model LiveSessionPoll {
+  id                    String      @id @default(cuid())
+  sessionId             String
+  session               LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  question              String
+  options               String[]    // List of option labels
+  status                String      @default("DRAFT") // DRAFT, ACTIVE, CLOSED
+  allowMultiple         Boolean     @default(false)
+
+  responses             LiveSessionPollResponse[]
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([sessionId])
+  @@index([status])
+}
+
+model LiveSessionPollResponse {
+  id                    String      @id @default(cuid())
+  pollId                String
+  poll                  LiveSessionPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  userId                String
+  selectedOptions       String[]    // Chosen option labels
+
+  createdAt             DateTime    @default(now())
+
+  @@unique([pollId, userId])
+  @@index([pollId])
+  @@index([userId])
+}
+
+model LiveSessionQuestion {
+  id                    String      @id @default(cuid())
+  sessionId             String
+  session               LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  userId                String
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade, name: "LiveSessionQuestions")
+
+  questionText          String
+  isAnonymous           Boolean     @default(false)
+  status                String      @default("OPEN") // OPEN, ANSWERED, DISMISSED
+  isPinned              Boolean     @default(false)
+  answerText            String?
+  answeredByUserId      String?
+
+  upvotes               Int         @default(0)
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([status])
+}
+
+model LiveSessionBreakoutRoom {
+  id                    String      @id @default(cuid())
+  sessionId             String
+  session               LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  roomName              String
+  meetingUrl            String?     // Separate Zoom/Meet link per room
+  memberUserIds         String[]    @default([])
+  topic                 String?
+  isActive              Boolean     @default(true)
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([sessionId])
+}
+
+model LiveSessionEngagement {
+  id                    String      @id @default(cuid())
+  sessionId             String
+  session               LiveSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  userId                String
+  // Event types: JOIN, LEAVE, POLL_RESPONSE, QUESTION_SUBMITTED, REACTION, BREAKOUT_ASSIGNED
+  eventType             String
+  metadata              Json?
+
+  createdAt             DateTime    @default(now())
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([eventType])
 }
 
 // ============================================================================

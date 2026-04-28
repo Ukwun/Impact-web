@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SubscriptionStatus } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
-import { mockSubscriptionPlans } from '../../../lib/mock-data';
+import { verifyToken } from '@/lib/auth';
 
 /**
  * GET /api/subscriptions
@@ -9,8 +9,12 @@ import { mockSubscriptionPlans } from '../../../lib/mock-data';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get the user ID from authorization header (would be from session in production)
-    const userId = request.headers.get('x-user-id') || 'demo-user';
+    const rawToken = request.headers.get('authorization')?.replace('Bearer ', '');
+    const tokenPayload = rawToken ? verifyToken(rawToken) : null;
+    if (!tokenPayload) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = tokenPayload.sub;
 
     // Get all subscription plans
     const plans = await prisma.subscriptionPlan.findMany({
@@ -49,13 +53,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Subscriptions fetch error:', error);
-    
-    // Return mock data if database unavailable
-    if (error instanceof Error && error.message.includes('does not exist')) {
-      console.log('Database tables not yet migrated - returning mock subscription data');
-      return NextResponse.json(mockSubscriptionPlans);
-    }
-    
     return NextResponse.json(
       { success: false, error: 'Failed to fetch subscriptions' },
       { status: 500 }
@@ -69,7 +66,12 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id') || 'demo-user';
+    const rawToken = request.headers.get('authorization')?.replace('Bearer ', '');
+    const tokenPayload = rawToken ? verifyToken(rawToken) : null;
+    if (!tokenPayload) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = tokenPayload.sub;
     const { planId, schoolName, schoolAdminIds = [] } = await request.json();
 
     if (!planId) {

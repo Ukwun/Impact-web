@@ -2,15 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
 
-interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
-}
+const GRADER_ROLES = ["FACILITATOR", "ADMIN", "SCHOOL_ADMIN"];
 
 /**
- * PUT /api/facilitator/submissions/[id]/grade
- * Grade a submission
+ * PUT /api/facilitator/submissions/[id]
+ * Grade an assignment submission (facilitator / admin only)
  */
 export async function PUT(
   req: NextRequest,
@@ -19,99 +15,100 @@ export async function PUT(
   try {
     const token = req.headers.get("authorization")?.split(" ")[1];
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = (await verifyToken(token)) as JWTPayload;
-    if (payload.role !== "FACILITATOR") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const payload = verifyToken(token);
+    if (!payload || !GRADER_ROLES.includes(payload.role?.toUpperCase())) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
     const { grade, feedback } = await req.json();
 
-    if (grade < 0 || grade > 100) {
+    if (typeof grade !== "number" || grade < 0 || grade > 100) {
       return NextResponse.json(
-        { error: "Grade must be between 0 and 100" },
+        { success: false, error: "Grade must be a number between 0 and 100" },
         { status: 400 }
       );
     }
 
-    // Get submission and verify facilitator owns the course
-    const submission = await prisma.submission.findUnique({
+    // Look up the submission and its associated assignment/course
+    const submission = await prisma.assignmentSubmission.findUnique({
       where: { id: params.id },
       include: {
         assignment: {
-          include: {
-            lesson: {
-              include: {
-                course: true,
-              },
-            },
-          },
+          include: { course: { select: { id: true, createdById: true } } },
         },
       },
     });
 
     if (!submission) {
-      return NextResponse.json(
-        { error: "Submission not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: "Submission not found" }, { status: 404 });
     }
 
-    if (submission.assignment.lesson.course.facilitatorId !== payload.userId) {
+    // Facilitators may only grade submissions in courses they created; admins may grade any.
+    const isAdmin = ["ADMIN", "SCHOOL_ADMIN"].includes(payload.role?.toUpperCase());
+    const isCourseOwner = submission.assignment.course.createdById === payload.sub;
+
+    if (!isAdmin && !isCourseOwner) {
       return NextResponse.json(
-        { error: "Unauthorized to grade this submission" },
+        { success: false, error: "You do not have permission to grade this submission" },
         { status: 403 }
       );
     }
 
-    // Update submission with grade
-    const updated = await prisma.submission.update({
+    // Persist the grade
+    const updated = await prisma.assignmentSubmission.update({
       where: { id: params.id },
       data: {
-        grade: (grade / 100) * submission.assignment.maxPoints || grade,
-        feedback,
+        score: grade,
+        feedback: feedback ?? null,
+        isGraded: true,
         gradedAt: new Date(),
-        gradedBy: payload.userId,
+        gradedBy: payload.sub,
       },
       include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        assignment: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+        assignment: { select: { id: true, title: true, maxPoints: true } },
       },
     });
 
-    // Create notification for student
-    await prisma.notification.create({
-      data: {
-        userId: submission.studentId,
-        title: `Grade Received`,
-        message: `Your submission for "${submission.assignment.title}" has been graded: ${grade}%`,
-        type: "GRADE_RECEIVED",
-        relatedId: submission.id,
-      },
-    });
+    // Notify the student
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: updated.userId,
+          title: "Assignment Graded",
+          message: `Your submission for "${updated.assignment.title}" has been graded: ${grade}%`,
+          type: "GRADE_RECEIVED",
+          relatedId: updated.id,
+        },
+      });
+    } catch {
+      // Notification failure should not block the response
+    }
 
     return NextResponse.json({
       success: true,
-      data: updated,
+      data: {
+        id: updated.id,
+        studentName: `${updated.user.firstName} ${updated.user.lastName}`.trim(),
+        studentEmail: updated.user.email,
+        assignmentTitle: updated.assignment.title,
+        score: updated.score,
+        maxPoints: updated.assignment.maxPoints,
+        percentage: updated.assignment.maxPoints > 0
+          ? Math.round((updated.score! / updated.assignment.maxPoints) * 100)
+          : null,
+        feedback: updated.feedback,
+        gradedAt: updated.gradedAt,
+      },
       message: "Submission graded successfully",
     });
   } catch (error) {
     console.error("Error grading submission:", error);
     return NextResponse.json(
-      { error: "Failed to grade submission" },
+      { success: false, error: "Failed to grade submission" },
       { status: 500 }
     );
   }
@@ -128,60 +125,40 @@ export async function GET(
   try {
     const token = req.headers.get("authorization")?.split(" ")[1];
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = (await verifyToken(token)) as JWTPayload;
-    if (payload.role !== "FACILITATOR") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const payload = verifyToken(token);
+    if (!payload || !GRADER_ROLES.includes(payload.role?.toUpperCase())) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
-    const submission = await prisma.submission.findUnique({
+    const submission = await prisma.assignmentSubmission.findUnique({
       where: { id: params.id },
       include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            avatar: true,
-          },
-        },
+        user: { select: { id: true, firstName: true, lastName: true, email: true, avatar: true } },
         assignment: {
-          include: {
-            lesson: {
-              include: {
-                course: true,
-              },
-            },
-          },
+          include: { course: { select: { id: true, createdById: true, title: true } } },
         },
       },
     });
 
     if (!submission) {
-      return NextResponse.json(
-        { error: "Submission not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: "Submission not found" }, { status: 404 });
     }
 
-    // Verify facilitator owns the course
-    if (submission.assignment.lesson.course.facilitatorId !== payload.userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 403 }
-      );
+    const isAdmin = ["ADMIN", "SCHOOL_ADMIN"].includes(payload.role?.toUpperCase());
+    const isCourseOwner = submission.assignment.course.createdById === payload.sub;
+
+    if (!isAdmin && !isCourseOwner) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: submission,
-    });
+    return NextResponse.json({ success: true, data: submission });
   } catch (error) {
     console.error("Error fetching submission:", error);
     return NextResponse.json(
-      { error: "Failed to fetch submission" },
+      { success: false, error: "Failed to fetch submission" },
       { status: 500 }
     );
   }

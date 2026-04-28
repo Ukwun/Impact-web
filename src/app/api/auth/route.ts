@@ -1,11 +1,17 @@
 /**
  * Authentication API Routes
  * /api/auth - User login, logout, and token verification
+ *
+ * NOTE: This legacy route is kept for compatibility. The primary login
+ * endpoint is /api/auth/login which uses Firebase credential verification.
+ * This route uses bcrypt + Prisma for environments without Firebase.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { authMiddleware, createToken, verifyToken } from "@/lib/auth-service";
-import { cookies } from "next/headers";
+import { verifyToken as verifyJwt, generateToken, comparePassword } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { demoUsers } from "@/lib/demoUsers";
 
 // ========================================================================
 // LOGIN ENDPOINT
@@ -51,46 +57,147 @@ async function handleLogin(request: NextRequest) {
       );
     }
 
-    // TODO: Fetch user from database and verify password
-    // const user = await prisma.user.findUnique({ where: { email } });
-    // if (!user || !verifyPassword(password, user.passwordHash)) {
-    //   return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
-    // }
+    const normalizedEmail = String(email).trim().toLowerCase();
 
-    // Mock user for demonstration
-    const mockUser = {
-      id: "user-" + Date.now(),
-      email: email,
-      name: "Test User",
-      role: "STUDENT",
-      school: "Central High School",
-    };
+    // 1. Try database lookup first
+    let dbUser: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: string;
+      institution: string | null;
+      isActive: boolean;
+      passwordHash: string;
+    } | null = null;
 
-    // Create JWT token
-    const token = createToken(mockUser);
+    try {
+      dbUser = await prisma.user.findUnique({
+        where: { email: normalizedEmail },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          institution: true,
+          isActive: true,
+          passwordHash: true,
+        },
+      });
+    } catch {
+      // Database unavailable – fall through to demo users
+    }
 
-    // Set secure cookie
-    const response = NextResponse.json({
-      success: true,
-      message: "Login successful",
-      data: {
-        user: mockUser,
-        token: token,
-        expiresIn: "24h",
-      },
-    });
+    if (dbUser) {
+      if (!dbUser.isActive) {
+        return NextResponse.json(
+          { success: false, error: "Account is deactivated" },
+          { status: 403 }
+        );
+      }
 
-    // Set HTTP-only cookie for token
-    response.cookies.set({
-      name: "auth_token",
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60, // 24 hours
-    });
+      const passwordValid = await comparePassword(password, dbUser.passwordHash);
+      if (!passwordValid) {
+        return NextResponse.json(
+          { success: false, error: "Invalid email or password" },
+          { status: 401 }
+        );
+      }
 
-    return response;
+      // Update lastLoginAt non-blocking
+      prisma.user
+        .update({ where: { id: dbUser.id }, data: { lastLoginAt: new Date() } })
+        .catch(() => {});
+
+      const tokenPayload = {
+        sub: dbUser.id,
+        email: dbUser.email,
+        role: dbUser.role,
+      };
+
+      const token = generateToken(tokenPayload);
+
+      const response = NextResponse.json({
+        success: true,
+        message: "Login successful",
+        data: {
+          user: {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: `${dbUser.firstName} ${dbUser.lastName}`.trim(),
+            role: dbUser.role,
+            school: dbUser.institution,
+          },
+          token,
+          expiresIn: "30d",
+        },
+      });
+
+      response.cookies.set({
+        name: "auth_token",
+        value: token,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60,
+      });
+
+      return response;
+    }
+
+    // 2. Fall back to demo/test users when database is unavailable
+    const demoUser = demoUsers.get(normalizedEmail);
+    if (demoUser) {
+      const passwordValid = await comparePassword(password, demoUser.passwordHash);
+      if (!passwordValid) {
+        return NextResponse.json(
+          { success: false, error: "Invalid email or password" },
+          { status: 401 }
+        );
+      }
+
+      const tokenPayload = {
+        sub: demoUser.id,
+        email: demoUser.email,
+        role: demoUser.role,
+      };
+
+      const token = generateToken(tokenPayload);
+
+      const response = NextResponse.json({
+        success: true,
+        message: "Login successful",
+        data: {
+          user: {
+            id: demoUser.id,
+            email: demoUser.email,
+            name: `${demoUser.firstName} ${demoUser.lastName}`.trim(),
+            role: demoUser.role,
+            school: demoUser.institution,
+          },
+          token,
+          expiresIn: "30d",
+        },
+      });
+
+      response.cookies.set({
+        name: "auth_token",
+        value: token,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 30 * 24 * 60 * 60,
+      });
+
+      return response;
+    }
+
+    // No user found at all
+    return NextResponse.json(
+      { success: false, error: "Invalid email or password" },
+      { status: 401 }
+    );
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

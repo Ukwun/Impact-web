@@ -4,6 +4,7 @@ import { roleMiddleware } from "@/lib/auth-service";
 import type { UserRole } from "@/lib/auth-service";
 import { defaultOpsEnvelope, LIVE_SESSION_SEQUENCE } from "@/lib/live-classroom-framework";
 import { queueLiveSessionLifecycleNotifications } from "@/lib/live-session-lifecycle";
+import { createZoomMeeting, isZoomConfigured } from "@/lib/zoom";
 
 const FACILITATOR_ROLES: UserRole[] = ["FACILITATOR", "ADMIN", "SCHOOL_ADMIN"];
 
@@ -89,6 +90,30 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
+  const startTime = new Date(body.startTime);
+  const endTime = new Date(body.endTime);
+  const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60_000);
+
+  // Auto-create Zoom meeting if credentials are configured and no external URL is provided
+  let meetingUrl: string | null = body.meetingUrl || null;
+  let zoomMeetingId: number | null = null;
+
+  if (!meetingUrl && isZoomConfigured()) {
+    try {
+      const zoomMeeting = await createZoomMeeting({
+        topic: body.title,
+        startTime,
+        durationMinutes: Math.max(durationMinutes, 30),
+        agenda: body.description || undefined,
+        waitingRoom: true,
+      });
+      meetingUrl = zoomMeeting.joinUrl;
+      zoomMeetingId = zoomMeeting.id;
+    } catch (zoomErr) {
+      console.error("Zoom meeting creation failed (continuing without Zoom):", zoomErr);
+    }
+  }
+
   const session = await prisma.liveSession.create({
     data: {
       courseId: body.courseId,
@@ -96,11 +121,11 @@ export async function POST(request: NextRequest) {
       title: body.title,
       description: body.description || null,
       facilitatorId: auth.user.userId,
-      startTime: new Date(body.startTime),
-      endTime: new Date(body.endTime),
+      startTime,
+      endTime,
       status: "SCHEDULED",
       sessionType: body.sessionType || "CLASSROOM",
-      meetingUrl: body.meetingUrl || null,
+      meetingUrl,
       hasPolls: Boolean(body.hasPolls),
       hasQandA: body.hasQandA ?? true,
       breakoutGroups: Number.isFinite(body.breakoutGroups) ? Math.max(0, Number(body.breakoutGroups)) : 0,
@@ -156,6 +181,6 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     success: true,
     message: "Live session created",
-    data: session,
+    data: { ...session, zoomMeetingId },
   });
 }
