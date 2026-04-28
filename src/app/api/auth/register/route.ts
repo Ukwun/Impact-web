@@ -10,6 +10,15 @@ import { getFirebaseAuth, getFirestore } from "@/lib/firebase-admin";
 import { generateToken, hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const PRIVILEGED_SELF_SIGNUP_ROLES = new Set(["ADMIN", "FACILITATOR", "SCHOOL_ADMIN"]);
+const ALLOWED_SELF_SIGNUP_ROLES = new Set([
+  "STUDENT",
+  "PARENT",
+  "UNI_MEMBER",
+  "CIRCLE_MEMBER",
+]);
+const DEFAULT_SIGNUP_ROLE = "STUDENT";
+
 export const dynamic = 'force-dynamic';
 
 export async function OPTIONS(req: NextRequest) {
@@ -40,7 +49,15 @@ export async function POST(req: NextRequest) {
     const password = body.password;
     const firstName = body.firstName || 'User';
     const lastName = body.lastName || 'Account';
-    const role = (body.role || 'student').toUpperCase();
+    const requestedRole = (body.role || DEFAULT_SIGNUP_ROLE).toUpperCase();
+    const normalizedRequestedRole = ALLOWED_SELF_SIGNUP_ROLES.has(requestedRole)
+      ? requestedRole
+      : DEFAULT_SIGNUP_ROLE;
+    const role = PRIVILEGED_SELF_SIGNUP_ROLES.has(requestedRole)
+      ? DEFAULT_SIGNUP_ROLE
+      : normalizedRequestedRole;
+    const isPrivilegedRoleRequest = requestedRole !== role;
+    const approvalStatus = isPrivilegedRoleRequest ? 'PENDING_ROLE_APPROVAL' : 'APPROVED';
     const phone = body.phone || '';
     const state = body.state || '';
 
@@ -99,6 +116,8 @@ export async function POST(req: NextRequest) {
           lastName: lastName,
           displayName: fullName,
           role: role,
+          requestedRole: requestedRole,
+          approvalStatus: approvalStatus,
           phone: phone,
           state: state,
           createdAt: new Date().toISOString(),
@@ -167,9 +186,16 @@ export async function POST(req: NextRequest) {
       const response = NextResponse.json(
         {
           success: true,
-          message: "Account created successfully",
+          message: isPrivilegedRoleRequest
+            ? "Account created. Your role request is pending admin approval."
+            : "Account created successfully",
           user: completedUser,
           token: jwtToken,
+          roleRequest: {
+            requestedRole,
+            assignedRole: role,
+            approvalStatus,
+          },
         },
         { status: 201 }
       );
