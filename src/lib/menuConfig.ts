@@ -429,6 +429,7 @@ export const schoolAdminMenuConfig: RoleMenuConfig = {
         { id: 'review-queue', label: 'Review Queue', href: '/dashboard/admin/curriculum/review-queue' },
         { id: 'replay-review', label: 'Replay Review', href: '/dashboard/admin/replay-review' },
         { id: 'safeguarding', label: 'Safeguarding', href: '/dashboard/admin/safeguarding' },
+        { id: 'invite-codes', label: 'Invite Codes', href: '/dashboard/admin/invite-codes' },
         { id: 'messaging-queue', label: 'Messaging Queue', href: '/dashboard/admin/messaging-queue' },
       ],
     },
