@@ -9,6 +9,7 @@ import {
 import { getFirebaseAuth, getFirestore } from "@/lib/firebase-admin";
 import { generateToken, hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getEmailService } from "@/lib/email-service";
 
 const PRIVILEGED_SELF_SIGNUP_ROLES = new Set(["ADMIN", "FACILITATOR", "SCHOOL_ADMIN"]);
 const ALLOWED_SELF_SIGNUP_ROLES = new Set([
@@ -27,6 +28,13 @@ const PUBLIC_EMAIL_DOMAINS = new Set([
   "icloud.com",
   "aol.com",
 ]);
+
+function getOwnerEmails(): string[] {
+  return (process.env.OWNER_EMAIL_ALLOWLIST || "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -234,6 +242,55 @@ export async function POST(req: NextRequest) {
       } catch (prismaError) {
         console.error("? PostgreSQL user creation failed:", prismaError);
         // Don't fail the registration if PostgreSQL fails, user is in Firestore
+      }
+
+      if (isPrivilegedRoleRequest) {
+        const ownerEmails = getOwnerEmails();
+        if (ownerEmails.length > 0) {
+          const appBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api").replace("/api", "");
+          const reviewUrl = `${appBaseUrl}/dashboard/admin/role-requests?userId=${encodeURIComponent(userRecord.uid)}&requestedRole=${encodeURIComponent(requestedRole)}`;
+          const issueCodeUrl = `${appBaseUrl}/dashboard/admin/invite-codes?targetEmail=${encodeURIComponent(email)}`;
+
+          const subject = `[Action Required] ${requestedRole} role request pending approval`;
+          const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; line-height: 1.5;">
+              <h2 style="margin-bottom: 12px;">Privileged Role Request Pending</h2>
+              <p>A new user requested elevated access and is waiting for owner review.</p>
+              <div style="background: #f5f7fa; border: 1px solid #e3e8ef; border-radius: 8px; padding: 12px 14px; margin: 14px 0;">
+                <p style="margin: 4px 0;"><strong>User ID:</strong> ${userRecord.uid}</p>
+                <p style="margin: 4px 0;"><strong>Name:</strong> ${firstName} ${lastName}</p>
+                <p style="margin: 4px 0;"><strong>Email:</strong> ${email}</p>
+                <p style="margin: 4px 0;"><strong>Requested Role:</strong> ${requestedRole}</p>
+                <p style="margin: 4px 0;"><strong>Status:</strong> ${approvalStatus}</p>
+                <p style="margin: 4px 0;"><strong>Institutional Email:</strong> ${roleRequestEvidence.institutionalEmail || "N/A"}</p>
+                <p style="margin: 4px 0;"><strong>Staff ID:</strong> ${roleRequestEvidence.staffIdNumber || "N/A"}</p>
+                <p style="margin: 4px 0;"><strong>Invitation Reference:</strong> ${roleRequestEvidence.invitationReference || "N/A"}</p>
+                <p style="margin: 4px 0;"><strong>Phone Verified:</strong> ${roleRequestEvidence.phoneVerified ? "Yes" : "No"}</p>
+                <p style="margin: 4px 0;"><strong>Supporting Note:</strong> ${roleRequestEvidence.supportingNote || "N/A"}</p>
+              </div>
+              <p style="margin: 14px 0 6px;">Review request:</p>
+              <p style="margin: 4px 0;"><a href="${reviewUrl}">${reviewUrl}</a></p>
+              <p style="margin: 14px 0 6px;">Issue one-time admin invite code:</p>
+              <p style="margin: 4px 0;"><a href="${issueCodeUrl}">${issueCodeUrl}</a></p>
+              <p style="color: #6b7280; font-size: 12px; margin-top: 16px;">This notification is sent automatically for privileged-role requests. Do not share invite codes over insecure channels.</p>
+            </div>
+          `;
+
+          try {
+            const emailService = getEmailService();
+            await Promise.all(
+              ownerEmails.map((ownerEmail) =>
+                emailService.send({
+                  to: ownerEmail,
+                  subject,
+                  html,
+                })
+              )
+            );
+          } catch (emailError) {
+            console.error("Owner notification email failed:", emailError);
+          }
+        }
       }
 
       const customToken = await auth.createCustomToken(userRecord.uid);
