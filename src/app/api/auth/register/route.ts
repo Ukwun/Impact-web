@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
     const isPrivilegedRoleRequest = requestedRole !== role;
     const isAdminRoleRequest = requestedRole === "ADMIN" && isPrivilegedRoleRequest;
     const approvalStatus = isPrivilegedRoleRequest ? 'PENDING_ROLE_APPROVAL' : 'APPROVED';
+    const ownerEmails = isAdminRoleRequest ? getOwnerEmails() : [];
     const phone = body.phone || '';
     const state = body.state || '';
     const roleRequestEvidence = {
@@ -87,6 +88,17 @@ export async function POST(req: NextRequest) {
     };
 
     if (isAdminRoleRequest) {
+      if (ownerEmails.length === 0) {
+        const response = NextResponse.json(
+          {
+            success: false,
+            error: "ADMIN approvals are temporarily unavailable. Owner email recipients are not configured.",
+          },
+          { status: 503 }
+        );
+        return addCorsHeaders(response, req.headers.get("origin") || undefined);
+      }
+
       const institutionalEmail = String(roleRequestEvidence.institutionalEmail).trim().toLowerCase();
       const staffIdNumber = String(roleRequestEvidence.staffIdNumber).trim();
       const invitationReference = String(roleRequestEvidence.invitationReference).trim();
@@ -246,13 +258,16 @@ export async function POST(req: NextRequest) {
       }
 
       if (isAdminRoleRequest) {
-        const ownerEmails = getOwnerEmails();
         if (ownerEmails.length > 0) {
-          const appBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api").replace("/api", "");
+          const appBaseUrl = (
+            process.env.NEXT_PUBLIC_API_BASE_URL ||
+            process.env.NEXT_PUBLIC_API_URL ||
+            "http://localhost:3000/api"
+          ).replace("/api", "");
           const reviewUrl = `${appBaseUrl}/dashboard/admin/role-requests?userId=${encodeURIComponent(userRecord.uid)}&requestedRole=${encodeURIComponent(requestedRole)}`;
           const issueCodeUrl = `${appBaseUrl}/dashboard/admin/invite-codes?targetEmail=${encodeURIComponent(email)}`;
 
-          const subject = `[Action Required] ${requestedRole} role request pending approval`;
+          const subject = `[Action Required] ADMIN role request pending approval`;
           const html = `
             <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; line-height: 1.5;">
               <h2 style="margin-bottom: 12px;">Privileged Role Request Pending</h2>
