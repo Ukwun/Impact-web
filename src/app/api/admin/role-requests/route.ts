@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
+import { authenticateUser } from "@/lib/auth";
 import { getFirestore } from "@/lib/firebase-admin";
 
 const PRIVILEGED_ROLES = new Set(["ADMIN", "FACILITATOR", "SCHOOL_ADMIN"]);
-
-function getBearerToken(req: NextRequest): string | null {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return null;
-  const [scheme, token] = authHeader.split(" ");
-  if (scheme !== "Bearer" || !token) return null;
-  return token;
-}
 
 /**
  * GET /api/admin/role-requests
@@ -18,10 +10,18 @@ function getBearerToken(req: NextRequest): string | null {
  */
 export async function GET(req: NextRequest) {
   try {
-    const token = getBearerToken(req);
-    const payload = verifyToken(token || "");
+    const authResult = await authenticateUser(req);
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json(
+        { success: false, error: authResult.error || "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-    if (!payload || payload.role?.toUpperCase() !== "ADMIN") {
+    const actorRole = String(authResult.user.role || "").toUpperCase();
+    const actorApprovalStatus = String(authResult.user.approvalStatus || "APPROVED").toUpperCase();
+
+    if (actorRole !== "ADMIN" || actorApprovalStatus !== "APPROVED") {
       return NextResponse.json(
         { success: false, error: "Only admin can access role requests" },
         { status: 403 }

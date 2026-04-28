@@ -18,6 +18,15 @@ const ALLOWED_SELF_SIGNUP_ROLES = new Set([
   "CIRCLE_MEMBER",
 ]);
 const DEFAULT_SIGNUP_ROLE = "STUDENT";
+const PUBLIC_EMAIL_DOMAINS = new Set([
+  "gmail.com",
+  "yahoo.com",
+  "hotmail.com",
+  "outlook.com",
+  "live.com",
+  "icloud.com",
+  "aol.com",
+]);
 
 export const dynamic = 'force-dynamic';
 
@@ -67,6 +76,50 @@ export async function POST(req: NextRequest) {
       phoneVerified: Boolean(body.phoneVerified),
       supportingNote: body.supportingNote || '',
     };
+
+    if (isPrivilegedRoleRequest) {
+      const institutionalEmail = String(roleRequestEvidence.institutionalEmail).trim().toLowerCase();
+      const staffIdNumber = String(roleRequestEvidence.staffIdNumber).trim();
+      const invitationReference = String(roleRequestEvidence.invitationReference).trim();
+      const supportingNote = String(roleRequestEvidence.supportingNote).trim();
+      const emailDomain = institutionalEmail.includes("@")
+        ? institutionalEmail.split("@")[1]
+        : "";
+
+      if (!institutionalEmail || !staffIdNumber || !invitationReference || !roleRequestEvidence.phoneVerified) {
+        const response = NextResponse.json(
+          {
+            success: false,
+            error:
+              "Privileged role request requires institutional email, staff ID, invitation reference, and verified phone.",
+          },
+          { status: 400 }
+        );
+        return addCorsHeaders(response, req.headers.get("origin") || undefined);
+      }
+
+      if (!emailDomain || PUBLIC_EMAIL_DOMAINS.has(emailDomain)) {
+        const response = NextResponse.json(
+          {
+            success: false,
+            error: "Institutional email must use a non-public organization domain.",
+          },
+          { status: 400 }
+        );
+        return addCorsHeaders(response, req.headers.get("origin") || undefined);
+      }
+
+      if (supportingNote.length < 20) {
+        const response = NextResponse.json(
+          {
+            success: false,
+            error: "Supporting note must include enough detail for manual review.",
+          },
+          { status: 400 }
+        );
+        return addCorsHeaders(response, req.headers.get("origin") || undefined);
+      }
+    }
 
     console.log(`?? Register Request - Email: ${email}, Role from form: "${body.role}", Normalized to: "${role}"`);
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUserWithDetails, updateUserProfile, deactivateUser, updateUserRole, logActivity } from "@/lib/firestore-utils";
-import { verifyToken } from "@/lib/auth";
+import { authenticateUser } from "@/lib/auth";
 
 /**
  * GET /api/admin/users/[id]
@@ -11,13 +11,22 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.headers.get("Authorization")?.split(" ")[1];
-    const payload = verifyToken(token || "");
+    const authResult = await authenticateUser(req);
 
-    if (!payload || payload.role?.toUpperCase() !== "ADMIN") {
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json(
+        { success: false, error: authResult.error || "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const actorRole = String(authResult.user.role || "").toUpperCase();
+    const actorApprovalStatus = String(authResult.user.approvalStatus || "APPROVED").toUpperCase();
+
+    if (actorRole !== "ADMIN" || actorApprovalStatus !== "APPROVED") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -53,13 +62,23 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.headers.get("Authorization")?.split(" ")[1];
-    const payload = verifyToken(token || "");
+    const authResult = await authenticateUser(req);
 
-    if (!payload || payload.role?.toUpperCase() !== "ADMIN") {
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json(
+        { success: false, error: authResult.error || "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const actor = authResult.user;
+    const actorRole = String(actor.role || "").toUpperCase();
+    const actorApprovalStatus = String(actor.approvalStatus || "APPROVED").toUpperCase();
+
+    if (actorRole !== "ADMIN" || actorApprovalStatus !== "APPROVED") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -84,6 +103,7 @@ export async function PUT(
     if (role) updates.role = role.toUpperCase();
     if (isActive !== undefined) updates.isActive = isActive;
     if (state) updates.state = state;
+    if (role || isActive !== undefined) updates.tokenInvalidBefore = new Date().toISOString();
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
@@ -96,7 +116,7 @@ export async function PUT(
     const updatedUser = await updateUserProfile(userId, updates);
 
     // Log activity
-    await logActivity(payload.sub, {
+    await logActivity(actor.id, {
       type: 'user_updated_admin',
       description: `Updated user: ${targetUser.firstName} ${targetUser.lastName}`,
       targetUserId: userId,
@@ -127,13 +147,23 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.headers.get("Authorization")?.split(" ")[1];
-    const payload = verifyToken(token || "");
+    const authResult = await authenticateUser(req);
 
-    if (!payload || payload.role?.toUpperCase() !== "ADMIN") {
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json(
+        { success: false, error: authResult.error || "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const actor = authResult.user;
+    const actorRole = String(actor.role || "").toUpperCase();
+    const actorApprovalStatus = String(actor.approvalStatus || "APPROVED").toUpperCase();
+
+    if (actorRole !== "ADMIN" || actorApprovalStatus !== "APPROVED") {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 403 }
       );
     }
 
@@ -149,7 +179,7 @@ export async function DELETE(
     }
 
     // Prevent self-deactivation
-    if (payload.sub === userId) {
+    if (actor.id === userId) {
       return NextResponse.json(
         { success: false, error: "You cannot deactivate your own account" },
         { status: 400 }
@@ -157,10 +187,13 @@ export async function DELETE(
     }
 
     // Soft deactivate user
-    const deactivatedUser = await deactivateUser(userId);
+    const deactivatedUser = await updateUserProfile(userId, {
+      isActive: false,
+      tokenInvalidBefore: new Date().toISOString(),
+    });
 
     // Log activity
-    await logActivity(payload.sub, {
+    await logActivity(actor.id, {
       type: 'user_deactivated_admin',
       description: `Deactivated user: ${targetUser.firstName} ${targetUser.lastName}`,
       targetUserId: userId,

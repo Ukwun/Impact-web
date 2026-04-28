@@ -32,6 +32,18 @@ export async function POST(
     }
 
     const courseId = params.id;
+    const body = await req.json().catch(() => ({}));
+    const paymentId = String(body.paymentId || "").trim();
+
+    if (!paymentId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Payment is required before enrollment. Provide a valid paymentId.",
+        },
+        { status: 402 }
+      );
+    }
 
     // Verify course exists
     const course = await prisma.course.findUnique({
@@ -62,25 +74,71 @@ export async function POST(
       );
     }
 
-    // Create enrollment
-    const enrollment = await prisma.enrollment.create({
-      data: {
-        courseId: courseId,
-        userId: user.id,
-        progress: 0,
-        isCompleted: false,
-      },
-      include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            difficulty: true,
-            duration: true,
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+    });
+
+    if (!payment || payment.userId !== user.id) {
+      return NextResponse.json(
+        { success: false, error: "Payment not found for this user" },
+        { status: 404 }
+      );
+    }
+
+    if (payment.status !== "COMPLETED") {
+      return NextResponse.json(
+        { success: false, error: "Payment is not completed yet" },
+        { status: 400 }
+      );
+    }
+
+    if (payment.enrollmentId) {
+      return NextResponse.json(
+        { success: false, error: "Payment has already been used for enrollment" },
+        { status: 409 }
+      );
+    }
+
+    const paymentMetadata = (payment.metadata || {}) as any;
+    const paidCourseId = String(paymentMetadata.courseId || "");
+    if (paidCourseId && paidCourseId !== courseId) {
+      return NextResponse.json(
+        { success: false, error: "Payment is tied to a different course" },
+        { status: 400 }
+      );
+    }
+
+    // Create enrollment and bind payment in one transaction.
+    const enrollment = await prisma.$transaction(async (tx) => {
+      const createdEnrollment = await tx.enrollment.create({
+        data: {
+          courseId: courseId,
+          userId: user.id,
+          progress: 0,
+          isCompleted: false,
+        },
+        include: {
+          course: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              difficulty: true,
+              duration: true,
+            },
           },
         },
-      },
+      });
+
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          enrollmentId: createdEnrollment.id,
+          purpose: "course_enrollment",
+        },
+      });
+
+      return createdEnrollment;
     });
 
     console.log(`✅ User ${user.id} enrolled in course ${courseId}`);

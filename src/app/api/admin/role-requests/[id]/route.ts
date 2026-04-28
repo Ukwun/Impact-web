@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as admin from "firebase-admin";
-import { verifyToken } from "@/lib/auth";
+import { authenticateUser } from "@/lib/auth";
 import { getFirestore } from "@/lib/firebase-admin";
 import { logActivity } from "@/lib/firestore-utils";
 import { prisma } from "@/lib/prisma";
 
 const PRIVILEGED_ROLES = new Set(["ADMIN", "FACILITATOR", "SCHOOL_ADMIN"]);
 const VALID_ACTIONS = new Set(["APPROVE", "REJECT"]);
-
-function getBearerToken(req: NextRequest): string | null {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return null;
-  const [scheme, token] = authHeader.split(" ");
-  if (scheme !== "Bearer" || !token) return null;
-  return token;
-}
 
 /**
  * PATCH /api/admin/role-requests/:id
@@ -25,10 +17,19 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = getBearerToken(req);
-    const payload = verifyToken(token || "");
+    const authResult = await authenticateUser(req);
+    if (!authResult.success || !authResult.user) {
+      return NextResponse.json(
+        { success: false, error: authResult.error || "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-    if (!payload || payload.role?.toUpperCase() !== "ADMIN") {
+    const actor = authResult.user;
+    const actorRole = String(actor.role || "").toUpperCase();
+    const actorApprovalStatus = String(actor.approvalStatus || "APPROVED").toUpperCase();
+
+    if (actorRole !== "ADMIN" || actorApprovalStatus !== "APPROVED") {
       return NextResponse.json(
         { success: false, error: "Only admin can review role requests" },
         { status: 403 }
@@ -40,8 +41,9 @@ export async function PATCH(
     const note = String(body.note || "").trim();
     const setVerified = body.setVerified !== false;
     const reviewerMetadata = {
-      reviewerUserId: payload.sub,
-      reviewerRole: payload.role,
+      reviewerUserId: actor.id,
+      reviewerRole: actor.role,
+      reviewerEmail: actor.email,
       reviewedAt: new Date().toISOString(),
       note,
       action,
@@ -69,11 +71,40 @@ export async function PATCH(
     const userData = userDoc.data() as any;
     const requestedRole = String(userData.requestedRole || "").toUpperCase();
 
+    if (actor.id === userId) {
+      return NextResponse.json(
+        { success: false, error: "You cannot review your own role request" },
+        { status: 400 }
+      );
+    }
+
     if (!PRIVILEGED_ROLES.has(requestedRole)) {
       return NextResponse.json(
         { success: false, error: "No privileged role request found for this user" },
         { status: 400 }
       );
+    }
+
+    if (requestedRole === "ADMIN") {
+      const ownerApprovers = (process.env.OWNER_EMAIL_ALLOWLIST || "")
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean);
+
+      if (ownerApprovers.length === 0) {
+        return NextResponse.json(
+          { success: false, error: "Owner approver list is not configured" },
+          { status: 500 }
+        );
+      }
+
+      const actorEmail = String(actor.email || "").toLowerCase();
+      if (!ownerApprovers.includes(actorEmail)) {
+        return NextResponse.json(
+          { success: false, error: "Only product owner can approve ADMIN role requests" },
+          { status: 403 }
+        );
+      }
     }
 
     if (String(userData.approvalStatus || "").toUpperCase() !== "PENDING_ROLE_APPROVAL") {
@@ -90,6 +121,7 @@ export async function PATCH(
     const updatePayload: Record<string, unknown> = {
       role: assignedRole,
       approvalStatus,
+      tokenInvalidBefore: reviewerMetadata.reviewedAt,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       roleRequest: {
         ...(userData.roleRequest || {}),
@@ -146,7 +178,7 @@ export async function PATCH(
         assignedRole,
         approvalStatus,
         note,
-        reviewedBy: payload.sub,
+        reviewedBy: actor.id,
       },
       timestamp: new Date(),
     });

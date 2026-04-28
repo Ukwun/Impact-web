@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getFirestore } from "@/lib/firebase-admin";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -202,7 +203,47 @@ export async function authenticateUser(request: NextRequest): Promise<{
       return { success: false, error: "User not found" };
     }
 
-    return { success: true, user };
+    if (user.isActive === false) {
+      return { success: false, error: "Account is deactivated" };
+    }
+
+    let resolvedUser: any = user;
+
+    // Enforce authoritative account state from Firestore (if available)
+    // so role/status changes invalidate stale token assumptions.
+    try {
+      const db = getFirestore();
+      const userDoc = await db.collection("users").doc(payload.sub).get();
+
+      if (userDoc.exists) {
+        const userData = userDoc.data() as any;
+
+        if (userData?.isActive === false) {
+          return { success: false, error: "Account is deactivated" };
+        }
+
+        if (userData?.tokenInvalidBefore) {
+          const invalidAfterMs = new Date(userData.tokenInvalidBefore).getTime();
+          const tokenIssuedAtMs = Number(payload.iat || 0) * 1000;
+          if (!Number.isNaN(invalidAfterMs) && tokenIssuedAtMs < invalidAfterMs) {
+            return { success: false, error: "Token is no longer valid. Please sign in again." };
+          }
+        }
+
+        resolvedUser = {
+          ...user,
+          role: userData?.role || user.role,
+          approvalStatus: userData?.approvalStatus || "APPROVED",
+          requestedRole: userData?.requestedRole || null,
+          verified: typeof userData?.verified === "boolean" ? userData.verified : user.verified,
+        };
+      }
+    } catch (firestoreError) {
+      // Keep compatibility when Firestore is temporarily unavailable.
+      resolvedUser = user;
+    }
+
+    return { success: true, user: resolvedUser };
   } catch (error) {
     return { success: false, error: "Authentication failed" };
   }

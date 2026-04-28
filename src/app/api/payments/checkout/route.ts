@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { default as prisma } from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
+import { authenticateUser } from "@/lib/auth";
 import { initializePayment } from "@/lib/flutterwave-service";
 
 /**
@@ -9,21 +9,15 @@ import { initializePayment } from "@/lib/flutterwave-service";
  */
 export async function POST(request: NextRequest) {
   try {
-    const token = request.headers.get("Authorization")?.split(" ")[1];
-    if (!token) {
+    const authResult = await authenticateUser(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: authResult.error || "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const payload = verifyToken(token);
-    if (!payload) {
-      return NextResponse.json(
-        { success: false, error: "Invalid token" },
-        { status: 401 }
-      );
-    }
+    const actor = authResult.user;
 
     const body = await request.json();
     const { paymentId, courseId, amount, currency = "NGN" } = body;
@@ -38,6 +32,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Payment not found" },
         { status: 404 }
+      );
+    }
+
+    if (payment.userId !== actor.id) {
+      return NextResponse.json(
+        { success: false, error: "You can only checkout your own payment" },
+        { status: 403 }
+      );
+    }
+
+    const paymentMetadata = (payment.metadata || {}) as any;
+    const metadataCourseId = String(paymentMetadata.courseId || "");
+    if (metadataCourseId && metadataCourseId !== String(courseId || "")) {
+      return NextResponse.json(
+        { success: false, error: "Payment course mismatch" },
+        { status: 400 }
       );
     }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { default as prisma } from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
+import { authenticateUser } from "@/lib/auth";
 import { verifyPayment } from "@/lib/flutterwave-service";
 
 /**
@@ -12,21 +12,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = request.headers.get("Authorization")?.split(" ")[1];
-    if (!token) {
+    const authResult = await authenticateUser(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: authResult.error || "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const payload = verifyToken(token);
-    if (!payload) {
-      return NextResponse.json(
-        { success: false, error: "Invalid token" },
-        { status: 401 }
-      );
-    }
+    const actor = authResult.user;
 
     const paymentId = params.id;
 
@@ -39,6 +33,14 @@ export async function GET(
       return NextResponse.json(
         { success: false, error: "Payment not found" },
         { status: 404 }
+      );
+    }
+
+    const requesterRole = String(actor.role || "").toUpperCase();
+    if (payment.userId !== actor.id && requesterRole !== "ADMIN") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 }
       );
     }
 
@@ -60,14 +62,32 @@ export async function GET(
           },
         });
 
-        // If payment is completed, update enrollment
-        if (isCompleted && payment.enrollmentId) {
-          await prisma.enrollment.update({
-            where: { id: payment.enrollmentId },
-            data: {
-              // Mark as active if payment is successful
-            },
-          });
+        // If payment is completed and not yet linked to enrollment, auto-link.
+        if (isCompleted && !payment.enrollmentId) {
+          const metadata = (payment.metadata || {}) as any;
+          const courseId = String(metadata.courseId || "");
+          if (courseId) {
+            const enrollment = await prisma.enrollment.upsert({
+              where: {
+                courseId_userId: {
+                  courseId,
+                  userId: payment.userId,
+                },
+              },
+              update: {},
+              create: {
+                courseId,
+                userId: payment.userId,
+                progress: 0,
+                isCompleted: false,
+              },
+            });
+
+            await prisma.payment.update({
+              where: { id: paymentId },
+              data: { enrollmentId: enrollment.id },
+            });
+          }
         }
 
         return NextResponse.json({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listUsers, updateUserProfile, logActivity } from "@/lib/firestore-utils";
-import { verifyToken } from "@/lib/auth";
+import { authenticateUser } from "@/lib/auth";
 import * as admin from "firebase-admin";
 
 /**
@@ -9,17 +9,18 @@ import * as admin from "firebase-admin";
  */
 export async function GET(req: NextRequest) {
   try {
-    const token = req.headers.get("Authorization")?.split(" ")[1];
-    const payload = verifyToken(token || "");
-
-    if (!payload) {
+    const authResult = await authenticateUser(req);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: authResult.error || "Unauthorized" },
         { status: 401 }
       );
     }
 
-    if (payload.role?.toUpperCase() !== "ADMIN") {
+    const actorRole = String(authResult.user.role || "").toUpperCase();
+    const actorApprovalStatus = String(authResult.user.approvalStatus || "APPROVED").toUpperCase();
+
+    if (actorRole !== "ADMIN" || actorApprovalStatus !== "APPROVED") {
       return NextResponse.json(
         { success: false, error: "Only admin can access this endpoint" },
         { status: 403 }
@@ -60,17 +61,19 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    const token = req.headers.get("Authorization")?.split(" ")[1];
-    const payload = verifyToken(token || "");
-
-    if (!payload) {
+    const authResult = await authenticateUser(req);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: authResult.error || "Unauthorized" },
         { status: 401 }
       );
     }
 
-    if (payload.role?.toUpperCase() !== "ADMIN") {
+    const actor = authResult.user;
+    const actorRole = String(actor.role || "").toUpperCase();
+    const actorApprovalStatus = String(actor.approvalStatus || "APPROVED").toUpperCase();
+
+    if (actorRole !== "ADMIN" || actorApprovalStatus !== "APPROVED") {
       return NextResponse.json(
         { success: false, error: "Only admin can create users" },
         { status: 403 }
@@ -79,12 +82,28 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const { email, firstName, lastName, password, role } = body;
+    const normalizedRole = String(role || "").toUpperCase();
 
-    if (!email || !firstName || !lastName || !password || !role) {
+    if (!email || !firstName || !lastName || !password || !normalizedRole) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
         { status: 400 }
       );
+    }
+
+    if (normalizedRole === "ADMIN") {
+      const ownerApprovers = (process.env.OWNER_EMAIL_ALLOWLIST || "")
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean);
+      const actorEmail = String(actor.email || "").toLowerCase();
+
+      if (!ownerApprovers.includes(actorEmail)) {
+        return NextResponse.json(
+          { success: false, error: "Only product owner can create ADMIN accounts" },
+          { status: 403 }
+        );
+      }
     }
 
     // Create user in Firebase Auth
@@ -100,7 +119,7 @@ export async function POST(req: NextRequest) {
       email,
       firstName,
       lastName,
-      role: role.toUpperCase(),
+      role: normalizedRole,
     };
 
     const db = admin.firestore();
@@ -109,7 +128,9 @@ export async function POST(req: NextRequest) {
       email,
       firstName,
       lastName,
-      role: role.toUpperCase(),
+      role: normalizedRole,
+      approvalStatus: "APPROVED",
+      tokenInvalidBefore: new Date().toISOString(),
       isActive: true,
       verified: false,
       membershipStatus: 'ACTIVE',
@@ -118,7 +139,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Log activity
-    await logActivity(payload.sub, {
+    await logActivity(actor.id, {
       type: 'user_created_admin',
       description: `Created user: ${firstName} ${lastName} (${email})`,
       targetUserId: userRecord.uid,
@@ -133,7 +154,7 @@ export async function POST(req: NextRequest) {
           email,
           firstName,
           lastName,
-          role: role.toUpperCase(),
+          role: normalizedRole,
           createdAt: new Date(),
         },
       },
