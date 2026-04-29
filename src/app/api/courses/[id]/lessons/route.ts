@@ -6,13 +6,18 @@ import { z } from "zod";
 // Validation schema for creating lesson
 const CreateLessonSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
+  description: z.string().min(3, "Description must be at least 3 characters").optional(),
   content: z.string().optional(),
   videoUrl: z.string().url().optional(),
   videoThumbnail: z.string().url().optional(),
-  duration: z.number().min(1, "Duration must be at least 1 minute"),
-  order: z.number().min(1, "Order must be at least 1"),
+  duration: z.number().min(1, "Duration must be at least 1 minute").optional(),
+  estimatedHours: z.number().min(1).optional(),
+  order: z.number().min(1, "Order must be at least 1").optional(),
   moduleId: z.string().optional(),
+  learningLayer: z.string().optional(),
+  instructions: z.string().optional(),
+  learningObjectives: z.array(z.string()).optional(),
+  facilitatorNotes: z.string().optional(),
 });
 
 const UpdateLessonSchema = CreateLessonSchema.partial();
@@ -136,11 +141,35 @@ export async function POST(
     const body = await req.json();
     const validatedData = CreateLessonSchema.parse(body);
 
+    const lastLesson = await prisma.lesson.findFirst({
+      where: { courseId },
+      orderBy: { order: "desc" },
+      select: { order: true },
+    });
+
+    const createData = {
+      title: validatedData.title,
+      description: validatedData.description || "Lesson content",
+      content: validatedData.content,
+      videoUrl: validatedData.videoUrl,
+      videoThumbnail: validatedData.videoThumbnail,
+      duration:
+        typeof validatedData.estimatedHours === "number"
+          ? validatedData.estimatedHours * 60
+          : validatedData.duration || 15,
+      order: validatedData.order || (lastLesson?.order || 0) + 1,
+      moduleId: validatedData.moduleId,
+      learningLayer: validatedData.learningLayer,
+      instructions: validatedData.instructions,
+      learningObjectives: validatedData.learningObjectives,
+      facilitatorNotes: validatedData.facilitatorNotes,
+    };
+
     // Create lesson in PostgreSQL
     const lesson = await prisma.lesson.create({
       data: {
         courseId,
-        ...validatedData,
+        ...createData,
       },
     });
 

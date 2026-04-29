@@ -111,7 +111,6 @@ export const EditCourseModal = ({
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
-          category: formData.category,
           difficulty: formData.level.toUpperCase(),
           duration: parseInt(formData.estimatedHours || "4", 10) * 60,
         }),
@@ -220,7 +219,6 @@ export const EditCourseModal = ({
             <option value="Beginner">Beginner</option>
             <option value="Intermediate">Intermediate</option>
             <option value="Advanced">Advanced</option>
-            <option value="Expert">Expert</option>
           </Select>
         </div>
 

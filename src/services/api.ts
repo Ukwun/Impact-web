@@ -315,16 +315,34 @@ class ApiClient {
     return this.client.delete(`/instructor/courses/${courseId}`);
   }
 
-  async addLesson(classroomId: string, lessonData: any, moduleId?: string) {
+  async addLesson(courseId: string, lessonData: any, moduleId?: string) {
     const resolvedModuleId = moduleId || lessonData?.moduleId;
-    if (!resolvedModuleId) {
-      throw new Error("moduleId is required to add a lesson");
+
+    const normalizedPayload = {
+      title: lessonData?.title,
+      description: lessonData?.description || "Lesson content",
+      content: lessonData?.content,
+      videoUrl: lessonData?.videoUrl,
+      videoThumbnail: lessonData?.videoThumbnail,
+      duration: typeof lessonData?.duration === "number" ? lessonData.duration : 15,
+      order: typeof lessonData?.order === "number" ? lessonData.order : 1,
+      moduleId: resolvedModuleId,
+      learningLayer: lessonData?.learningLayer,
+      instructions: lessonData?.instructions,
+      learningObjectives: lessonData?.learningObjectives,
+      facilitatorNotes: lessonData?.facilitatorNotes,
+    };
+
+    // Primary path for facilitator classroom authoring flow.
+    if (resolvedModuleId) {
+      return this.client.post(
+        `/facilitator/classroom/${courseId}/modules/${resolvedModuleId}/lessons`,
+        normalizedPayload
+      );
     }
 
-    return this.client.post(
-      `/facilitator/classroom/${classroomId}/modules/${resolvedModuleId}/lessons`,
-      lessonData
-    );
+    // Fallback for generic course authoring flow.
+    return this.client.post(`/courses/${courseId}/lessons`, normalizedPayload);
   }
 
   async uploadLessonMedia(_courseId: string, lessonId: string, file: File) {
@@ -359,6 +377,7 @@ class ApiClient {
       ? { videoUrl: fileUrl }
       : { content: fileUrl };
 
+    // Persist media metadata onto the canonical lesson route.
     return this.client.put(`/lessons/${lessonId}`, updatePayload);
   }
 

@@ -9,10 +9,14 @@ import { getFirebaseAuth, getFirestore } from "@/lib/firebase-admin";
 import { generateToken } from "@/lib/auth";
 import { comparePassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { demoUsers } from "@/lib/demoUsers";
 
 export const dynamic = 'force-dynamic';
 
-async function verifyCredentials(email: string, password: string): Promise<{ valid: boolean; uid?: string }> {
+async function verifyCredentials(
+  email: string,
+  password: string
+): Promise<{ valid: boolean; uid?: string; source?: "firebase" | "db" | "demo" }> {
   const firebaseApiKey = process.env.FIREBASE_WEB_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
   // Preferred production path: Firebase credential verification through Identity Toolkit.
@@ -31,11 +35,12 @@ async function verifyCredentials(email: string, password: string): Promise<{ val
     );
 
     if (!response.ok) {
-      return { valid: false };
+      // Fall through to local db/demo verification in development setups
+      // where Firebase config may be present but unusable.
+    } else {
+      const data = await response.json();
+      return { valid: true, uid: data.localId, source: "firebase" };
     }
-
-    const data = await response.json();
-    return { valid: true, uid: data.localId };
   }
 
   // Safe fallback for local development only.
@@ -43,17 +48,32 @@ async function verifyCredentials(email: string, password: string): Promise<{ val
     throw new Error("Firebase web API key is required for production credential verification");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true, passwordHash: true },
-  });
-
-  if (!user?.passwordHash) {
-    return { valid: false };
+  let user: { id: string; passwordHash: string } | null = null;
+  try {
+    user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, passwordHash: true },
+    });
+  } catch {
+    user = null;
   }
 
-  const passwordValid = await comparePassword(password, user.passwordHash);
-  return passwordValid ? { valid: true, uid: user.id } : { valid: false };
+  if (user?.passwordHash) {
+    const passwordValid = await comparePassword(password, user.passwordHash);
+    if (passwordValid) {
+      return { valid: true, uid: user.id, source: "db" };
+    }
+  }
+
+  const demoUser = demoUsers.get(email);
+  if (demoUser?.passwordHash) {
+    const passwordValid = await comparePassword(password, demoUser.passwordHash);
+    if (passwordValid) {
+      return { valid: true, uid: demoUser.id, source: "demo" };
+    }
+  }
+
+  return { valid: false };
 }
 
 export async function OPTIONS(req: NextRequest) {
@@ -94,8 +114,6 @@ export async function POST(req: NextRequest) {
       return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
-    const auth = getFirebaseAuth();
-
     try {
       const credentialCheck = await verifyCredentials(email, password);
       if (!credentialCheck.valid || !credentialCheck.uid) {
@@ -106,17 +124,33 @@ export async function POST(req: NextRequest) {
         return addCorsHeaders(response, req.headers.get("origin") || undefined);
       }
 
-      let userRecord: { uid: string; email?: string | null };
-      try {
-        const firebaseUser = await auth.getUser(credentialCheck.uid);
-        userRecord = { uid: firebaseUser.uid, email: firebaseUser.email };
-      } catch {
-        userRecord = { uid: credentialCheck.uid, email };
+      let userRecord: { uid: string; email?: string | null } = {
+        uid: credentialCheck.uid,
+        email,
+      };
+
+      if (credentialCheck.source === "firebase") {
+        try {
+          const auth = getFirebaseAuth();
+          const firebaseUser = await auth.getUser(credentialCheck.uid);
+          userRecord = { uid: firebaseUser.uid, email: firebaseUser.email };
+        } catch {
+          userRecord = { uid: credentialCheck.uid, email };
+        }
       }
 
       // Fetch user role from Firestore
       let userRole = 'STUDENT';
       let userProfile: any = null;
+
+      if (credentialCheck.source === "demo") {
+        const demoUser = demoUsers.get(email);
+        if (demoUser) {
+          userRole = demoUser.role || "STUDENT";
+          userProfile = demoUser;
+        }
+      }
+
       try {
         const db = getFirestore();
         const userDoc = await db.collection('users').doc(userRecord.uid).get();

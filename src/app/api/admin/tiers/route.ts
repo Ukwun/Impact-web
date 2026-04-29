@@ -16,6 +16,8 @@ const CreateTierSchema = z.object({
   canManageChapter: z.boolean().default(false),
   maxCoursesAccess: z.number().min(1).default(999),
   maxEventsAccess: z.number().min(1).default(999),
+  maxCourses: z.number().min(1).optional(),
+  maxStudents: z.number().min(1).optional(),
 });
 
 // Helper to verify admin role
@@ -110,12 +112,25 @@ export async function POST(req: NextRequest) {
     // Validate input
     const body = await req.json();
     const validatedData = CreateTierSchema.parse(body);
+    const normalizedData = {
+      tierType: validatedData.tierType,
+      name: validatedData.name,
+      description: validatedData.description,
+      canAccessLearning: validatedData.canAccessLearning,
+      canParticipateEvents: validatedData.canParticipateEvents,
+      canAccessCommunity: validatedData.canAccessCommunity,
+      canAccessMentorship: validatedData.canAccessMentorship,
+      canCreateContent: validatedData.canCreateContent,
+      canManageChapter: validatedData.canManageChapter,
+      maxCoursesAccess: validatedData.maxCoursesAccess || validatedData.maxCourses || 999,
+      maxEventsAccess: validatedData.maxEventsAccess || validatedData.maxStudents || 999,
+    };
 
     // Check for duplicate tier name
     const existingTier = await prisma.membershipTier.findFirst({
       where: {
         name: {
-          equals: validatedData.name,
+          equals: normalizedData.name,
           mode: "insensitive",
         },
       },
@@ -130,7 +145,7 @@ export async function POST(req: NextRequest) {
 
     // Create tier
     const tier = await prisma.membershipTier.create({
-      data: validatedData as any,
+      data: normalizedData as any,
       select: {
         id: true,
         tierType: true,

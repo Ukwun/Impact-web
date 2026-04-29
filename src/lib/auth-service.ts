@@ -7,6 +7,7 @@
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyToken as verifyJwtToken } from '@/lib/auth';
 
 // ========================================================================
 // TYPES
@@ -22,6 +23,32 @@ export interface AuthToken {
   permissions: string[];
   iat: number;
   exp: number;
+}
+
+function normalizeRole(rawRole: string | undefined): UserRole {
+  const role = String(rawRole || 'STUDENT').toUpperCase();
+  if (role === 'FACILITATOR') return 'FACILITATOR';
+  if (role === 'PARENT') return 'PARENT';
+  if (role === 'ADMIN') return 'ADMIN';
+  if (role === 'SUPER_ADMIN') return 'SUPER_ADMIN';
+  if (role === 'SCHOOL_ADMIN') return 'SCHOOL_ADMIN';
+  return 'STUDENT';
+}
+
+function parseStandardJwtToken(token: string): AuthToken | null {
+  const payload = verifyJwtToken(token);
+  if (!payload) return null;
+
+  const role = normalizeRole(payload.role);
+  return {
+    userId: payload.sub,
+    email: payload.email,
+    role,
+    schoolId: '',
+    permissions: ROLE_PERMISSIONS[role] || [],
+    iat: payload.iat,
+    exp: payload.exp,
+  };
 }
 
 export interface AuthContext {
@@ -155,12 +182,16 @@ export async function verifyToken(token: string): Promise<AuthToken | null> {
  */
 export async function getAuthUser(request: NextRequest): Promise<AuthToken | null> {
   const cookieStore = cookies();
-  const token = cookieStore.get('authToken')?.value || 
+  const token = cookieStore.get('auth_token')?.value ||
+                cookieStore.get('authToken')?.value || 
                 request.headers.get('authorization')?.replace('Bearer ', '');
 
   if (!token) {
     return null;
   }
+
+  const standardJwt = parseStandardJwtToken(token);
+  if (standardJwt) return standardJwt;
 
   return await verifyToken(token);
 }

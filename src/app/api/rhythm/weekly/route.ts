@@ -378,10 +378,52 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Weekly Rhythm API Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+    const toIsoDate = (d: Date) => d.toISOString().split("T")[0];
+    const dayDate = (offset: number) => {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + offset);
+      return toIsoDate(d);
+    };
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        rhythm: {
+          studentId: null,
+          weekStartDate: dayDate(0),
+          weekEndDate: dayDate(6),
+          schedule: [
+            { dayOfWeek: "MON", date: dayDate(0), focusArea: "Learn", suggestedDuration: 0, completionRate: 0, status: "UNAVAILABLE", sessions: [] },
+            { dayOfWeek: "TUE", date: dayDate(1), focusArea: "Practice", suggestedDuration: 0, completionRate: 0, status: "UNAVAILABLE", sessions: [] },
+            { dayOfWeek: "WED", date: dayDate(2), focusArea: "Engage Live", suggestedDuration: 0, completionRate: 0, status: "UNAVAILABLE", sessions: [] },
+            { dayOfWeek: "THU", date: dayDate(3), focusArea: "Engage Live", suggestedDuration: 0, completionRate: 0, status: "UNAVAILABLE", sessions: [] },
+            { dayOfWeek: "FRI", date: dayDate(4), focusArea: "Assess", suggestedDuration: 0, completionRate: 0, status: "UNAVAILABLE", sessions: [] },
+            { dayOfWeek: "SAT", date: dayDate(5), focusArea: "Reinforce", suggestedDuration: 0, completionRate: 0, status: "UNAVAILABLE", sessions: [] },
+            { dayOfWeek: "SUN", date: dayDate(6), focusArea: "Reflect", suggestedDuration: 0, completionRate: 0, status: "UNAVAILABLE", sessions: [] },
+          ],
+          enrolledCourses: [],
+          upcomingLiveSessions: [],
+          streakDays: 0,
+          completedSessionsThisWeek: 0,
+          totalSessionsThisWeek: 0,
+          adaptations: [],
+          insights: [
+            {
+              category: "System",
+              title: "Schedule temporarily unavailable",
+              description: "We could not load your live weekly plan right now. Please try again shortly.",
+              actionable: true,
+              suggestedAction: "Retry in a few moments",
+            },
+          ],
+        },
+      },
+    });
   }
 }
 

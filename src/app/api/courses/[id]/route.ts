@@ -11,12 +11,14 @@ export const dynamic = 'force-dynamic';
 const UpdateCourseSchema = z.object({
   title: z.string().min(3).max(255).optional(),
   description: z.string().min(10).optional(),
-  category: z.string().optional(),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).optional(),
+  level: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).optional(),
   duration: z.number().min(0).optional(),
+  estimatedHours: z.number().min(1).optional(),
   language: z.string().optional(),
   thumbnail: z.string().url().optional(),
   isPublished: z.boolean().optional(),
+  maxStudents: z.number().optional(),
 });
 
 export async function OPTIONS(req: NextRequest) {
@@ -240,10 +242,23 @@ export async function PUT(
     const body = await req.json();
     const validatedData = UpdateCourseSchema.parse(body);
 
+    const updateData = {
+      title: validatedData.title,
+      description: validatedData.description,
+      difficulty: validatedData.difficulty || validatedData.level,
+      duration:
+        typeof validatedData.estimatedHours === "number"
+          ? validatedData.estimatedHours * 60
+          : validatedData.duration,
+      language: validatedData.language,
+      thumbnail: validatedData.thumbnail,
+      isPublished: validatedData.isPublished,
+    };
+
     // Update course
     const updatedCourse = await prisma.course.update({
       where: { id: courseId },
-      data: validatedData,
+      data: updateData,
       include: {
         createdBy: {
           select: { firstName: true, lastName: true },

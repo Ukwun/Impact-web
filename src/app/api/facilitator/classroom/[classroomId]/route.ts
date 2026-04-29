@@ -146,6 +146,12 @@ export async function PUT(
     const facilitatorId = payload.sub;
     const classroomId = params.classroomId;
     const body = await request.json();
+    const resolvedDuration =
+      typeof body.duration === "number"
+        ? body.duration
+        : typeof body.estimatedDuration === "number"
+          ? body.estimatedDuration
+          : undefined;
 
     // Verify ownership
     const classroom = await prisma.course.findUnique({
@@ -172,7 +178,7 @@ export async function PUT(
         description: body.description,
         difficulty: body.difficulty,
         language: body.language,
-        duration: body.duration,
+        duration: resolvedDuration,
         isPublished: body.isPublished ?? false,
         thumbnail: body.thumbnail,
       },

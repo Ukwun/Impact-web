@@ -3,6 +3,7 @@ import bcryptjs from "bcryptjs";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getFirestore } from "@/lib/firebase-admin";
+import { demoUsers } from "@/lib/demoUsers";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -195,11 +196,24 @@ export async function authenticateUser(request: NextRequest): Promise<{
       return { success: false, error: "Invalid token" };
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: payload.sub },
-    });
+    let user: any = null;
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+    } catch {
+      user = null;
+    }
 
     if (!user) {
+      // Local development fallback for deterministic demo-auth flows.
+      if (process.env.NODE_ENV !== "production") {
+        const demoUser = demoUsers.get(String(payload.email || "").toLowerCase());
+        if (demoUser && demoUser.id === payload.sub) {
+          return { success: true, user: demoUser };
+        }
+      }
+
       return { success: false, error: "User not found" };
     }
 
