@@ -15,84 +15,92 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
-  const auth = await roleMiddleware(request, ALL_ROLES);
-  if (auth instanceof NextResponse) return auth;
+  try {
+    const auth = await roleMiddleware(request, ALL_ROLES);
+    if (auth instanceof NextResponse) return auth;
 
-  const polls = await prisma.liveSessionPoll.findMany({
-    where: { sessionId: params.sessionId },
-    include: {
-      responses: {
-        select: { userId: true, selectedOptions: true },
+    const polls = await prisma.liveSessionPoll.findMany({
+      where: { sessionId: params.sessionId },
+      include: {
+        responses: {
+          select: { userId: true, selectedOptions: true },
+        },
       },
-    },
-    orderBy: { createdAt: "asc" },
-  });
-
-  // Tally results
-  const data = polls.map((poll) => {
-    const tally: Record<string, number> = {};
-    poll.options.forEach((opt) => { tally[opt] = 0; });
-    poll.responses.forEach((r) => {
-      r.selectedOptions.forEach((opt) => {
-        tally[opt] = (tally[opt] ?? 0) + 1;
-      });
+      orderBy: { createdAt: "asc" },
     });
 
-    return {
-      id: poll.id,
-      question: poll.question,
-      options: poll.options,
-      status: poll.status,
-      allowMultiple: poll.allowMultiple,
-      totalResponses: poll.responses.length,
-      tally,
-      // Students see whether they responded; facilitators see all responses
-      myResponse: poll.responses.find((r) => r.userId === auth.user.userId)?.selectedOptions ?? null,
-    };
-  });
+    const data = polls.map((poll) => {
+      const tally: Record<string, number> = {};
+      poll.options.forEach((opt) => { tally[opt] = 0; });
+      poll.responses.forEach((r) => {
+        r.selectedOptions.forEach((opt) => {
+          tally[opt] = (tally[opt] ?? 0) + 1;
+        });
+      });
 
-  return NextResponse.json({ success: true, data });
+      return {
+        id: poll.id,
+        question: poll.question,
+        options: poll.options,
+        status: poll.status,
+        allowMultiple: poll.allowMultiple,
+        totalResponses: poll.responses.length,
+        tally,
+        myResponse: poll.responses.find((r) => r.userId === auth.user.userId)?.selectedOptions ?? null,
+      };
+    });
+
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error('Poll list error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to fetch polls' }, { status: 500 });
+  }
 }
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { sessionId: string } }
 ) {
-  const auth = await roleMiddleware(request, FACILITATOR_ROLES);
-  if (auth instanceof NextResponse) return auth;
+  try {
+    const auth = await roleMiddleware(request, FACILITATOR_ROLES);
+    if (auth instanceof NextResponse) return auth;
 
-  const session = await prisma.liveSession.findUnique({
-    where: { id: params.sessionId },
-    select: { facilitatorId: true },
-  });
+    const session = await prisma.liveSession.findUnique({
+      where: { id: params.sessionId },
+      select: { facilitatorId: true },
+    });
 
-  if (!session) {
-    return NextResponse.json({ success: false, error: "Session not found" }, { status: 404 });
+    if (!session) {
+      return NextResponse.json({ success: false, error: "Session not found" }, { status: 404 });
+    }
+
+    if (auth.user.role === "FACILITATOR" && session.facilitatorId !== auth.user.userId) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { question, options, allowMultiple = false } = body;
+
+    if (!question || !Array.isArray(options) || options.length < 2) {
+      return NextResponse.json(
+        { success: false, error: "question and at least 2 options are required" },
+        { status: 400 }
+      );
+    }
+
+    const poll = await prisma.liveSessionPoll.create({
+      data: {
+        sessionId: params.sessionId,
+        question,
+        options,
+        allowMultiple,
+        status: "DRAFT",
+      },
+    });
+
+    return NextResponse.json({ success: true, data: poll }, { status: 201 });
+  } catch (error) {
+    console.error('Poll create error:', error);
+    return NextResponse.json({ success: false, error: 'Failed to create poll' }, { status: 500 });
   }
-
-  if (auth.user.role === "FACILITATOR" && session.facilitatorId !== auth.user.userId) {
-    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
-  }
-
-  const body = await request.json();
-  const { question, options, allowMultiple = false } = body;
-
-  if (!question || !Array.isArray(options) || options.length < 2) {
-    return NextResponse.json(
-      { success: false, error: "question and at least 2 options are required" },
-      { status: 400 }
-    );
-  }
-
-  const poll = await prisma.liveSessionPoll.create({
-    data: {
-      sessionId: params.sessionId,
-      question,
-      options,
-      allowMultiple,
-      status: "DRAFT",
-    },
-  });
-
-  return NextResponse.json({ success: true, data: poll }, { status: 201 });
 }

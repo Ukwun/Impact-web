@@ -10,6 +10,7 @@ import { getFirebaseAuth, getFirestore } from "@/lib/firebase-admin";
 import { generateToken, hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getEmailService } from "@/lib/email-service";
+import { demoUsers } from "@/lib/demoUsers";
 
 const PRIVILEGED_SELF_SIGNUP_ROLES = new Set(["ADMIN", "FACILITATOR", "SCHOOL_ADMIN"]);
 const ALLOWED_SELF_SIGNUP_ROLES = new Set([
@@ -92,9 +93,9 @@ export async function POST(req: NextRequest) {
         const response = NextResponse.json(
           {
             success: false,
-            error: "ADMIN approvals are temporarily unavailable. Owner email recipients are not configured.",
+            error: "ADMIN self-registration is not allowed.",
           },
-          { status: 503 }
+          { status: 403 }
         );
         return addCorsHeaders(response, req.headers.get("origin") || undefined);
       }
@@ -177,9 +178,95 @@ export async function POST(req: NextRequest) {
       return addCorsHeaders(response, req.headers.get("origin") || undefined);
     }
 
-    const auth = getFirebaseAuth();
+    const buildCompletedUser = (id: string) => ({
+      id,
+      firstName,
+      lastName,
+      email,
+      phone,
+      role,
+      state,
+      institution: body.institution || '',
+      verified: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    const createLocalSignupFallback = async () => {
+      const existingDemoUser = demoUsers.get(email);
+      if (existingDemoUser) {
+        return NextResponse.json(
+          { success: false, error: "Email already registered" },
+          { status: 409 }
+        );
+      }
+
+      const passwordHash = await hashPassword(password);
+      const localUserId = `local-${Date.now()}`;
+
+      demoUsers.set(email, {
+        id: localUserId,
+        email,
+        firstName,
+        lastName,
+        phone,
+        role,
+        state,
+        institution: body.institution || '',
+        passwordHash,
+        emailVerified: false,
+        isActive: true,
+        avatar: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      try {
+        await prisma.user.create({
+          data: {
+            id: localUserId,
+            email,
+            firstName,
+            lastName,
+            passwordHash,
+            role,
+            phone,
+            state: state || 'Unknown',
+            institution: body.institution || '',
+            verified: false,
+          },
+        });
+      } catch {
+        // Local fallback can still proceed with in-memory demo user storage.
+      }
+
+      const jwtToken = generateToken({ sub: localUserId, email, role });
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: isPrivilegedRoleRequest
+            ? "Account created. Your role request is pending admin approval."
+            : "Account created successfully",
+          user: buildCompletedUser(localUserId),
+          token: jwtToken,
+          data: {
+            role,
+            user: buildCompletedUser(localUserId),
+          },
+          roleRequest: {
+            requestedRole,
+            assignedRole: role,
+            approvalStatus,
+          },
+        },
+        { status: 201 }
+      );
+    };
     
     try {
+      const auth = getFirebaseAuth();
+
       const userRecord = await auth.createUser({
         email: email,
         password: password,
@@ -344,6 +431,10 @@ export async function POST(req: NextRequest) {
             : "Account created successfully",
           user: completedUser,
           token: jwtToken,
+          data: {
+            role,
+            user: completedUser,
+          },
           roleRequest: {
             requestedRole,
             assignedRole: role,
@@ -356,6 +447,11 @@ export async function POST(req: NextRequest) {
       return addCorsHeaders(response, req.headers.get("origin") || undefined);
 
     } catch (firebaseError: any) {
+      if (process.env.NODE_ENV !== "production") {
+        const fallbackResponse = await createLocalSignupFallback();
+        return addCorsHeaders(fallbackResponse, req.headers.get("origin") || undefined);
+      }
+
       let errorMessage = "Signup failed";
       let statusCode = 400;
 

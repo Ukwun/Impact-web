@@ -16,31 +16,36 @@ export async function GET(request: NextRequest) {
     }
     const userId = tokenPayload.sub;
 
-    // Get all subscription plans
-    const plans = await prisma.subscriptionPlan.findMany({
-      select: {
-        id: true,
-        tierType: true,
-        name: true,
-        monthlyPrice: true,
-        maxUsers: true,
-        canAccessAnalytics: true,
-        canManageFacilitators: true,
-        canIntegrateSIS: true,
-      },
-      orderBy: { monthlyPrice: 'asc' }
-    });
+    let plans: any[] = [];
+    let userSubscriptions: any[] = [];
 
-    // Get user's active subscriptions
-    const userSubscriptions = await prisma.subscription.findMany({
-      where: {
-        subscriberId: userId,
-        status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PAST_DUE] }
-      },
-      include: {
-        plan: true,
-      }
-    });
+    try {
+      plans = await prisma.subscriptionPlan.findMany({
+        select: {
+          id: true,
+          tierType: true,
+          name: true,
+          monthlyPrice: true,
+          maxUsers: true,
+          canAccessAnalytics: true,
+          canManageFacilitators: true,
+          canIntegrateSIS: true,
+        },
+        orderBy: { monthlyPrice: 'asc' }
+      });
+
+      userSubscriptions = await prisma.subscription.findMany({
+        where: {
+          subscriberId: userId,
+          status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PAST_DUE] }
+        },
+        include: {
+          plan: true,
+        }
+      });
+    } catch (storageError) {
+      console.warn('Subscriptions storage unavailable, returning empty state:', storageError);
+    }
 
     return NextResponse.json({
       success: true,
