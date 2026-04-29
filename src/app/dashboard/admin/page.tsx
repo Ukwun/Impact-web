@@ -18,7 +18,7 @@ export default async function AdminDashboardPage() {
     const auth = await verifyAuth();
 
     if (!auth || (auth.role !== "ADMIN" && auth.role !== "SUPER_ADMIN")) {
-      redirect("/login?error=unauthorized&redirect=/dashboard/admin");
+      redirect("/auth/login?error=unauthorized&redirect=/dashboard/admin");
     }
 
     return (
@@ -28,6 +28,6 @@ export default async function AdminDashboardPage() {
     );
   } catch (error) {
     console.error("Admin Dashboard Error:", error);
-    redirect("/login");
+    redirect("/auth/login");
   }
 }

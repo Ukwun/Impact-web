@@ -53,10 +53,12 @@ export default function LoginPage() {
     const success = await login(formData.email, formData.password);
     if (success) {
       setSuccessMessage("Login successful! Redirecting...");
+      const loggedInUser = useAuthStore.getState().user;
+      const dashboardRoute = getDashboardRoute(loggedInUser?.role);
       // Use window.location to do a full page reload
       // This ensures clean state and avoids redirect loops
       setTimeout(() => {
-        window.location.href = "/dashboard";
+        window.location.href = dashboardRoute;
       }, 500);
     }
   };

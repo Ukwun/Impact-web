@@ -5,14 +5,14 @@ export function getDashboardRoute(role: string | undefined): string {
   if (!role || typeof role !== 'string') return "/dashboard";
 
   const roleMap: Record<string, string> = {
-    STUDENT: "/dashboard",
-    PARENT: "/dashboard",
-    FACILITATOR: "/dashboard",
-    SCHOOL_ADMIN: "/dashboard",
-    UNI_MEMBER: "/dashboard",
-    CIRCLE_MEMBER: "/dashboard",
-    ADMIN: "/dashboard",
-    MENTOR: "/dashboard",
+    STUDENT: "/dashboard/student",
+    PARENT: "/dashboard/parent",
+    FACILITATOR: "/dashboard/facilitator",
+    SCHOOL_ADMIN: "/dashboard/admin",
+    UNI_MEMBER: "/dashboard/university",
+    CIRCLE_MEMBER: "/dashboard/circle-member",
+    ADMIN: "/dashboard/admin",
+    MENTOR: "/dashboard/mentor",
   };
 
   const normalizedRole = role.trim().toUpperCase();

@@ -224,7 +224,7 @@ export default function RegisterPage() {
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
                     type="button"
-                    onClick={() => router.push("/dashboard")}
+                    onClick={() => router.push(getDashboardRoute(user?.role))}
                     className="w-full py-3 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold"
                   >
                     Go to my dashboard

@@ -18,7 +18,7 @@ export default async function ParentDashboardPage() {
     const auth = await verifyAuth();
 
     if (!auth || auth.role !== "PARENT") {
-      redirect("/login?error=unauthorized&redirect=/dashboard/parent");
+      redirect("/auth/login?error=unauthorized&redirect=/dashboard/parent");
     }
 
     return (
@@ -28,6 +28,6 @@ export default async function ParentDashboardPage() {
     );
   } catch (error) {
     console.error("Parent Dashboard Error:", error);
-    redirect("/login");
+    redirect("/auth/login");
   }
 }

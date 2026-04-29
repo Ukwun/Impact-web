@@ -15,6 +15,7 @@ import UniversityMemberDashboard from "@/components/dashboard/UniversityMemberDa
 import { Card } from "@/components/ui/Card";
 import { AlertCircle, Loader } from "lucide-react";
 import { User } from "@/types";
+import { getDashboardRoute } from "@/lib/rbac";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -137,6 +138,17 @@ export default function DashboardPage() {
     }
   }, [needsOnboarding, router, user]);
 
+  // Canonical role-aware handoff from /dashboard to role-specific dashboards
+  useEffect(() => {
+    if (isLoading || !user) return;
+
+    const dashboardRoute = getDashboardRoute(user.role);
+    if (dashboardRoute !== "/dashboard") {
+      console.log("🔀 Redirecting to role-specific dashboard:", dashboardRoute);
+      router.replace(dashboardRoute);
+    }
+  }, [isLoading, user, router]);
+
   // Show loading while checking auth
   if (isLoading) {
     return (
@@ -152,6 +164,18 @@ export default function DashboardPage() {
   // If no user after loading, don't render (useEffect will have redirected)
   if (!user) {
     return null;
+  }
+
+  const dashboardRoute = getDashboardRoute(user.role);
+  if (dashboardRoute !== "/dashboard") {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-dark">
+        <div className="text-center space-y-4">
+          <Loader className="w-8 h-8 animate-spin text-primary-500 mx-auto" />
+          <p className="text-white">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   console.log("📊 Rendering dashboard for user:", user.firstName, user.lastName, "Role:", user.role);
