@@ -1,3 +1,22 @@
+// ============================================================================
+// USER ACTIVITY LOGGING (NEW)
+// ============================================================================
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  path        String
+  userAgent   String?
+  ip          String?
+  timestamp   DateTime @default(now())
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([path])
+  @@index([timestamp])
+}
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -83,7 +102,10 @@ model User {
   reviewedVersions      CurriculumVersion[] @relation("VersionReviewer")
   approvalRequests      ApprovalRequest[]   @relation("ApprovalRequester")
   approvalReviews       ApprovalRequest[]   @relation("ApprovalReviewer")
-  
+
+  // User activity logs
+  activityLogs          ActivityLog[]
+
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
 

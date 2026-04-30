@@ -9,6 +9,7 @@ export default function EmailVerificationForm({ email, onSuccess }: { email: str
   const [timer, setTimer] = useState(600); // 10 minutes in seconds
   const [resending, setResending] = useState(false);
   const [resendAvailable, setResendAvailable] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -25,7 +26,9 @@ export default function EmailVerificationForm({ email, onSuccess }: { email: str
   const handleResend = async () => {
     setResending(true);
     setError(null);
+    setInfo(null);
     try {
+      console.log("[EmailVerification] Resending code to:", email);
       const res = await fetch("/api/auth/send-verification-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -37,9 +40,11 @@ export default function EmailVerificationForm({ email, onSuccess }: { email: str
       } else {
         setTimer(600);
         setResendAvailable(false);
+        setInfo("A new verification code has been sent to your email.");
       }
-    } catch {
+    } catch (e) {
       setError("Network error");
+      console.error("[EmailVerification] Resend error:", e);
     } finally {
       setResending(false);
     }
@@ -49,8 +54,10 @@ export default function EmailVerificationForm({ email, onSuccess }: { email: str
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setInfo(null);
     setSuccess(false);
     try {
+      console.log("[EmailVerification] Verifying code for:", email, code);
       const res = await fetch("/api/auth/verify-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -59,12 +66,14 @@ export default function EmailVerificationForm({ email, onSuccess }: { email: str
       const data = await res.json();
       if (data.success) {
         setSuccess(true);
+        setInfo("Email verified successfully! You may continue.");
         if (onSuccess) onSuccess();
       } else {
         setError(data.error || "Verification failed");
       }
     } catch (err) {
       setError("Network error");
+      console.error("[EmailVerification] Verification error:", err);
     } finally {
       setLoading(false);
     }
@@ -113,6 +122,7 @@ export default function EmailVerificationForm({ email, onSuccess }: { email: str
         {loading ? "Verifying..." : "Verify Email"}
       </button>
       {error && <div className="text-red-600 text-sm">{error}</div>}
+      {info && <div className="text-blue-700 text-sm">{info}</div>}
       {success && <div className="text-green-700 text-sm">Email verified! You may continue.</div>}
     </form>
   );

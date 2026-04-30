@@ -4,12 +4,106 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCourses } from '@/hooks/useCourses';
 import { useEvents } from '@/hooks/useEvents';
 import Link from 'next/link';
-import { BookOpen, Calendar, Award, TrendingUp, Clock, Users } from 'lucide-react';
+import { BookOpen, Calendar, Award, TrendingUp, Clock, Users, ReceiptText } from 'lucide-react';
+import { useEffect, useState } from 'react';
+function useReceipts() {
+  const [receipts, setReceipts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    async function fetchReceipts() {
+      try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch('/api/payments/receipts', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.success) setReceipts(data.receipts);
+        else setError(data.error || 'Failed to load receipts');
+      } catch (e) {
+        setError('Network error');
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchReceipts();
+  }, []);
+  return { receipts, loading, error };
+}
 
 export default function StudentDashboard() {
   const { user } = useAuth();
   const { courses, loading: coursesLoading } = useCourses(3);
   const { events, loading: eventsLoading } = useEvents(3);
+  const { receipts, loading: receiptsLoading, error: receiptsError } = useReceipts();
+      {/* Payment Receipts */}
+      <div className="bg-gradient-to-br from-dark-500 to-dark-600 rounded-2xl p-8 border-2 border-dark-400 mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <ReceiptText size={24} className="text-blue-400" />
+          <h2 className="text-2xl font-black text-white">Payment Receipts</h2>
+        </div>
+        {receiptsLoading ? (
+          <div className="text-gray-400">Loading receipts...</div>
+        ) : receiptsError ? (
+          <div className="text-red-500">{receiptsError}</div>
+        ) : receipts.length === 0 ? (
+          <div className="text-gray-400">No payments found.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm border border-dark-400 rounded-lg">
+              <thead>
+                <tr className="bg-dark-700 text-gray-300">
+                  <th className="p-2 text-left">Date</th>
+                  <th className="p-2 text-left">Course</th>
+                  <th className="p-2 text-left">Amount</th>
+                  <th className="p-2 text-left">Currency</th>
+                  <th className="p-2 text-left">Status</th>
+                  <th className="p-2 text-left">Gateway</th>
+                  <th className="p-2 text-left">Receipt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {receipts.map((r) => (
+                  <tr key={r.id} className="border-b border-dark-400">
+                    <td className="p-2">{new Date(r.createdAt).toLocaleDateString()}</td>
+                    <td className="p-2">{r.course?.title || '-'}</td>
+                    <td className="p-2">{r.amount}</td>
+                    <td className="p-2">{r.currency}</td>
+                    <td className="p-2 capitalize">{r.status}</td>
+                    <td className="p-2 uppercase">{r.gateway || '-'}</td>
+                    <td className="p-2">
+                      {r.receiptUrl ? (
+                        <a href={r.receiptUrl} target="_blank" rel="noopener" className="text-blue-500 underline">View</a>
+                      ) : (
+                        <button
+                          className="text-blue-500 underline"
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            try {
+                              const res = await fetch(`/api/payments/receipts/pdf?id=${r.id}`);
+                              const blob = await res.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = `receipt-${r.id}.pdf`;
+                              a.click();
+                              window.URL.revokeObjectURL(url);
+                            } catch {
+                              alert('Failed to download receipt.');
+                            }
+                          }}
+                        >
+                          Download PDF
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
   const stats = [
     { icon: BookOpen, label: 'Courses Enrolled', value: '5', color: 'primary' },

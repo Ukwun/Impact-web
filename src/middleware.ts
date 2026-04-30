@@ -1,31 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// --- User Activity Tracking Helper ---
+async function trackUserActivity(request: NextRequest) {
+  try {
+    // Only track for authenticated users (example: check for session cookie or header)
+    const userId = request.cookies.get('userId')?.value;
+    if (!userId) return;
+
+    // Track only for page navigations (GET requests)
+    if (request.method !== 'GET') return;
+
+    // Collect basic activity data
+    const activity = {
+      userId,
+      path: request.nextUrl.pathname,
+      timestamp: Date.now(),
+      userAgent: request.headers.get('user-agent'),
+      ip: request.ip,
+    };
+
+    // Send to your tracking API endpoint (implement /api/activity)
+    fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/activity`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(activity),
+    });
+  } catch (e) {
+    // Fail silently
+  }
+}
+
 /**
  * Middleware to add security headers
  * Authentication is handled client-side via Zustand store
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  // Track user activity (non-blocking)
+  trackUserActivity(request);
+
   // Add security headers to all responses
   const response = NextResponse.next();
-
-  // Prevent clickjacking
   response.headers.set('X-Frame-Options', 'DENY');
-
-  // Prevent MIME sniffing
   response.headers.set('X-Content-Type-Options', 'nosniff');
-
-  // Enable XSS protection
   response.headers.set('X-XSS-Protection', '1; mode=block');
-
-  // Referrer policy
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-  // Content Security Policy (CSP) - allow Google Fonts and WebSocket connections
   response.headers.set(
     'Content-Security-Policy',
     "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: ws: wss:;"
   );
-
   return response;
 }
 

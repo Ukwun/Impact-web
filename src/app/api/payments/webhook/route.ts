@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
             },
           });
 
-          // Send email confirmation
+          // Send email confirmation to student
           try {
             const emailService = getEmailService();
             await emailService.send({
@@ -115,6 +115,24 @@ export async function POST(request: NextRequest) {
                 </div>
               `,
             });
+            // Admin/owner notification
+            const adminEmail = process.env.OWNER_EMAIL || process.env.ADMIN_EMAIL;
+            if (adminEmail) {
+              await emailService.send({
+                to: adminEmail,
+                subject: `New Flutterwave Payment Received - ${payment.enrollment.course.title}`,
+                html: `
+                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #1FA774;">New Flutterwave Payment Received</h2>
+                    <p><strong>Student:</strong> ${payment.user.firstName} ${payment.user.lastName} (${payment.user.email})</p>
+                    <p><strong>Course:</strong> ${payment.enrollment.course.title}</p>
+                    <p><strong>Amount:</strong> ${payment.currency} ${payment.amount}</p>
+                    <p><strong>Payment ID:</strong> ${payment.id}</p>
+                    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                  </div>
+                `,
+              });
+            }
           } catch (emailError) {
             console.error("Error sending payment confirmation email:", emailError);
           }

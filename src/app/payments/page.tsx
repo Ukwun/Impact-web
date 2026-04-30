@@ -12,7 +12,7 @@ export default function PaymentsPage() {
   >(null);
   const [loading, setLoading] = useState(false);
 
-  const handlePaymentMethodSelect = async (method: "stripe" | "flutterwave" | "bank") => {
+  const handlePaymentMethodSelect = async (method: "stripe" | "flutterwave" | "bank" | "paypal") => {
     setLoading(true);
     try {
       setSelectedMethod(method);
@@ -21,6 +21,8 @@ export default function PaymentsPage() {
         router.push("/payments/stripe");
       } else if (method === "flutterwave") {
         router.push("/payments/flutterwave");
+      } else if (method === "paypal") {
+        router.push("/payments/paypal");
       } else {
         router.push("/payments/bank-transfer");
       }
@@ -38,6 +40,43 @@ export default function PaymentsPage() {
         </p>
 
         <div className="grid md:grid-cols-2 gap-6">
+                    {/* PayPal Card */}
+                    <div className="bg-dark-800 border border-blue-400 rounded-lg p-8 hover:shadow-lg hover:shadow-blue-400/20 transition-all cursor-pointer">
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-2xl font-bold text-white">PayPal</h2>
+                        <span className="bg-blue-400 text-white text-xs font-semibold px-3 py-1 rounded">
+                          Global
+                        </span>
+                      </div>
+                      <p className="text-gray-400 mb-6">
+                        Pay securely with your PayPal account or card (worldwide)
+                      </p>
+                      <ul className="space-y-2 mb-8 text-gray-300 text-sm">
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                          PayPal balance, Visa, Mastercard, Amex
+                        </li>
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                          Works worldwide (USD, EUR)
+                        </li>
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                          Instant confirmation
+                        </li>
+                        <li className="flex items-center">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
+                          Bank-level security
+                        </li>
+                      </ul>
+                      <button
+                        onClick={() => handlePaymentMethodSelect("paypal")}
+                        disabled={loading}
+                        className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? "Processing..." : "Pay with PayPal"}
+                      </button>
+                    </div>
           {/* Flutterwave Card */}
           <div className="bg-dark-800 border border-primary-500 rounded-lg p-8 hover:shadow-lg hover:shadow-primary-500/20 transition-all cursor-pointer">
             <div className="flex items-center justify-between mb-4">

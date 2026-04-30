@@ -84,8 +84,16 @@ export async function POST(request: NextRequest) {
 
         // Send confirmation email
         try {
-          // TODO: Send welcome email via Resend
-          console.log(`📧 Sending enrollment confirmation to ${payment.user.email}`);
+          const course = await prisma.course.findUnique({ where: { id: payment.courseId } });
+          const { sendStripePaymentConfirmation } = await import('./email-confirmation');
+          await sendStripePaymentConfirmation({
+            user: payment.user,
+            course,
+            amount: payment.amount,
+            currency: payment.currency,
+            paymentId: payment.id,
+          });
+          console.log(`📧 Sent Stripe payment confirmation to ${payment.user.email}`);
         } catch (emailError) {
           console.error('Error sending email:', emailError);
           // Don't fail the webhook if email fails
