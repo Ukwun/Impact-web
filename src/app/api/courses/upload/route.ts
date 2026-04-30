@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { existsSync } from "fs";
+import { uploadToS3 } from "@/lib/s3-client";
 import path from "path";
 import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -53,12 +52,12 @@ function validateFile(file: File, fileType: "video" | "pdf" | "document"): { val
   return { valid: true };
 }
 
-// Helper to generate unique filename
-function generateFileName(file: File, fileType: string): string {
+// Helper to generate unique S3 key
+function generateFileKey(file: File, fileType: string): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
   const extension = file.name.split(".").pop();
-  return `${fileType}-${timestamp}-${random}.${extension}`;
+  return `courses/${fileType}-${timestamp}-${random}.${extension}`;
 }
 
 /**
@@ -98,10 +97,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Ensure upload directory exists
-    if (!existsSync(UPLOAD_DIR)) {
-      await mkdir(UPLOAD_DIR, { recursive: true });
-    }
+
 
     // Parse FormData
     const formData = await req.formData();
@@ -133,19 +129,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
       }
 
-      const fileName = generateFileName(videoFile, "video");
-      const filePath = path.join(UPLOAD_DIR, fileName);
+      const fileKey = generateFileKey(videoFile, "video");
       const bytes = await videoFile.arrayBuffer();
-      await writeFile(filePath, Buffer.from(bytes));
+      const { url } = await uploadToS3(Buffer.from(bytes), fileKey, videoFile.type);
 
       uploadedFiles.push({
         type: "video",
-        url: `/uploads/courses/${fileName}`,
+        url,
         fileName: videoFile.name,
         fileSize: videoFile.size,
       });
 
-      console.log(`✅ Video uploaded: ${fileName}`);
+      console.log(`✅ Video uploaded to S3: ${fileKey}`);
     }
 
     if (pdfFile) {
@@ -154,19 +149,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
       }
 
-      const fileName = generateFileName(pdfFile, "pdf");
-      const filePath = path.join(UPLOAD_DIR, fileName);
+      const fileKey = generateFileKey(pdfFile, "pdf");
       const bytes = await pdfFile.arrayBuffer();
-      await writeFile(filePath, Buffer.from(bytes));
+      const { url } = await uploadToS3(Buffer.from(bytes), fileKey, pdfFile.type);
 
       uploadedFiles.push({
         type: "pdf",
-        url: `/uploads/courses/${fileName}`,
+        url,
         fileName: pdfFile.name,
         fileSize: pdfFile.size,
       });
 
-      console.log(`✅ PDF uploaded: ${fileName}`);
+      console.log(`✅ PDF uploaded to S3: ${fileKey}`);
     }
 
     if (wordFile) {
@@ -175,19 +169,18 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: validation.error }, { status: 400 });
       }
 
-      const fileName = generateFileName(wordFile, "document");
-      const filePath = path.join(UPLOAD_DIR, fileName);
+      const fileKey = generateFileKey(wordFile, "document");
       const bytes = await wordFile.arrayBuffer();
-      await writeFile(filePath, Buffer.from(bytes));
+      const { url } = await uploadToS3(Buffer.from(bytes), fileKey, wordFile.type);
 
       uploadedFiles.push({
         type: "document",
-        url: `/uploads/courses/${fileName}`,
+        url,
         fileName: wordFile.name,
         fileSize: wordFile.size,
       });
 
-      console.log(`✅ Document uploaded: ${fileName}`);
+      console.log(`✅ Document uploaded to S3: ${fileKey}`);
     }
 
     // Create or update course

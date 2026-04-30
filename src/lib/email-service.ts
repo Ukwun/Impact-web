@@ -1,3 +1,4 @@
+
 import { Resend } from "resend";
 import nodemailer from "nodemailer";
 
@@ -145,6 +146,21 @@ export const emailTemplates = {
         <p style="color: #666; font-size: 12px;">This link will expire in 24 hours.</p>
       </div>
     `,
+  }),
+
+  // 6-digit code verification email
+  verificationCode: (name: string, code: string) => ({
+    subject: "Your ImpactEdu Verification Code",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Welcome to ImpactEdu, ${name}!</h2>
+        <p>Your verification code is:</p>
+        <div style="font-size: 2rem; font-weight: bold; letter-spacing: 0.2em; margin: 24px 0; color: #4CAF50;">${code}</div>
+        <p>Enter this code in the app to verify your email address.</p>
+        <p style="color: #666; font-size: 12px;">This code will expire in 10 minutes.</p>
+      </div>
+    `,
+    text: `Your ImpactEdu verification code is: ${code}\n\nEnter this code in the app to verify your email.\n\nThis code will expire in 10 minutes.`
   }),
 
   // Password reset email

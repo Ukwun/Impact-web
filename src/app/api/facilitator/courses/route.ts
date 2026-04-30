@@ -19,18 +19,20 @@ export async function GET(request: NextRequest) {
   try {
     // Get all courses created by this facilitator
     const courses = await prisma.course.findMany({
-      where: { createdBy: userId },
+      where: { createdById: userId },
       select: {
         id: true,
         title: true,
         description: true,
-        category: true,
-        level: true,
+        difficulty: true,
+        language: true,
+        instructor: true,
+        isPublished: true,
         createdAt: true,
         _count: {
           select: {
-            enrollments: { where: { status: 'active' } },
-            submissions: { where: { gradeStatus: 'pending' } },
+            enrollments: true,
+            grades: true,
           },
         },
       },
@@ -41,11 +43,13 @@ export async function GET(request: NextRequest) {
       id: course.id,
       title: course.title,
       description: course.description,
-      category: course.category,
-      level: course.level,
+      difficulty: course.difficulty,
+      language: course.language,
+      instructor: course.instructor,
+      isPublished: course.isPublished,
       createdAt: course.createdAt,
       totalStudents: course._count.enrollments,
-      pendingGrades: course._count.submissions,
+      totalGrades: course._count.grades,
     }));
 
     return NextResponse.json({ courses: formattedCourses });
@@ -73,11 +77,11 @@ export async function POST(request: NextRequest) {
   const userId = payload.sub;
 
   try {
-    const { title, description, category, level, capacity, lessons } = await request.json();
+    const { title, description, difficulty, language, instructor, lessons } = await request.json();
 
-    if (!title || !lessons || lessons.length === 0) {
+    if (!title || !lessons || lessons.length === 0 || !instructor) {
       return NextResponse.json(
-        { error: 'Title and lessons are required' },
+        { error: 'Title, instructor, and lessons are required' },
         { status: 400 }
       );
     }
@@ -87,11 +91,11 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         description,
-        category,
-        level,
-        capacity: capacity || 30,
-        createdBy: userId,
-        status: 'published',
+        difficulty: difficulty || 'BEGINNER',
+        language: language || 'English',
+        instructor,
+        createdById: userId,
+        isPublished: true,
       },
     });
 
@@ -103,7 +107,7 @@ export async function POST(request: NextRequest) {
           title: lesson.title,
           description: lesson.description,
           order: lesson.order,
-          dueDate: lesson.dueDate ? new Date(lesson.dueDate) : null,
+          duration: lesson.duration || 60,
         },
       });
     }

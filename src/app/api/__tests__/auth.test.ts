@@ -1,3 +1,56 @@
+// Mock email service to capture verification code
+let lastVerificationCode = null;
+jest.mock("@/lib/email-service", () => {
+  const actual = jest.requireActual("@/lib/email-service");
+  return {
+    ...actual,
+    getEmailService: () => ({
+      send: (template) => {
+        // If it's a verification code email, capture the code
+        if (template && template.subject && template.subject.includes("Verification Code")) {
+          // Extract code from HTML or text
+          const match = /([0-9]{6})/.exec(template.text || template.html || "");
+          if (match) lastVerificationCode = match[1];
+        }
+        return Promise.resolve({ success: true });
+      },
+    }),
+    emailTemplates: actual.emailTemplates,
+  };
+});
+
+import { POST as registerHandler } from "../auth/register/route";
+import { POST as verifyEmailHandler } from "../auth/verify-email/route";
+
+describe("End-to-end registration and email verification", () => {
+  it("should register a user and verify email with code", async () => {
+    // 1. Register a new user
+    const email = `e2euser${Date.now()}@example.com`;
+    const password = "TestPassword123!";
+    const firstName = "E2E";
+    const lastName = "User";
+    lastVerificationCode = null;
+
+    const registerReq = createMockNextRequest("/api/auth/register", {
+      method: "POST",
+      body: { email, password, firstName, lastName },
+    });
+    const registerRes = await registerHandler(registerReq);
+    const registerJson = await registerRes.json();
+    expect(registerJson.success).toBe(true);
+    expect(lastVerificationCode).toMatch(/^[0-9]{6}$/);
+
+    // 2. Verify email with code
+    const verifyReq = createMockNextRequest("/api/auth/verify-email", {
+      method: "POST",
+      body: { email, code: lastVerificationCode },
+    });
+    const verifyRes = await verifyEmailHandler(verifyReq);
+    const verifyJson = await verifyRes.json();
+    expect(verifyJson.success).toBe(true);
+    expect(verifyJson.message).toMatch(/verified/i);
+  });
+});
 import { createMockNextRequest, createAuthenticatedRequest } from "./test-utils";
 
 // Mock Prisma

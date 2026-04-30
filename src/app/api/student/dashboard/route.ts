@@ -14,17 +14,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const studentId = payload.sub;
+    const userId = payload.sub;
 
     // Get student info
     const student = await prisma.user.findUnique({
-      where: { id: studentId },
-      select: { name: true, email: true, avatar: true },
+      where: { id: userId },
+      select: { firstName: true, lastName: true, email: true, avatar: true },
     });
 
-    // Get all enrollments
+    // Get all enrollments for this user
     const enrollments = await prisma.enrollment.findMany({
-      where: { studentId },
+      where: { userId },
       include: {
         course: {
           include: {
@@ -32,16 +32,15 @@ export async function GET(request: NextRequest) {
             assignments: {
               include: {
                 submissions: {
-                  where: { studentId },
+                  where: { userId },
                   take: 1,
                 },
               },
             },
-            facilitator: {
-              include: { user: true },
-            },
+            createdBy: true, // The creator of the course (facilitator)
           },
         },
+        lessonProgress: true, // For lesson completion
       },
     });
 
@@ -49,9 +48,11 @@ export async function GET(request: NextRequest) {
     const courses = enrollments.map((enrollment) => {
       const course = enrollment.course;
       const lessonsTotal = course.lessons.length;
-      const lessonsCompleted = course.lessons.filter(
-        (l) => l.completedAt !== null
-      ).length;
+      // Find completed lessons for this enrollment via LessonProgress
+      const completedLessonIds = enrollment.lessonProgress
+        .filter((lp) => lp.isCompleted)
+        .map((lp) => lp.lessonId);
+      const lessonsCompleted = completedLessonIds.length;
       const completionPercent =
         lessonsTotal > 0
           ? Math.round((lessonsCompleted / lessonsTotal) * 100)
@@ -74,17 +75,17 @@ export async function GET(request: NextRequest) {
 
       return {
         courseId: course.id,
-        courseName: course.name,
-        facilitatorName: course.facilitator?.user?.name || "Unknown",
-        facilitatorEmail: course.facilitator?.user?.email,
+        courseName: course.title,
+        facilitatorName: course.createdBy?.firstName + ' ' + course.createdBy?.lastName || "Unknown",
+        facilitatorEmail: course.createdBy?.email,
         completionPercent,
         lessonsCompleted,
         lessonsTotal,
         assignmentsSubmitted,
         assignmentsTotal,
         averageGrade,
-        status: enrollment.status,
-        enrolledDate: enrollment.enrolledDate,
+        status: enrollment.isCompleted ? "completed" : "active",
+        enrolledDate: enrollment.enrolledAt,
       };
     });
 
@@ -135,7 +136,7 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         student: {
-          name: student?.name,
+          name: student ? student.firstName + ' ' + student.lastName : undefined,
           email: student?.email,
           avatar: student?.avatar,
         },

@@ -48,12 +48,18 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
+    // Require authentication
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+    // Optionally: verify token (import verifyToken from @/lib/auth)
+    // If you want to check the user, uncomment below:
+    // import { verifyToken } from "@/lib/auth";
+    // const user = verifyToken(token);
+    // if (!user) return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 });
+
     const body = await req.json();
-
-    // TODO: Add authentication check here
-    // const token = req.headers.get("authorization");
-    // if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
     const { authorName, authorRole, quote, rating, category } = body;
 
     if (!authorName || !quote || !category) {

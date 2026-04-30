@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEmailService, emailTemplates } from "@/lib/email-service";
-import { prisma } from "@/lib/db";
-import { verifyToken } from "@/lib/auth";
-import jwt from "jsonwebtoken";
+import { prisma } from "@/lib/prisma";
+import { getFirestore } from "@/lib/firebase-admin";
 
 /**
  * POST /api/auth/send-verification-email
@@ -10,73 +9,44 @@ import jwt from "jsonwebtoken";
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email, userId } = await request.json();
+    const { email } = await request.json();
 
-    if (!email || !userId) {
+    if (!email) {
       return NextResponse.json(
-        { error: "Email and userId are required" },
+        { error: "Email is required" },
         { status: 400 }
       );
     }
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
+    // Find user by email
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
     if (user.emailVerified) {
-      return NextResponse.json(
-        { error: "Email already verified" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email already verified" }, { status: 400 });
     }
 
-    // Generate verification token (expires in 24 hours)
-    const verificationToken = jwt.sign(
-      { sub: userId, type: "email_verification" },
-      process.env.JWT_SECRET || "",
-      { expiresIn: "24h" }
-    );
-
-    // Save token to database
+    // Generate new 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
     await prisma.user.update({
-      where: { id: userId },
-      data: {
-        emailVerificationToken: verificationToken,
-      },
+      where: { email },
+      data: { emailVerificationToken: code },
     });
+    // Update Firestore if present
+    try {
+      const db = getFirestore();
+      const snapshot = await db.collection("users").where("email", "==", email).get();
+      snapshot.forEach(async (doc) => {
+        await doc.ref.update({ emailVerificationToken: code });
+      });
+    } catch {}
 
-    // Generate verification link
-    const verificationLink = `${process.env.NEXT_PUBLIC_API_BASE_URL?.replace("/api", "") || "http://localhost:3000"}/verify-email?token=${verificationToken}`;
-
-    // Send email
+    // Send code email
     const emailService = getEmailService();
-    const template = emailTemplates.verifyEmail(user.firstName, verificationLink);
+    await emailService.send(emailTemplates.verificationCode(user.firstName || "User", code));
 
-    const result = await emailService.send({
-      to: email,
-      subject: template.subject,
-      html: template.html,
-    });
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error || "Failed to send verification email" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Verification email sent",
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error sending verification email:", error);
     return NextResponse.json(

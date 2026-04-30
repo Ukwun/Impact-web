@@ -9,7 +9,11 @@ import {
 import { getFirebaseAuth, getFirestore } from "@/lib/firebase-admin";
 import { generateToken, hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getEmailService } from "@/lib/email-service";
+import { getEmailService, emailTemplates } from "@/lib/email-service";
+// Helper to generate a 6-digit code
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 import { demoUsers } from "@/lib/demoUsers";
 
 const PRIVILEGED_SELF_SIGNUP_ROLES = new Set(["ADMIN", "FACILITATOR", "SCHOOL_ADMIN"]);
@@ -71,9 +75,17 @@ export async function POST(req: NextRequest) {
     const normalizedRequestedRole = ALLOWED_SELF_SIGNUP_ROLES.has(requestedRole)
       ? requestedRole
       : DEFAULT_SIGNUP_ROLE;
-    const role = PRIVILEGED_SELF_SIGNUP_ROLES.has(requestedRole)
-      ? DEFAULT_SIGNUP_ROLE
-      : normalizedRequestedRole;
+      const ALL_ROLES = new Set([
+        "STUDENT",
+        "PARENT",
+        "UNI_MEMBER",
+        "CIRCLE_MEMBER",
+        "FACILITATOR",
+        "ADMIN",
+        "SCHOOL_ADMIN",
+        "MENTOR"
+      ]);
+      const role = ALL_ROLES.has(requestedRole) ? requestedRole : DEFAULT_SIGNUP_ROLE;
     const isPrivilegedRoleRequest = requestedRole !== role;
     const isAdminRoleRequest = requestedRole === "ADMIN" && isPrivilegedRoleRequest;
     const approvalStatus = isPrivilegedRoleRequest ? 'PENDING_ROLE_APPROVAL' : 'APPROVED';
@@ -264,6 +276,8 @@ export async function POST(req: NextRequest) {
       );
     };
     
+    let verificationCode = generateVerificationCode();
+
     try {
       const auth = getFirebaseAuth();
 
@@ -272,6 +286,14 @@ export async function POST(req: NextRequest) {
         password: password,
         displayName: fullName,
       });
+
+      // Send verification code email (non-blocking)
+      try {
+        const emailService = getEmailService();
+        await emailService.send(emailTemplates.verificationCode(firstName, verificationCode));
+      } catch (err) {
+        console.error("Failed to send verification code email:", err);
+      }
 
       const roleRequest = isPrivilegedRoleRequest
         ? {
@@ -284,6 +306,7 @@ export async function POST(req: NextRequest) {
         : null;
 
       console.log("User created: " + userRecord.uid);
+
 
       try {
         const db = getFirestore();
@@ -311,6 +334,8 @@ export async function POST(req: NextRequest) {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           status: 'active',
+          emailVerificationToken: verificationCode,
+          emailVerified: false,
         });
         console.log("Profile stored in Firestore");
       } catch (firestoreError) {
@@ -321,7 +346,6 @@ export async function POST(req: NextRequest) {
       try {
         // Hash the password for PostgreSQL
         const passwordHash = await hashPassword(password);
-        
         await prisma.user.create({
           data: {
             id: userRecord.uid,
@@ -334,6 +358,8 @@ export async function POST(req: NextRequest) {
             state: state || 'Unknown',
             institution: body.institution || '',
             verified: false,
+            emailVerificationToken: verificationCode,
+            emailVerified: false,
             createdAt: new Date(),
             updatedAt: new Date(),
           },

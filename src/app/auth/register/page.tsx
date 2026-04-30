@@ -9,6 +9,8 @@ import { Select } from "@/components/ui/Select";
 import { Container } from "@/components/ui/Container";
 import { Card } from "@/components/ui/Card";
 import { useAuthStore } from "@/context/AuthStore";
+import dynamic from "next/dynamic";
+const EmailVerificationForm = dynamic(() => import("@/components/auth/EmailVerificationForm"), { ssr: false });
 import { getDashboardRoute } from "@/lib/rbac";
 import { ArrowRight, CheckCircle2, Lock, User, MapPin } from "lucide-react";
 
@@ -78,6 +80,8 @@ export default function RegisterPage() {
     agreeToTerms: false,
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [error, setError] = useState("");
   const router = useRouter();
   const { setUser, setToken, register: registerUser, user, logout } = useAuthStore();
@@ -130,28 +134,10 @@ export default function RegisterPage() {
         throw new Error(result.error || "Registration failed");
       }
 
-      console.log("✅ Registration successful, user:", result.user);
-
-      // Ensure user object exists before proceeding
-      if (!result.user) {
-        console.error("Registration succeeded but no user object returned:", result);
-        setError("Registration completed but user data is missing. Please contact support.");
-        setIsLoading(false);
-        return;
-      }
-
-      // Ensure user state is updated before redirecting
-      console.log("🔄 Updating user state and redirecting...");
-      
-      // Redirect to appropriate dashboard based on user role
-      const dashboardRoute = getDashboardRoute(result.user.role);
-      const finalRoute = dashboardRoute || "/dashboard";
-      
-      // Use window.location for full page reload to avoid state inconsistencies
-      setTimeout(() => {
-        console.log("🔄 Executing redirect to:", finalRoute);
-        window.location.href = finalRoute;
-      }, 500);
+      // Show verification form instead of redirecting immediately
+      setPendingEmail(formData.email);
+      setShowVerification(true);
+      setIsLoading(false);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred. Please try again.";
       console.error("⚠️ Signup error:", errorMsg);
@@ -244,6 +230,24 @@ export default function RegisterPage() {
                 </div>
               </div>
             </div>
+          </Card>
+        </Container>
+      </div>
+    );
+  }
+
+  if (showVerification && pendingEmail) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-dark px-4 py-12 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500 opacity-10 rounded-full blur-3xl -mr-48 -mt-48"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary-500 opacity-10 rounded-full blur-3xl -ml-48 -mb-48"></div>
+        <Container className="max-w-md relative z-10">
+          <Card className="p-8 shadow-2xl">
+            <EmailVerificationForm email={pendingEmail} onSuccess={() => {
+              // After successful verification, redirect to dashboard
+              const dashboardRoute = getDashboardRoute(formData.role);
+              window.location.href = dashboardRoute || "/dashboard";
+            }} />
           </Card>
         </Container>
       </div>

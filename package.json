@@ -74,8 +74,8 @@
     "zustand": "^4.4.0"
   },
   "devDependencies": {
-    "prisma": "^5.20.0",
     "@netlify/plugin-nextjs": "^5.15.9",
+    "@playwright/test": "^1.59.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -91,7 +91,9 @@
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "k6": "^0.0.0",
+    "playwright": "^1.59.1",
     "prettier": "^3.1.0",
+    "prisma": "^5.20.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2"
   }
